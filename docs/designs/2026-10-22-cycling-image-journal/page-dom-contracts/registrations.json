@@ -7,11 +7,12 @@
   "ts": "miniprogram/pages/registrations/index.ts",
   "containers": [
     { "class": "page registrations-page", "role": "page-root", "order": 1 },
-    { "class": "page-heading", "role": "page-heading", "order": 2, "note": "heading-eyebrow + heading-title + heading-copy + heading-count。" },
-    { "class": "trip-stats", "role": "list", "order": 3, "optional": true, "note": "items 存在时展示：审核中 / 可出发 / 已失效 三项状态计数。" },
-    { "class": "registration-list", "role": "list", "order": 4, "note": "每条 swipe-row：cancelled 时左滑 swipe-delete；主卡 registration-card status-xxx。" },
-    { "class": "ticket-head", "role": "ticket-header", "order": 5, "note": "每张 ticket 的顶部：ticket-label + card-index + status-pill。" },
-    { "class": "ticket-body", "role": "ticket-body", "order": 6, "note": "ticket 主体：club-identity + registration-title + meeting-panel + status-guidance + card-actions。" }
+    { "class": "pageheading", "role": "page-heading", "order": 2, "note": "eyebrow + pageheading-title editorial + pageheading-sub + 可选 meta。" },
+    { "class": "content tight", "role": "content-wrapper", "order": 3, "note": "紧凑栏：状态计数 trip-stats + 刷新/骨架/空态 + section." },
+    { "class": "trip-stats", "role": "list", "order": 4, "optional": true, "note": "items 存在时展示：审核中 / 可出发 / 已失效 三项状态计数。" },
+    { "class": "section section-trips", "role": "section", "order": 5, "note": "我的行程：chapterhead + trip-list + 每条 ticket（photo ticketphoto + shade + ticketbody + ticketfooter）。" },
+    { "class": "trip-list", "role": "list", "order": 6, "note": "swipe-row 包裹，cancelled 时左滑 swipe-delete；主卡 ticket status-xxx。" },
+    { "class": "ticket", "role": "ticket", "order": 7, "note": "每张票：photo ticketphoto + ticketbody（tag + 标题 + club-identity + 集合行 + 状态引导）+ ticketfooter（提示 + 行动按钮）。" }
   ],
   "interactions": [
     { "trigger": "open", "dataAttr": "data-id", "note": "打开票据对应的凭证 / 活动详情（由 destinationLabel 决定）。" },
@@ -24,11 +25,12 @@
   ],
   "copy": [
     "此里 · 骑行日历",
-    "每次出发，都有一张记忆。",
+    "每次出发，",
+    "都有一张记忆。",
     "在这里确认报名状态与集合安排。",
+    "我的行程",
     "骑行票据",
     "集合时间",
-    "集合地点",
     "审核中",
     "可出发",
     "已失效"
@@ -36,5 +38,13 @@
   "assets": [
     { "class": "club-avatar", "note": "活动归属俱乐部头像；缺省态使用 club-avatar--placeholder。" }
   ],
-  "forbids": []
+  "forbids": [
+    { "class": "page-heading", "reason": "旧 Oil UI page-heading 已被 pageheading 替换。" },
+    { "class": "registration-list", "reason": "registration-list 已被 trip-list 替换。" },
+    { "class": "registration-card", "reason": "registration-card 已被 ticket 替换。" },
+    { "class": "ticket-head", "reason": "ticket-head 分区结构已被 ticketbody 内部的 ticket-row-top 替换。" },
+    { "class": "ticket-body", "reason": "ticket-body（旧 Oil UI）已被 ticketbody 替换。" },
+    { "class": "meeting-panel", "reason": "meeting-panel 已被 row ticket-row 替换。" },
+    { "class": "card-actions", "reason": "card-actions 已被 ticketfooter + ticket-actions 替换。" }
+  ]
 }

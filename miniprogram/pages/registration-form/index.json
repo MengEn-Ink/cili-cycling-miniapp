@@ -8,8 +8,6 @@
   "backgroundColorBottom": "#fbf5ea",
   "backgroundTextStyle": "dark",
   "usingComponents": {
-    "state-view": "/components/state-view/index",
-    "activity-card": "/components/activity-card/index",
-    "status-pill": "/components/status-pill/index"
+    "state-view": "/components/state-view/index"
   }
 }

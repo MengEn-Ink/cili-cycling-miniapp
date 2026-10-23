@@ -2,62 +2,46 @@ import { describe, expect, it } from 'vitest';
 import { declaration, effectiveBlock, expectSemantic, read } from './theme-contract-helpers';
 
 describe('沸点首批六页尺寸契约', () => {
-  it('活动首页使用统一页边距、46px 分段控件和完整竖向影像列表', () => {
+  it('活动首页使用统一页边距，并以 pageheading + segment 承载时间与紧凑切换', () => {
     const app = read('miniprogram/app.wxss');
+    const template = read('miniprogram/pages/activities/index.wxml');
     const styles = read('miniprogram/pages/activities/index.wxss');
     expect(app).toContain('padding: 32rpx var(--page-gutter);');
-    expect(declaration(effectiveBlock(app, '.timeline-tab'), 'min-height')).toBe(
-      'var(--segment-height)',
-    );
-    expect(declaration(effectiveBlock(styles, '.activity-story-list'), 'gap')).toBe('48rpx');
-    expect(declaration(effectiveBlock(styles, '.activity-card-skeleton'), 'height')).toBe('820rpx');
-    expect(declaration(effectiveBlock(app, '.page-title'), 'font-size')).toBe('64rpx');
+    expect(template).toContain('class="pageheading"');
+    expect(template).toContain('class="pageheading-title editorial"');
+    expect(template).toContain('class="segment"');
+    expect(styles).toContain('.pageheading');
+    expect(styles).toContain('.segment');
   });
 
-  it('我的行程逐项还原独立统计卡、深色票据头和暖米白集合信息', () => {
+  it('我的行程使用 pageheading + content.tight + ticket 票据结构', () => {
     const template = read('miniprogram/pages/registrations/index.wxml');
     const styles = read('miniprogram/pages/registrations/index.wxss');
-    const list = effectiveBlock(styles, '.registration-list');
-    const ready = effectiveBlock(styles, '.trip-stat--ready');
-    const card = effectiveBlock(styles, '.registration-card');
-    expect(declaration(list, 'gap')).toBe('var(--card-gap)');
-    expect(styles).toMatch(/\.trip-stats\s*\{[^}]*gap:\s*20rpx[^}]*margin-top:\s*30rpx/s);
-    expectSemantic(declaration(ready, 'background'), '--color-media-card-bg');
-    expect(declaration(card, 'padding')).toBe('0');
-    expect(declaration(card, 'border')).toBe('0');
-    expectSemantic(declaration(card, 'border-radius'), '--radius-display');
-    expectSemantic(
-      declaration(effectiveBlock(styles, '.ticket-head'), 'background'),
-      '--color-media-card-bg',
-    );
-    expectSemantic(
-      declaration(effectiveBlock(styles, '.meeting-panel'), 'background'),
-      '--color-bg',
-    );
-    expect(declaration(effectiveBlock(styles, '.meeting-panel'), 'border-radius')).toBe('28rpx');
-    expectSemantic(
-      declaration(effectiveBlock(styles, '.trip-action--primary'), 'background'),
-      '--color-action',
-    );
-    expect(template).toContain('<view class="ticket-body">');
-    expect(template).toContain('status-pill ticket="{{true}}"');
+    expect(template).toContain('class="pageheading"');
+    expect(template).toContain('class="content tight"');
+    expect(template).toMatch(/class="ticket status-\{\{item\.status\}\}"/);
+    expect(styles).toContain('.ticket');
+    expect(styles).toContain('.ticketbody');
+    expect(styles).toContain('.ticketfooter');
+    expect(styles).toContain('.trip-stats');
+    // 旧 Oil UI 不得残留
+    expect(styles).not.toMatch(/\.registration-list\s*\{/);
+    expect(styles).not.toMatch(/\.registration-card\s*\{/);
+    expect(template).not.toContain('<view class="ticket-body">');
   });
 
-  it('活动详情使用统一同级分区、紧凑路线操作和安全区 CTA', () => {
-    const app = read('miniprogram/app.wxss');
+  it('活动详情使用 photo hero detail + ink + content 分区，并保留固定 actionbar', () => {
+    const template = read('miniprogram/pages/activity-detail/index.wxml');
     const styles = read('miniprogram/pages/activity-detail/index.wxss');
-    const metrics = effectiveBlock(app, '.metric-panel');
-    const card = effectiveBlock(app, '.card');
-    expect(declaration(metrics, 'border')).toBe('2rpx solid var(--color-border)');
-    expect(declaration(metrics, 'border-radius')).toBe('var(--card-radius)');
-    expect(declaration(card, 'padding')).toBe('var(--card-padding)');
-    expect(declaration(card, 'border')).toBe('var(--card-border-width) solid var(--card-border)');
-    expect(declaration(card, 'border-radius')).toBe('var(--card-radius)');
-    expect(declaration(effectiveBlock(styles, '.route-location-row button'), 'min-height')).toBe(
-      'var(--control-height)',
-    );
-    expect(declaration(effectiveBlock(app, '.btn'), 'min-height')).toBe('var(--control-height)');
-    expect(app).toContain('calc(16rpx + env(safe-area-inset-bottom))');
+    expect(template).toContain('photo hero detail');
+    expect(template).toContain('class="ink"');
+    expect(template).toContain('class="actionbar"');
+    expect(styles).toContain('.photo.hero.detail');
+    expect(styles).toContain('.ink');
+    expect(styles).toContain('.actionbar');
+    expect(styles).toMatch(/\.actionbar\s*\{[^}]*position:\s*fixed/s);
+    // 旧 Oil UI 不得残留
+    expect(styles).not.toMatch(/\.detail-decision\s*\{/);
   });
 
   it('创建活动使用统一页边距、14px 卡片和 48px 控件', () => {
@@ -85,24 +69,30 @@ describe('沸点首批六页尺寸契约', () => {
     expect(template).toContain('aria-label="打开设置"');
     expect(template).not.toContain('<text>设置</text>');
     expect(styles).toMatch(/\.profile-hero\s*\{[^}]*min-height:\s*680rpx/s);
-    const card = effectiveBlock(styles, '.menu-list');
-    expect(declaration(card, 'border')).toBe('0');
-    expect(declaration(card, 'border-radius')).toBe('0');
-    expectSemantic(declaration(card, 'background'), '--color-bg');
-    expect(declaration(effectiveBlock(styles, '.menu-card'), 'min-height')).toBe('144rpx');
+    // 新设计：三条 row.rowlink.rowbutton 替代旧 .menu-list / .menu-card
+    const row = effectiveBlock(styles, '.row.rowlink.rowbutton');
+    expect(declaration(row, 'min-height')).toBe('128rpx');
+    expectSemantic(declaration(row, 'background'), '--color-surface');
+    expect(styles).not.toMatch(/\.menu-list\s*\{/);
+    expect(styles).not.toMatch(/\.menu-card\s*\{/);
   });
 
-  it('设置页使用统一边距、四级标题和 14px 卡片', () => {
+  it('设置页按设计稿 settings.html 使用 pageheading + section 排版，不保留旧 release-card 结构', () => {
     const app = read('miniprogram/app.wxss');
     const styles = read('miniprogram/pages/settings/index.wxss');
-    const release = effectiveBlock(styles, '.release-content');
-    const releaseCard = effectiveBlock(styles, '.release-card');
     expect(app).toContain('padding: 32rpx var(--page-gutter);');
-    expect(declaration(effectiveBlock(styles, '.hero-title'), 'font-size')).toBe('64rpx');
-    expect(declaration(release, 'padding')).toBe('28rpx');
-    expect(declaration(releaseCard, 'border')).toBe('4rpx solid var(--color-border-strong)');
-    expectSemantic(declaration(releaseCard, 'border-radius'), '--radius-card');
-    expect(styles).not.toMatch(/theme-option|theme-preview|appearance-card/);
+    // pageheading 字号与设计稿双行宋体对齐
+    expect(declaration(effectiveBlock(styles, '.pageheading-title'), 'line-height')).toBe('88rpx');
+    // row.rowlink.rowbutton 使用 20rpx 圆角 + 128rpx 触控高度（对齐设计稿 .row.rowlink.rowbutton）
+    const row = effectiveBlock(styles, '.row.rowlink.rowbutton');
+    expect(declaration(row, 'min-height')).toBe('128rpx');
+    expectSemantic(declaration(row, 'background'), '--color-surface');
+    // detailrows 用来承载"当前版本/本次更新"，不再是整块 release-card
+    const detailrows = effectiveBlock(styles, '.detailrows');
+    expectSemantic(declaration(detailrows, 'background'), '--color-surface');
+    expect(styles).not.toMatch(
+      /theme-option|theme-preview|appearance-card|release-list|release-card/,
+    );
   });
 
   it('报名凭证页禁用历史硬编码色并把关键文字收口到沸点 token', () => {
@@ -127,20 +117,15 @@ describe('沸点首批六页尺寸契约', () => {
     for (const value of forbidden) {
       expect(styles.toLowerCase()).not.toContain(value);
     }
-    const app = read('miniprogram/app.wxss');
     expectSemantic(
       declaration(effectiveBlock(styles, '.credential-page'), 'background'),
       '--color-bg',
     );
-    expectSemantic(declaration(effectiveBlock(app, '.credential-card'), 'background'), '--card-bg');
-    expectSemantic(declaration(effectiveBlock(styles, '.serial'), 'color'), '--color-muted');
+    // 新结构：ticket.voucher 承载凭证主体
     expectSemantic(
-      declaration(effectiveBlock(app, '.approved-mark'), 'color'),
-      '--color-status-success',
+      declaration(effectiveBlock(styles, '.ticket.voucher'), 'background'),
+      '--color-surface',
     );
-    expectSemantic(
-      declaration(effectiveBlock(app, '.approved-mark'), 'background'),
-      '--color-status-success-soft',
-    );
+    expectSemantic(declaration(effectiveBlock(styles, '.person-meta'), 'color'), '--color-muted');
   });
 });

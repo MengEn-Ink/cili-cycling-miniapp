@@ -1,13 +1,13 @@
 {
   "schemaVersion": 2,
-  "syncedThrough": "98673f3712228ef371b5b895e5b4dc1a13b0daad",
-  "syncedAt": "2026-10-22T17:08:00.000Z",
+  "syncedThrough": "58350ba621602be692dc981085767f3b46ff26c3",
+  "syncedAt": "2026-10-23T03:00:00.000Z",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:66cff9f5de7766746d460ef3f383958e5917e979117525ad65952156230cf39b"
+    "digest": "sha256:e061424fafa66df5ab874ef6e524259998464793db808b0ce7b340bda0d0630c"
   },
   "prototype": {
     "digest": "sha256:89461e3d7e10123a6b78cce68bb929d4a43000574aa29c30e83fe220e50d4688"

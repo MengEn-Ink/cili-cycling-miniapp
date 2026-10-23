@@ -1,197 +1,285 @@
+<!--
+  骑行影像志 · 活动编辑（1:1 对齐 docs/designs/2026-10-22-cycling-image-journal/pages/admin-activity-edit.html）
+  - 骨架：pageheading(宋体双行标题) → content.tight → form →
+      section 影像与标题 → upload(封面 image-grid × 3 + 添加) + field 标题
+      section 何时，在哪里 → fieldgrid 日期+时间 + field 集合地点
+      section 报名方式 → fieldset(fieldlegend + choicegrid.choice × 2) + detailrows(截止/容量)
+      section 路线与说明 → field Strava URL + btn 解析 + paper(metrics + map + notice warning) + GPX field + description field
+      section 活动群 → field 群二维码
+      action-bar actions buttonpair → 保存草稿 secondary + 发布 primary
+  - 真实业务保留：loading / allowed / 身份校验、formErrors、date/time picker、
+    registrationMode(open/approval)、routeStart(含地图选点)、三张封面图上传+pendingImages+重试、
+    Strava readiness / addOfficialRoute / routePreview / publicRoutePreview、GPX chooseRouteGpx、
+    group QR chooseGroupQrCode/pendingGroupQrCode/removeGroupQrCode、
+    固定底部双按钮保存草稿/发布 + 发布禁用提示。
+-->
 <view class="page-shell activity-editor activity-form-page">
-  <view wx:if="{{loading}}" class="state-card">正在加载活动…</view>
-  <view wx:elif="{{!allowed}}" class="state-card state-card--error">
-    <view>{{error || '无权访问活动管理'}}</view>
-    <button wx:if="{{error}}" class="button button--secondary" bindtap="retryLoad">重试</button>
+  <view wx:if="{{loading}}" class="empty"><view class="empty-copy">正在加载活动…</view></view>
+
+  <view wx:elif="{{!allowed}}" class="empty" role="alert">
+    <view class="empty-title">无权访问活动管理</view>
+    <view class="empty-copy">{{error || '请先完成微信身份验证后重试。'}}</view>
+    <button wx:if="{{error}}" class="btn secondary" bindtap="retryLoad">重试</button>
   </view>
+
   <block wx:else>
-    <view class="editor-hero journal-heading">
-      <view class="journal-eyebrow">此里 · 编辑这次骑行</view>
-      <view class="editor-title editorial">{{id ? '编辑活动' : '创建活动'}}</view>
-      <view class="editor-summary">填写活动信息，保存草稿后可继续完善。</view>
-    </view>
-
-    <view wx:if="{{error}}" class="card danger"><view class="error-summary">{{error}}</view></view>
-
-    <view class="form-card card">
-      <view class="card-head"><text class="card-no">01</text><view class="card-title">基本信息</view></view>
-      <view class="field" data-error-anchor="title">
-        <view class="field-label">活动标题 <text class="required">必填</text></view>
-        <input class="input" value="{{form.title}}" maxlength="100" placeholder-class="input-placeholder" placeholder="请输入活动标题" bindinput="field" data-name="title" />
-        <view wx:if="{{formErrors.title}}" class="form-error">{{formErrors.title}}</view>
+    <header class="pageheading editor-hero">
+      <view class="eyebrow">此里 · 编辑这次骑行</view>
+      <view class="pageheading-title editorial">
+        <text class="pageheading-line">出发之前，</text>
+        <text class="pageheading-line">把细节讲清楚。</text>
       </view>
-      <view class="section-title">集合信息</view>
-      <view class="field" data-error-anchor="startAt">
-        <view class="field-label">集合时间 <text class="required">必填</text></view>
-        <view class="date-time-row">
-          <picker mode="date" value="{{form.startDate}}" bindchange="dateTimePicker" data-target="start" data-part="date">
-            <view class="picker-value">{{form.startDate || '选择日期'}}</view>
-          </picker>
-          <picker mode="time" value="{{form.startTime}}" bindchange="dateTimePicker" data-target="start" data-part="time">
-            <view class="picker-value">{{form.startTime || '选择时间'}}</view>
-          </picker>
-        </view>
-        <view wx:if="{{formErrors.startAt}}" class="field-error field-error-copy">{{formErrors.startAt}}</view>
+      <view class="pageheading-sub">{{id ? '编辑中 · 保存草稿后可继续完善' : '创建新活动 · 填写信息并保存草稿'}}</view>
+    </header>
+
+    <view class="content tight">
+      <view wx:if="{{error}}" class="notice notice--warn" role="alert">
+        <view class="notice-dot" aria-hidden="true"></view>
+        <text>{{error}}</text>
       </view>
 
-      <view class="field registration-mode-field">
-        <view class="field-label">报名模式</view>
-        <view class="registration-mode-options" role="radiogroup" aria-label="报名模式">
-          <button class="registration-mode-option {{registrationMode === 'open' ? 'is-active' : ''}}" data-mode="open" bindtap="registrationModeChange" role="radio" aria-checked="{{registrationMode === 'open'}}">
-            <text class="registration-mode-title">公开报名</text>
-            <text class="section-help">资料与名额校验通过后直接报名成功</text>
-          </button>
-          <button class="registration-mode-option {{registrationMode === 'approval' ? 'is-active' : ''}}" data-mode="approval" bindtap="registrationModeChange" role="radio" aria-checked="{{registrationMode === 'approval'}}">
-            <text class="registration-mode-title">审核报名</text>
-            <text class="section-help">提交后等待管理员审批</text>
-          </button>
-        </view>
-        <view class="section-help">报名截止自动设为活动开始日当地 00:00，无需单独填写。</view>
-      </view>
-
-      <view class="field" data-error-anchor="routeStart">
-        <view class="field-label">集合地点 <text class="required">必填</text></view>
-        <view class="location-row">
-          <input class="input" value="{{form.routeStart}}" placeholder-class="input-placeholder" placeholder="填写地点或从地图选择" bindinput="field" data-name="routeStart" />
-          <button class="map-button map-button--secondary" loading="{{choosingLocation}}" bindtap="chooseRouteLocation">地图选点</button>
-        </view>
-        <view wx:if="{{formErrors.routeStart}}" class="field-error field-error-copy">{{formErrors.routeStart}}</view>
-      </view>
-    </view>
-
-    <view class="form-card card">
-      <view class="card-head"><text class="card-no">02</text><view class="card-title">活动封面</view></view>
-      <view class="section-head">
-        <view>
-          <view class="section-title">封面照片</view>
-          <view class="section-help">最多 3 张，第一张作为封面</view>
-        </view>
-        <view class="image-count">{{images.length + pendingImages.length}} / 3</view>
-      </view>
-      <view class="image-grid">
-        <view wx:for="{{images}}" wx:key="*this" class="image-item">
-          <image wx:if="{{imagePreviewUrls[index]}}" class="image-preview" src="{{imagePreviewUrls[index]}}" mode="aspectFill" data-file-id="{{item}}" bindload="storedMediaPreviewLoad" binderror="storedMediaPreviewError" />
-          <button wx:else class="stored-media-placeholder" data-file-id="{{item}}" bindtap="retryStoredMediaPreview">{{mediaPreviewLoading ? '图片加载中…' : '图片加载失败，点击重试'}}</button>
-          <view wx:if="{{index === 0}}" class="cover-badge">封面</view>
-          <view class="image-actions">
-            <button wx:if="{{index > 0}}" class="image-action" bindtap="setCover" data-index="{{index}}">设为封面</button>
-            <button class="image-action image-action--danger" bindtap="removeImage" data-index="{{index}}">删除</button>
+      <form data-submit="save">
+        <section class="section form-card card">
+          <view class="chapterhead">
+            <view class="chapterhead-title">影像与标题</view>
+            <view class="chapterhead-aside">活动封面 {{images.length + pendingImages.length}} / 3</view>
           </view>
-        </view>
-        <view wx:for="{{pendingImages}}" wx:for-item="pendingImage" wx:key="id" class="image-item image-item--pending">
-          <image class="image-preview" src="{{pendingImage.previewPath}}" mode="aspectFill" />
-          <view class="upload-status upload-status--{{pendingImage.status}}">{{pendingImage.status === 'uploading' ? '上传中…' : pendingImage.status === 'uploaded' ? '已上传' : '上传失败'}}</view>
-          <view wx:if="{{pendingImage.status === 'failed'}}" class="image-actions">
-            <button class="image-action" bindtap="retryImage" data-id="{{pendingImage.id}}">重试</button>
-            <button class="image-action image-action--danger" bindtap="removePendingImage" data-id="{{pendingImage.id}}">删除</button>
-          </view>
-        </view>
-        <button wx:if="{{images.length + pendingImages.length < 3}}" class="upload-tile" loading="{{uploading}}" bindtap="chooseImages">
-          <text class="upload-plus">＋</text>
-          <text>{{uploading ? '上传中' : '添加照片'}}</text>
-        </button>
-      </view>
-    </view>
 
-    <view class="form-card card">
-      <view class="card-head"><text class="card-no">03</text><view class="card-title">备注、路线与群二维码</view></view>
-      <view class="field" data-error-anchor="description">
-        <view class="field-label">备注说明</view>
-        <textarea class="textarea" value="{{form.description}}" maxlength="5000" placeholder-class="input-placeholder" placeholder="集合提醒、补给安排或其他需要说明的内容" bindinput="field" data-name="description" />
-        <view class="char-count">{{form.description.length}} / 5000</view>
-      </view>
-      <view class="section-title">活动路线</view>
-      <view class="field" data-error-anchor="stravaRouteUrl">
-        <view class="field-label">Strava 线路地址</view>
-        <view wx:if="{{!stravaConnected}}" class="route-source-conn tone-warning">
-          <view class="route-source-conn-dot" aria-hidden="true"></view>
-          <view class="route-source-conn-copy">需先在设置里完成 Strava 同步，才能解析线路。</view>
-          <button class="route-source-conn-link" bindtap="openStravaSettings">去设置 ›</button>
-        </view>
-        <view wx:elif="{{stravaAthleteName}}" class="route-source-conn tone-success">
-          <view class="route-source-conn-dot" aria-hidden="true"></view>
-          <view class="route-source-conn-copy">已连接 {{stravaAthleteName}}</view>
-        </view>
-        <view class="route-link-row">
-          <input class="input route-link-input" value="{{form.stravaRouteUrl}}" maxlength="256" placeholder-class="input-placeholder" placeholder="粘贴 Strava 线路链接" bindinput="field" data-name="stravaRouteUrl" />
-          <button class="route-link-plus" bindtap="openRouteBoostSheet" aria-label="补充本地路线文件">＋</button>
-        </view>
-        <view class="route-command-row">
-          <button class="map-button map-button--secondary" loading="{{syncingRoute}}" disabled="{{saving || syncingRoute || !stravaConnected || !form.stravaRouteUrl}}" bindtap="addOfficialRoute">{{syncingRoute ? '正在解析线路' : '解析线路'}}</button>
-        </view>
-        <view wx:if="{{publicRoutePreview && !routePreview}}" class="route-preview-card">
-          <view class="route-preview-heading">
-            <view><view class="route-preview-name">{{publicRoutePreview.routeName}}</view><view class="section-help">此里估算 {{routeTimeLabel}}</view></view>
-            <view class="route-ready-mark">公开线路已解析</view>
+          <view class="upload cover-upload">
+            <view class="upload-copy">
+              <strong class="upload-title">活动封面 · 最多 3 张</strong>
+              <view class="upload-sub small muted" id="cover-help">最多 3 张，第一张作为封面；优先横向照片。</view>
+            </view>
+            <view class="image-grid">
+              <view wx:for="{{images}}" wx:key="*this" class="image-item">
+                <image wx:if="{{imagePreviewUrls[index]}}" class="image-preview" src="{{imagePreviewUrls[index]}}" mode="aspectFill" data-file-id="{{item}}" bindload="storedMediaPreviewLoad" binderror="storedMediaPreviewError" />
+                <button wx:else class="stored-media-placeholder" data-file-id="{{item}}" bindtap="retryStoredMediaPreview">{{mediaPreviewLoading ? '图片加载中…' : '图片加载失败，点击重试'}}</button>
+                <view wx:if="{{index === 0}}" class="cover-badge">封面</view>
+                <view class="image-actions">
+                  <button wx:if="{{index > 0}}" class="image-action" bindtap="setCover" data-index="{{index}}">设为封面</button>
+                  <button class="image-action image-action--danger" bindtap="removeImage" data-index="{{index}}">删除</button>
+                </view>
+              </view>
+              <view wx:for="{{pendingImages}}" wx:for-item="pendingImage" wx:key="id" class="image-item image-item--pending">
+                <image class="image-preview" src="{{pendingImage.previewPath}}" mode="aspectFill" />
+                <view class="upload-status upload-status--{{pendingImage.status}}">{{pendingImage.status === 'uploading' ? '上传中…' : pendingImage.status === 'uploaded' ? '已上传' : '上传失败'}}</view>
+                <view wx:if="{{pendingImage.status === 'failed'}}" class="image-actions">
+                  <button class="image-action" bindtap="retryImage" data-id="{{pendingImage.id}}">重试</button>
+                  <button class="image-action image-action--danger" bindtap="removePendingImage" data-id="{{pendingImage.id}}">删除</button>
+                </view>
+              </view>
+              <button wx:if="{{images.length + pendingImages.length < 3}}" class="upload-tile" loading="{{uploading}}" bindtap="chooseImages">
+                <text class="upload-plus">＋</text>
+                <text>{{uploading ? '上传中' : '添加照片'}}</text>
+              </button>
+            </view>
           </view>
-          <view class="route-metric-grid">
-            <view><text>{{publicRoutePreview.distanceKm}}</text><text>km 里程</text></view>
-            <view><text>{{publicRoutePreview.elevationM}}</text><text>m 爬升</text></view>
-            <view><text>{{publicRoutePreview.elevationLossM}}</text><text>m 下降</text></view>
-            <view><text>{{publicRoutePreview.elevationMinM}}–{{publicRoutePreview.elevationMaxM}}</text><text>m 海拔</text></view>
-          </view>
-          <canvas id="route-outline-canvas" type="2d" class="route-outline-canvas" aria-label="{{publicRoutePreview.routeName}}线路轮廓"></canvas>
-          <canvas id="route-elevation-canvas" type="2d" class="route-elevation-canvas" aria-label="{{publicRoutePreview.routeName}}海拔曲线"></canvas>
-        </view>
-        <view wx:if="{{routePreview}}" class="route-preview-card">
-          <view class="route-preview-heading">
-            <view><view class="route-preview-name">{{routePreview.routeName}}</view><view class="section-help">此里估算 {{routeTimeLabel}}</view></view>
-            <view class="route-ready-mark">线路详情已准备好</view>
-          </view>
-          <view class="route-metric-grid">
-            <view><text>{{routePreview.distanceKm}}</text><text>km 里程</text></view>
-            <view><text>{{routePreview.elevationM}}</text><text>m 爬升</text></view>
-            <view><text>{{routePreview.elevationLossM}}</text><text>m 下降</text></view>
-            <view><text>{{routePreview.elevationMinM}}–{{routePreview.elevationMaxM}}</text><text>m 海拔</text></view>
-          </view>
-          <canvas id="route-outline-canvas" type="2d" class="route-outline-canvas" aria-label="{{routePreview.routeName}}线路轮廓"></canvas>
-          <canvas id="route-elevation-canvas" type="2d" class="route-elevation-canvas" aria-label="{{routePreview.routeName}}海拔曲线"></canvas>
-          <view class="route-command-row">
-            <button class="map-button map-button--secondary" bindtap="openRouteBoostSheet">补充本地路线</button>
-            <button class="map-button map-button--secondary" disabled="{{saving || uploadingRoute}}" bindtap="removeRouteDetails">移除线路</button>
-            <button wx:if="{{routePreview.generatedPreviewFileId}}" class="map-button map-button--secondary" bindtap="useRouteAsCover">{{routeCoverSelected ? '已设为活动背景' : '设为活动背景'}}</button>
-          </view>
-        </view>
-        <view wx:if="{{routeStatusMessage}}" class="route-status">{{routeStatusMessage}}</view>
-      </view>
 
-      <view wx:if="{{showRouteBoostSheet}}" class="route-boost-mask" bindtap="closeRouteBoostSheet"></view>
-      <view wx:if="{{showRouteBoostSheet}}" class="route-boost-sheet" catchtap="noop">
-        <view class="route-boost-handle" aria-hidden="true"></view>
-        <view class="route-boost-title">补充本地路线文件</view>
-        <view class="route-boost-copy">若 Strava 线路解析失败或没有可同步线路，可上传本地导出的路线文件（支持 GPX 等骑行记录文件）。</view>
-        <view wx:if="{{pendingRouteUpload || storedRouteGpxMissingDetails}}" class="route-boost-status route-boost-status--warning">线路文件解析失败或缺失，可重试或重新选择文件。</view>
-        <view wx:elif="{{routePreview}}" class="route-boost-status route-boost-status--ready">已有线路详情，补传会覆盖当前解析结果。</view>
-        <button class="upload-tile upload-tile--wide route-upload-button" loading="{{uploadingRoute}}" disabled="{{saving || uploadingRoute}}" bindtap="chooseRouteGpx">{{uploadingRoute ? '正在读取路线' : (pendingRouteUpload || storedRouteGpxMissingDetails ? '重新上传路线文件' : (routePreview ? '替换本地路线文件' : '上传本地路线文件'))}}</button>
-        <view wx:if="{{pendingRouteUpload && !uploadingRoute}}" class="route-command-row">
-          <button class="map-button" bindtap="retryRouteGpx">重试解析</button>
-          <button class="map-button map-button--secondary" bindtap="removeRouteDetails">放弃本次上传</button>
-        </view>
-        <button class="route-boost-close" bindtap="closeRouteBoostSheet">完成</button>
-      </view>
-      <view class="field group-qr-field">
-        <view class="field-label">活动群二维码</view>
-        <view class="section-help">可选上传 1 张微信群二维码，便于已报名成员进群；较久未更新时会提示可能过期，请及时替换。</view>
-        <view wx:if="{{groupQrCode}}" class="group-qr-card">
-          <image wx:if="{{groupQrPreviewUrl}}" class="group-qr-preview" src="{{groupQrPreviewUrl}}" mode="aspectFit" data-file-id="{{groupQrCode}}" bindload="storedMediaPreviewLoad" binderror="storedMediaPreviewError" />
-          <button wx:else class="stored-media-placeholder group-qr-preview" data-file-id="{{groupQrCode}}" bindtap="retryStoredMediaPreview">{{mediaPreviewLoading ? '二维码加载中…' : '二维码加载失败，点击重试'}}</button>
-          <view wx:if="{{groupQrCodeExpired}}" class="group-qr-warning">二维码可能已过期，请替换为最新图片。</view>
-          <button class="image-action image-action--danger" bindtap="removeGroupQrCode">删除二维码</button>
-        </view>
-        <view wx:elif="{{pendingGroupQrCode}}" class="group-qr-card group-qr-card--pending">
-          <image class="group-qr-preview" src="{{pendingGroupQrCode.previewPath}}" mode="aspectFit" />
-          <view class="upload-status upload-status--{{pendingGroupQrCode.status}}">{{pendingGroupQrCode.status === 'uploading' ? '上传中…' : '上传失败'}}</view>
-          <button wx:if="{{pendingGroupQrCode.status === 'failed'}}" class="image-action" bindtap="chooseGroupQrCode">重新选择</button>
-          <button wx:if="{{pendingGroupQrCode.status === 'failed'}}" class="image-action image-action--danger" bindtap="removeGroupQrCode">删除</button>
-        </view>
-        <button wx:else class="upload-tile upload-tile--wide" loading="{{uploading}}" bindtap="chooseGroupQrCode">上传活动群二维码</button>
-      </view>
-    </view>
+          <view class="field" data-error-anchor="title">
+            <view class="field-label">活动标题<text class="required">· 必填</text></view>
+            <input class="input" value="{{form.title}}" maxlength="100" placeholder-class="input-placeholder" placeholder="请输入活动标题" bindinput="field" data-name="title" />
+            <view wx:if="{{formErrors.title}}" class="field-error">{{formErrors.title}}</view>
+          </view>
+        </section>
 
-    <view class="action-bar actions">
-      <view class="disabled-hint" role="status" aria-live="polite" aria-atomic="true" wx:if="{{uploading || uploadingRoute || choosingLocation || syncingRoute || pendingImages.length || pendingRouteUpload}}">{{uploading ? '图片上传中，请稍候' : uploadingRoute || syncingRoute ? '路线预览准备中，请稍候' : choosingLocation ? '请先完成集合地点选择' : pendingImages.length ? '请先重试或删除上传失败的图片' : '路线详情尚未准备好，请重试或移除 GPX'}}</view>
-      <button class="button button--secondary secondary" loading="{{saving}}" disabled="{{saving || uploading || uploadingRoute || choosingLocation || syncingRoute || pendingImages.length > 0 || !!pendingRouteUpload}}" data-status="draft" bindtap="save">保存草稿</button>
-      <button class="button button--primary" loading="{{saving}}" disabled="{{saving || uploading || uploadingRoute || choosingLocation || syncingRoute || pendingImages.length > 0 || !!pendingRouteUpload}}" data-status="published" bindtap="save">{{publishButtonLabel}}</button>
+        <section class="section form-card card">
+          <view class="chapterhead">
+            <view class="chapterhead-title">何时，在哪里</view>
+            <view class="chapterhead-aside">集合安排</view>
+          </view>
+
+          <view class="fieldgrid" data-error-anchor="startAt">
+            <view class="field">
+              <view class="field-label">活动日期<text class="required">· 必填</text></view>
+              <picker mode="date" value="{{form.startDate}}" bindchange="dateTimePicker" data-target="start" data-part="date">
+                <view class="picker-value">{{form.startDate || '选择日期'}}</view>
+              </picker>
+            </view>
+            <view class="field">
+              <view class="field-label">集合时间<text class="required">· 必填</text></view>
+              <picker mode="time" value="{{form.startTime}}" bindchange="dateTimePicker" data-target="start" data-part="time">
+                <view class="picker-value">{{form.startTime || '选择时间'}}</view>
+              </picker>
+            </view>
+          </view>
+          <view wx:if="{{formErrors.startAt}}" class="field-error">{{formErrors.startAt}}</view>
+
+          <view class="field" data-error-anchor="routeStart">
+            <view class="field-label">集合地点<text class="required">· 必填</text></view>
+            <view class="location-row">
+              <input class="input" value="{{form.routeStart}}" placeholder-class="input-placeholder" placeholder="填写地点或从地图选择" bindinput="field" data-name="routeStart" />
+              <button class="map-button map-button--secondary" loading="{{choosingLocation}}" bindtap="chooseRouteLocation">地图选点</button>
+            </view>
+            <view wx:if="{{formErrors.routeStart}}" class="field-error">{{formErrors.routeStart}}</view>
+          </view>
+        </section>
+
+        <section class="section form-card card">
+          <view class="chapterhead">
+            <view class="chapterhead-title">报名方式</view>
+            <view class="chapterhead-aside">报名模式</view>
+          </view>
+          <view class="fieldset registration-mode-field">
+            <view class="fieldlegend">报名模式</view>
+            <view class="choicegrid registration-mode-options" role="radiogroup" aria-label="报名模式">
+              <button class="choice {{registrationMode === 'open' ? 'is-active' : ''}}" data-mode="open" bindtap="registrationModeChange" role="radio" aria-checked="{{registrationMode === 'open'}}">
+                <text class="choice-title">公开报名</text>
+                <text class="choice-sub small muted">资料与名额校验通过后直接报名成功</text>
+              </button>
+              <button class="choice {{registrationMode === 'approval' ? 'is-active' : ''}}" data-mode="approval" bindtap="registrationModeChange" role="radio" aria-checked="{{registrationMode === 'approval'}}">
+                <text class="choice-title">审核报名</text>
+                <text class="choice-sub small muted">提交后等待管理员审批</text>
+              </button>
+            </view>
+            <view class="small muted">公开报名：资料与名额校验通过后直接报名。审核报名：提交后等待管理员审批。</view>
+          </view>
+
+          <view class="detailrows">
+            <view class="detailrow"><text class="dt">报名截止</text><text class="dd">活动开始日 00:00 · 自动</text></view>
+            <view class="detailrow"><text class="dt">活动容量</text><text class="dd">沿用活动已保存配置</text></view>
+          </view>
+          <view class="small muted">报名截止自动设为活动开始日当地 00:00，无需单独填写。容量沿用活动已保存配置，本页不修改。</view>
+        </section>
+
+        <section class="section form-card card">
+          <view class="chapterhead">
+            <view class="chapterhead-title">路线与说明</view>
+            <view class="chapterhead-aside">Strava + GPX 兜底</view>
+          </view>
+
+          <view class="field route-link-row" data-error-anchor="stravaRouteUrl">
+            <view class="field-label">Strava 线路地址</view>
+            <view wx:if="{{!stravaConnected}}" class="notice notice--warn route-source-conn">
+              <view class="notice-dot" aria-hidden="true"></view>
+              <text class="route-source-conn-copy">需先在设置里完成 Strava 同步，才能解析线路。</text>
+              <button class="btn secondary route-source-conn-link" bindtap="openStravaSettings">去设置 ›</button>
+            </view>
+            <view wx:elif="{{stravaAthleteName}}" class="notice route-source-conn tone-success">
+              <view class="notice-dot" aria-hidden="true"></view>
+              <text class="route-source-conn-copy">已连接 {{stravaAthleteName}}</text>
+            </view>
+            <view class="input-row">
+              <input class="input route-link-input" value="{{form.stravaRouteUrl}}" maxlength="256" placeholder-class="input-placeholder" placeholder="粘贴 Strava 线路链接" bindinput="field" data-name="stravaRouteUrl" />
+              <button class="btn secondary route-link-plus" bindtap="openRouteBoostSheet" aria-label="补充本地路线文件">＋</button>
+            </view>
+            <view class="small muted">先在设置中完成 Strava 同步，再粘贴线路链接并解析。解析失败或没有可同步线路时，可改用下方 GPX 文件。</view>
+            <button class="map-button map-button--secondary" loading="{{syncingRoute}}" disabled="{{saving || syncingRoute || !stravaConnected || !form.stravaRouteUrl}}" bindtap="addOfficialRoute">{{syncingRoute ? '正在解析线路' : '解析并导入 Strava 线路'}}</button>
+          </view>
+
+          <view wx:if="{{publicRoutePreview && !routePreview}}" class="paper route-preview-card">
+            <view class="chapterhead">
+              <view class="chapterhead-title">{{publicRoutePreview.routeName}}</view>
+              <view class="chapterhead-aside">公开线路已解析</view>
+            </view>
+            <view class="metrics">
+              <view class="metric"><strong>{{publicRoutePreview.distanceKm}}<text class="unit">km</text></strong><span>里程</span></view>
+              <view class="metric"><strong>{{publicRoutePreview.elevationM}}<text class="unit">m</text></strong><span>爬升</span></view>
+              <view class="metric"><strong>{{publicRoutePreview.elevationLossM}}<text class="unit">m</text></strong><span>下降</span></view>
+              <view class="metric"><strong>{{publicRoutePreview.elevationMinM}}–{{publicRoutePreview.elevationMaxM}}<text class="unit">m</text></strong><span>海拔</span></view>
+            </view>
+            <view class="small muted">此里估算 {{routeTimeLabel}}。实际里程/爬升/时长以导入后的路线预览为准。</view>
+            <canvas id="route-outline-canvas" type="2d" class="route-outline-canvas" aria-label="{{publicRoutePreview.routeName}}线路轮廓"></canvas>
+            <canvas id="route-elevation-canvas" type="2d" class="route-elevation-canvas" aria-label="{{publicRoutePreview.routeName}}海拔曲线"></canvas>
+          </view>
+
+          <view wx:if="{{routePreview}}" class="paper route-preview-card">
+            <view class="chapterhead">
+              <view class="chapterhead-title">{{routePreview.routeName}}</view>
+              <view class="chapterhead-aside">线路详情已准备好</view>
+            </view>
+            <view class="metrics">
+              <view class="metric"><strong>{{routePreview.distanceKm}}<text class="unit">km</text></strong><span>里程</span></view>
+              <view class="metric"><strong>{{routePreview.elevationM}}<text class="unit">m</text></strong><span>爬升</span></view>
+              <view class="metric"><strong>{{routePreview.elevationLossM}}<text class="unit">m</text></strong><span>下降</span></view>
+              <view class="metric"><strong>{{routePreview.elevationMinM}}–{{routePreview.elevationMaxM}}<text class="unit">m</text></strong><span>海拔</span></view>
+            </view>
+            <view class="small muted">此里估算 {{routeTimeLabel}}</view>
+            <canvas id="route-outline-canvas" type="2d" class="route-outline-canvas" aria-label="{{routePreview.routeName}}线路轮廓"></canvas>
+            <canvas id="route-elevation-canvas" type="2d" class="route-elevation-canvas" aria-label="{{routePreview.routeName}}海拔曲线"></canvas>
+            <view class="buttonpair">
+              <button class="btn secondary" bindtap="openRouteBoostSheet">补充本地路线</button>
+              <button class="btn secondary" disabled="{{saving || uploadingRoute}}" bindtap="removeRouteDetails">移除线路</button>
+              <button wx:if="{{routePreview.generatedPreviewFileId}}" class="btn secondary" bindtap="useRouteAsCover">{{routeCoverSelected ? '已设为活动背景' : '设为活动背景'}}</button>
+            </view>
+          </view>
+
+          <view wx:if="{{routeStatusMessage}}" class="small muted route-status">{{routeStatusMessage}}</view>
+
+          <view wx:if="{{!routePreview && !publicRoutePreview}}" class="notice notice--warn" role="status" aria-live="polite">
+            <view class="notice-dot" aria-hidden="true"></view>
+            <text>请先导入路线。预览生成并绑定完成前，不能发布活动。</text>
+          </view>
+
+          <view wx:if="{{showRouteBoostSheet}}" class="route-boost-mask" bindtap="closeRouteBoostSheet"></view>
+          <view wx:if="{{showRouteBoostSheet}}" class="route-boost-sheet" catchtap="noop">
+            <view class="route-boost-handle" aria-hidden="true"></view>
+            <view class="route-boost-title editorial">补充本地路线文件</view>
+            <view class="small muted">若 Strava 线路解析失败或没有可同步线路，可上传本地导出的路线文件（支持 GPX 等骑行记录文件）。</view>
+            <view wx:if="{{pendingRouteUpload || storedRouteGpxMissingDetails}}" class="notice notice--warn">
+              <view class="notice-dot" aria-hidden="true"></view>
+              <text>线路文件解析失败或缺失，可重试或重新选择文件。</text>
+            </view>
+            <view wx:elif="{{routePreview}}" class="small muted">已有线路详情，补传会覆盖当前解析结果。</view>
+            <button class="btn secondary route-upload-button" loading="{{uploadingRoute}}" disabled="{{saving || uploadingRoute}}" bindtap="chooseRouteGpx">{{uploadingRoute ? '正在读取路线' : (pendingRouteUpload || storedRouteGpxMissingDetails ? '重新上传路线文件' : (routePreview ? '替换本地路线文件' : '上传本地路线文件'))}}</button>
+            <view wx:if="{{pendingRouteUpload && !uploadingRoute}}" class="buttonpair">
+              <button class="btn secondary" bindtap="retryRouteGpx">重试解析</button>
+              <button class="btn secondary" bindtap="removeRouteDetails">放弃本次上传</button>
+            </view>
+            <button class="btn" bindtap="closeRouteBoostSheet">完成</button>
+          </view>
+
+          <view class="field">
+            <view class="field-label">本地路线文件 · GPX 降级</view>
+            <button class="btn secondary upload-tile--wide" loading="{{uploadingRoute}}" disabled="{{saving || uploadingRoute}}" bindtap="chooseRouteGpx">{{uploadingRoute ? '正在读取路线' : '上传本地路线文件'}}</button>
+            <view class="small muted">支持 GPX，文件不超过 4 MB。微信开发者工具无法选取文件时，请把 GPX 发到微信聊天，在真实设备的微信中选择并导入。</view>
+          </view>
+
+          <view class="field" data-error-anchor="description">
+            <view class="field-label">活动说明 · 备注说明<text class="optional">· 选填</text></view>
+            <textarea class="textarea" value="{{form.description}}" maxlength="5000" placeholder-class="input-placeholder" placeholder="集合提醒、补给安排或其他需要说明的内容" bindinput="field" data-name="description" />
+            <view class="field-meta">
+              <text class="small muted">集合提醒、补给与骑行注意事项统一写在这里。</text>
+              <text class="field-count small muted">{{form.description.length}} / 5000</text>
+            </view>
+          </view>
+        </section>
+
+        <section class="section form-card card">
+          <view class="chapterhead">
+            <view class="chapterhead-title">活动群</view>
+            <view class="chapterhead-aside">选填 · 最多 1 张</view>
+          </view>
+
+          <view class="field group-qr-field">
+            <view class="field-label">活动群二维码<text class="optional">· 选填，最多 1 张</text></view>
+            <view class="small muted">供已报名成员进群。未上传时详情页提示暂无群二维码；二维码较久未更新时，请替换为最新图片。</view>
+            <view wx:if="{{groupQrCode}}" class="group-qr-card">
+              <image wx:if="{{groupQrPreviewUrl}}" class="group-qr-preview" src="{{groupQrPreviewUrl}}" mode="aspectFit" data-file-id="{{groupQrCode}}" bindload="storedMediaPreviewLoad" binderror="storedMediaPreviewError" />
+              <button wx:else class="stored-media-placeholder group-qr-preview" data-file-id="{{groupQrCode}}" bindtap="retryStoredMediaPreview">{{mediaPreviewLoading ? '二维码加载中…' : '二维码加载失败，点击重试'}}</button>
+              <view wx:if="{{groupQrCodeExpired}}" class="notice notice--warn group-qr-warning">
+                <view class="notice-dot" aria-hidden="true"></view>
+                <text>二维码可能已过期，请替换为最新图片。</text>
+              </view>
+              <button class="image-action image-action--danger" bindtap="removeGroupQrCode">删除二维码</button>
+            </view>
+            <view wx:elif="{{pendingGroupQrCode}}" class="group-qr-card group-qr-card--pending">
+              <image class="group-qr-preview" src="{{pendingGroupQrCode.previewPath}}" mode="aspectFit" />
+              <view class="upload-status upload-status--{{pendingGroupQrCode.status}}">{{pendingGroupQrCode.status === 'uploading' ? '上传中…' : '上传失败'}}</view>
+              <button wx:if="{{pendingGroupQrCode.status === 'failed'}}" class="image-action" bindtap="chooseGroupQrCode">重新选择</button>
+              <button wx:if="{{pendingGroupQrCode.status === 'failed'}}" class="image-action image-action--danger" bindtap="removeGroupQrCode">删除</button>
+            </view>
+            <button wx:else class="btn secondary upload-tile--wide" loading="{{uploading}}" bindtap="chooseGroupQrCode">上传活动群二维码</button>
+          </view>
+        </section>
+
+        <view class="small muted" id="publish-help" wx:if="{{!routePreview && !publicRoutePreview}}">当前路线尚未绑定，暂不能发布；可先保存草稿，继续完善信息。</view>
+
+        <view class="action-bar actions buttonpair">
+          <view class="disabled-hint small muted" role="status" aria-live="polite" aria-atomic="true" wx:if="{{uploading || uploadingRoute || choosingLocation || syncingRoute || pendingImages.length || pendingRouteUpload}}">{{uploading ? '图片上传中，请稍候' : uploadingRoute || syncingRoute ? '路线预览准备中，请稍候' : choosingLocation ? '请先完成集合地点选择' : pendingImages.length ? '请先重试或删除上传失败的图片' : '路线详情尚未准备好，请重试或移除 GPX'}}</view>
+          <button class="btn secondary" loading="{{saving}}" disabled="{{saving || uploading || uploadingRoute || choosingLocation || syncingRoute || pendingImages.length > 0 || !!pendingRouteUpload}}" data-status="draft" bindtap="save">保存草稿</button>
+          <button class="btn" loading="{{saving}}" disabled="{{saving || uploading || uploadingRoute || choosingLocation || syncingRoute || pendingImages.length > 0 || !!pendingRouteUpload}}" data-status="published" bindtap="save">{{publishButtonLabel}}</button>
+        </view>
+      </form>
     </view>
   </block>
 </view>

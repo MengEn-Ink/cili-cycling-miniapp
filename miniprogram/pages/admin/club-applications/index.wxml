@@ -1,62 +1,121 @@
+<!--
+  骑行影像志 · 俱乐部管理（1:1 对齐 docs/designs/2026-10-22-cycling-image-journal/pages/admin-club-management.html）
+  - 骨架：pageheading(宋体双行标题) → photo.hero.club(封面图 + caption + fallback) →
+      content → detailrows(俱乐部名称/地区/管理范围) →
+      section 资料维护 → btn 编辑俱乐部资料 → btn secondary 查看俱乐部主页
+  - 真实业务保留：mode = loading / error / bootstrap / default；首次 bootstrap 分支显示“创建唯一俱乐部”入口；
+    错误 retry；头像 fallback；data-club-admin-overview 保留供单元测试绑定。
+-->
 <view class="page club-admin-page">
-  <brand-logo compact="{{true}}" meta="俱乐部管理" />
-
   <block wx:if="{{mode === 'loading'}}">
-    <view class="club-admin-head journal-heading">
-      <view class="journal-eyebrow">此里 · 唯一俱乐部</view>
-      <view class="page-title editorial">俱乐部管理</view>
-      <view class="page-sub">正在加载唯一俱乐部资料</view>
+    <header class="pageheading">
+      <view class="eyebrow">此里 · 唯一俱乐部</view>
+      <view class="pageheading-title editorial">
+        <text class="pageheading-line">让我们的故事，</text>
+        <text class="pageheading-line">有一个共同的名字。</text>
+      </view>
+      <view class="pageheading-sub">正在加载唯一俱乐部资料…</view>
+    </header>
+    <view class="content">
+      <view class="skeleton" aria-hidden="true"><view></view><view></view><view></view></view>
     </view>
-    <view class="skeleton club-admin-skeleton" aria-hidden="true"></view>
-    <view class="skeleton club-admin-skeleton club-admin-skeleton--short" aria-hidden="true"></view>
   </block>
 
-  <view class="state-card" wx:elif="{{mode === 'error'}}" role="alert">
-    <view class="title">俱乐部资料加载失败</view>
-    <view class="muted">{{error}}</view>
-    <button class="btn club-admin-retry" bindtap="load">重新加载</button>
-  </view>
+  <block wx:elif="{{mode === 'error'}}">
+    <header class="pageheading">
+      <view class="eyebrow">此里 · 唯一俱乐部</view>
+      <view class="pageheading-title editorial">
+        <text class="pageheading-line">暂时读不到</text>
+        <text class="pageheading-line">俱乐部资料。</text>
+      </view>
+      <view class="pageheading-sub">{{error}}</view>
+    </header>
+    <view class="content">
+      <view class="empty" role="alert">
+        <view class="empty-title">俱乐部资料加载失败</view>
+        <view class="empty-copy">{{error}}</view>
+        <button class="btn club-admin-retry" bindtap="load">重新加载</button>
+      </view>
+    </view>
+  </block>
 
   <block wx:elif="{{mode === 'bootstrap'}}">
-    <view class="club-admin-head journal-heading">
-      <view class="journal-eyebrow">此里 · 唯一俱乐部</view>
-      <view class="club-admin-badge">平台管理员 · 首次创建</view>
-      <view class="page-title editorial">俱乐部管理</view>
-      <view class="page-sub">平台尚未创建俱乐部，仅平台管理员可完成首次创建；创建后此入口不再出现。</view>
-    </view>
-    <view class="state-card club-admin-bootstrap">
-      <view class="club-admin-bootstrap-mark" aria-hidden="true">＋</view>
-      <view class="title">尚未创建俱乐部</view>
-      <view class="muted">创建后将成为全平台唯一俱乐部，所有活动统一归属该俱乐部。</view>
-      <button class="btn club-admin-action" bindtap="create">创建唯一俱乐部</button>
+    <header class="pageheading">
+      <view class="eyebrow">此里 · 唯一俱乐部</view>
+      <view class="club-admin-badge small muted">平台管理员 · 首次创建</view>
+      <view class="pageheading-title editorial">
+        <text class="pageheading-line">让我们的故事，</text>
+        <text class="pageheading-line">有一个共同的名字。</text>
+      </view>
+      <view class="pageheading-sub">平台尚未创建俱乐部，仅平台管理员可完成首次创建；创建后此入口不再出现。</view>
+    </header>
+    <view class="content">
+      <view class="empty club-admin-bootstrap">
+        <view class="club-admin-bootstrap-mark" aria-hidden="true">＋</view>
+        <view class="empty-title">尚未创建俱乐部</view>
+        <view class="empty-copy">创建后将成为全平台唯一俱乐部，所有活动统一归属该俱乐部。</view>
+        <button class="btn club-admin-action" bindtap="create">创建唯一俱乐部</button>
+      </view>
     </view>
   </block>
 
   <block wx:else>
-    <view class="club-admin-head journal-heading">
-      <view class="journal-eyebrow">此里 · 唯一俱乐部</view>
-      <view class="club-admin-badge">平台管理员</view>
-      <view class="page-title editorial">俱乐部管理</view>
-      <view class="page-sub">全平台只有一个俱乐部，本页展示其资料并提供编辑入口；不再出现新建或列表。</view>
-    </view>
-    <view class="card club-admin-card" data-club-admin-overview>
-      <view class="club-admin-avatar">
-        <image
-          wx:if="{{club.avatarUrl && !avatarFailed}}"
-          class="club-admin-avatar-img"
-          src="{{club.avatarUrl}}"
-          mode="aspectFill"
-          binderror="avatarError"
-        />
-        <view wx:else class="club-admin-avatar-fallback">{{avatarInitial}}</view>
+    <header class="pageheading">
+      <view class="eyebrow">此里 · 唯一俱乐部</view>
+      <view class="club-admin-badge small muted">平台管理员</view>
+      <view class="pageheading-title editorial">
+        <text class="pageheading-line">让我们的故事，</text>
+        <text class="pageheading-line">有一个共同的名字。</text>
       </view>
-      <view class="club-admin-copy">
-        <view class="club-admin-name">{{club.name}}</view>
-        <view class="club-admin-meta">{{club.city}} · 全平台唯一</view>
+      <view class="pageheading-sub">平台管理员可维护俱乐部资料。</view>
+    </header>
+
+    <view class="photo hero club" data-club-admin-overview>
+      <image
+        wx:if="{{club.coverUrl && !coverFailed}}"
+        class="photo-image"
+        src="{{club.coverUrl}}"
+        mode="aspectFill"
+        binderror="coverError"
+      />
+      <image
+        wx:elif="{{club.avatarUrl && !avatarFailed}}"
+        class="photo-image"
+        src="{{club.avatarUrl}}"
+        mode="aspectFill"
+        binderror="avatarError"
+      />
+      <view wx:else class="photo-fallback" aria-hidden="true">
+        <text class="photo-fallback-mark">{{avatarInitial}}</text>
       </view>
-      <view class="tag tag-success club-admin-status">ACTIVE</view>
+      <view class="shade" aria-hidden="true"></view>
+      <view class="caption">
+        <view class="caption-eyebrow">{{club.city || '全平台唯一'}}</view>
+        <view class="caption-title editorial">{{club.name}}</view>
+      </view>
     </view>
-    <button class="btn club-admin-action" bindtap="edit">编辑俱乐部资料</button>
-    <view class="neutral-note">全平台只允许存在一个俱乐部；本页仅提供资料查看与编辑入口。</view>
+
+    <view class="content">
+      <view class="detailrows">
+        <view class="detailrow"><text class="dt">俱乐部名称</text><text class="dd">{{club.name}}</text></view>
+        <view class="detailrow"><text class="dt">所在地区</text><text class="dd">{{club.city || '未填写地区'}}</text></view>
+        <view class="detailrow"><text class="dt">管理范围</text><text class="dd">平台唯一俱乐部</text></view>
+        <view class="detailrow"><text class="dt">状态</text><text class="dd"><text class="tag tag-success">ACTIVE</text></text></view>
+      </view>
+
+      <section class="section">
+        <view class="chapterhead">
+          <view class="chapterhead-title">资料维护</view>
+          <view class="chapterhead-aside">平台管理员</view>
+        </view>
+        <view class="small muted">更换头像与背景，更新名称、地区和简介。普通成员在俱乐部主页查看这些资料。</view>
+        <button class="btn club-admin-action" bindtap="edit">编辑俱乐部资料</button>
+      </section>
+
+      <view class="notice" role="note">
+        <view class="notice-dot" aria-hidden="true"></view>
+        <text>全平台只允许存在一个俱乐部；本页仅提供资料查看与编辑入口。</text>
+      </view>
+    </view>
   </block>
 </view>

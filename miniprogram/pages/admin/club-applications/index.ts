@@ -10,13 +10,14 @@ Page({
     club: null as SoleClubProfile | null,
     avatarInitial: '俱',
     avatarFailed: false,
+    coverFailed: false,
     error: '',
   },
   onShow() {
     void this.load();
   },
   async load() {
-    this.setData({ mode: 'loading', error: '', avatarFailed: false });
+    this.setData({ mode: 'loading', error: '', avatarFailed: false, coverFailed: false });
     await appStore.ensureIdentity(wx.cloud);
     if (appStore.authStatus !== 'authenticated' || appStore.role !== 'admin') {
       this.setData({
@@ -58,5 +59,8 @@ Page({
   },
   avatarError() {
     this.setData({ avatarFailed: true });
+  },
+  coverError() {
+    this.setData({ coverFailed: true });
   },
 });

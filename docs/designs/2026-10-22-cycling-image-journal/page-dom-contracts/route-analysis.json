@@ -1,42 +1,52 @@
 {
   "slug": "route-analysis",
   "pagePath": "pages/route-analysis/index",
-  "title": "路线分析",
+  "title": "完整路线分析",
   "wxml": "miniprogram/pages/route-analysis/index.wxml",
   "wxss": "miniprogram/pages/route-analysis/index.wxss",
   "ts": "miniprogram/pages/route-analysis/index.ts",
+  "designIntent": "设计稿 pages/route-analysis.html 一比一映射：pageheading(一路向山) → ink(metrics) → 核心结论 panel → map.large(路线走向) → content(先读懂爬升 / 主要坡段 / 路上的停顿 / 风险 / 策略 / 带上这些) → fixed actionbar(返回活动页下载 GPX)。真实业务保留 原生 map/markers/折线/全线/聚焦 / canvas 海拔联动 / 起点导航 / 关键公里点 + anchor-strip / 坡段 / 装备 / state-view 加载/错误/空。",
   "containers": [
-    { "class": "route-analysis-page", "role": "page-root", "order": 1 },
-    { "class": "analysis-header", "role": "page-heading", "order": 2, "note": "brand-line + analysis-title + analysis-route + 可选 analysis-summary。" },
-    { "class": "overview-grid", "role": "metrics", "order": 3, "note": "metric-grid 四项核心指标，两列。" },
-    { "class": "conclusion-panel", "role": "summary", "order": 4, "optional": true, "note": "核心结论 + strategy-tags；strategySummary 为空时整块隐藏。" },
-    { "class": "analysis-card map-card", "role": "card", "order": 5, "optional": true, "note": "路线走向 · 关键地名；mapAvailable 或 mapFailed 时展示。" },
-    { "class": "analysis-card", "role": "card", "order": 6, "optional": true, "note": "海拔剖面与锚点；profileAvailable 时展示 canvas + anchor-strip。" },
-    { "class": "analysis-card", "role": "card", "order": 7, "optional": true, "note": "路线分段 segments。" },
-    { "class": "analysis-card equipment-card", "role": "card", "order": 8, "optional": true, "note": "装备建议。" }
+    { "class": "page route-analysis-page", "role": "page-root", "order": 1 },
+    { "class": "pageheading", "role": "page-heading", "order": 2, "note": "一路向山 · 活动名称 · 可选 routeSummary" },
+    { "class": "ink", "role": "metrics", "order": 3, "note": "metrics 两列 overviewItems" },
+    { "class": "conclusion-panel", "role": "summary", "order": 4, "optional": true, "note": "核心结论暗底 panel；strategySummary 为空时整块隐藏" },
+    { "class": "map large", "role": "card", "order": 5, "optional": true, "note": "路线走向 · 关键地名；mapAvailable 或 mapFailed 时展示" },
+    { "class": "content", "role": "content", "order": 6, "note": "section × N 容器" },
+    { "class": "section", "role": "section", "order": 7, "optional": true, "note": "先读懂这段爬升：elevation canvas + anchor-strip" },
+    { "class": "elevation", "role": "chart", "order": 8, "optional": true, "note": "elevation + canvas 容器" },
+    { "class": "segment-list", "role": "list", "order": 9, "optional": true, "note": "主要坡段 segment-item 列表" },
+    { "class": "point-list", "role": "list", "order": 10, "optional": true, "note": "路上的几个停顿 point 列表" },
+    { "class": "actionbar", "role": "fixed-cta", "order": 11, "note": "固定底栏；返回活动页下载 GPX" }
   ],
   "interactions": [
-    { "trigger": "retry", "note": "state-view bindretry。" },
-    { "trigger": "markerTap", "note": "地图 marker 点击 → applyPoint。" },
-    { "trigger": "retryMap", "note": "地图失败重试。" },
-    { "trigger": "showFullRoute", "note": "重置到全线视角。" },
-    { "trigger": "navigateToStart", "note": "起点选中时导航到起点。" },
-    { "trigger": "selectPoint", "dataAttr": "data-id", "note": "锚点或点列表选择。" },
-    { "trigger": "selectSegment", "dataAttr": "data-id", "note": "坡段选择。" }
+    { "trigger": "retry", "note": "state-view bindretry" },
+    { "trigger": "markerTap", "note": "地图 marker 点击 → applyPoint" },
+    { "trigger": "retryMap", "note": "地图失败重试" },
+    { "trigger": "showFullRoute", "note": "重置到全线视角" },
+    { "trigger": "navigateToStart", "note": "起点选中时导航到起点" },
+    { "trigger": "selectPoint", "dataAttr": "data-id", "note": "锚点或点列表选择" },
+    { "trigger": "selectSegment", "dataAttr": "data-id", "note": "坡段选择" },
+    { "trigger": "backToActivity", "note": "返回活动详情（下载 GPX 入口）" }
   ],
   "copy": [
-    "核心结论",
-    "路线走向 · 关键地名",
-    "海拔剖面与锚点",
-    "路线分段",
-    "关键公里点",
-    "坡段风险",
-    "路线策略",
-    "装备建议"
+    "此里 · 路线手记",
+    "先读懂这段爬升",
+    "主要坡段",
+    "路上的几个停顿",
+    "带上这些",
+    "返回活动页下载 GPX"
   ],
   "assets": [
-    { "class": "route-map", "note": "原生 map 组件，id=route-analysis-map。" },
-    { "class": "elevation-chart", "note": "canvas type=2d，id=route-analysis-elevation。" }
+    { "class": "route-map", "note": "原生 map 组件，id=route-analysis-map" },
+    { "class": "elevation-chart", "note": "canvas type=2d，id=route-analysis-elevation" }
   ],
-  "forbids": []
+  "forbids": [
+    { "class": "analysis-header", "reason": "旧 Oil UI header 已退役，由 pageheading 取代。" },
+    { "class": "brand-line", "reason": "旧 brand-line 已退役。" },
+    { "class": "analysis-title", "reason": "旧 analysis-title 已退役，由 pageheading-title.editorial 取代。" },
+    { "class": "overview-grid", "reason": "旧 metric-grid 外壳已退役，由 ink > metrics 取代。" },
+    { "class": "analysis-card", "reason": "旧 analysis-card 已退役，由 section + paper + conclusion-panel + map.large + elevation 分摊承载。" }
+  ],
+  "designSource": "docs/designs/2026-10-22-cycling-image-journal/pages/route-analysis.html"
 }

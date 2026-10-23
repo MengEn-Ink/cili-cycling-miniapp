@@ -1,91 +1,133 @@
 <view class="page settings-page">
-  <brand-logo compact="{{true}}" meta="设置" />
-
-  <view class="settings-hero journal-heading">
-    <view class="journal-eyebrow">此里 · 安心同行</view>
-    <view class="hero-title editorial">设置</view>
-    <view class="hero-copy">管理活动通知、隐私与本地缓存，查看当前版本更新。</view>
-  </view>
-
-  <view wx:if="{{isAdmin}}" class="section-label strava-section-label"><text>00</text> 线路同步</view>
-  <view wx:if="{{isAdmin}}" class="management-list strava-list">
-    <button
-      class="management-row strava-row strava-row--{{stravaState}}"
-      bindtap="openStravaSync"
-      disabled="{{actionPending}}"
-      aria-label="同步 Strava 线路信息"
-    >
-      <view class="strava-mark" aria-hidden="true"><view class="strava-mark-dot"></view></view>
-      <view class="management-copy">
-        <view class="management-title">同步 Strava 线路信息</view>
-        <view class="management-description">{{stravaDescription}}</view>
-      </view>
-      <text class="management-action" aria-hidden="true">{{stravaAction}}</text>
-    </button>
-  </view>
-
-  <view class="section-label"><text>01</text> 常用管理</view>
-  <view class="management-list">
-    <button
-      class="management-row"
-      bindtap="manageNotifications"
-      disabled="{{actionPending}}"
-      aria-label="管理活动通知订阅"
-    >
-      <view class="management-copy">
-        <view class="management-title">活动通知</view>
-        <view class="management-description">按需订阅报名审核等活动提醒，每次选择以微信授权结果为准</view>
-      </view>
-      <text class="management-action" aria-hidden="true">订阅 ›</text>
-    </button>
-    <button
-      class="management-row"
-      bindtap="managePrivacy"
-      disabled="{{actionPending}}"
-      aria-label="打开微信隐私管理"
-    >
-      <view class="management-copy">
-        <view class="management-title">隐私管理</view>
-        <view class="management-description">查看微信隐私说明及已使用的信息</view>
-      </view>
-      <text class="management-action" aria-hidden="true">查看 ›</text>
-    </button>
-    <button
-      class="management-row"
-      bindtap="clearSafeCache"
-      disabled="{{actionPending}}"
-      aria-label="清理可安全重建的缓存"
-    >
-      <view class="management-copy">
-        <view class="management-title">清理缓存</view>
-        <view class="management-description">仅清理可重新下载的活动、资料和图片，不会退出登录或删除业务数据</view>
-      </view>
-      <text class="management-action" aria-hidden="true">清理 ›</text>
-    </button>
-  </view>
-
-  <view class="section-label release-section-label"><text>02</text> App 更新</view>
-  <view class="release-list">
-    <view class="release-card latest" wx:if="{{currentRelease}}">
-      <view class="release-content">
-        <view class="release-meta">
-          <text class="release-version">V{{currentRelease.version}}</text>
-          <text class="release-latest">当前版本</text>
-          <text class="release-date">{{currentRelease.date}}</text>
-        </view>
-        <view class="release-title">{{currentRelease.title}}</view>
-        <view class="release-summary">{{currentRelease.summary}}</view>
-        <view class="release-features">
-          <view
-            class="release-feature"
-            wx:for="{{currentRelease.features}}"
-            wx:for-item="feature"
-            wx:key="*this"
-            ><text aria-hidden="true">→</text><text>{{feature}}</text></view
-          >
-        </view>
-      </view>
+  <header class="pageheading">
+    <view class="eyebrow">此里 · 安心同行</view>
+    <view class="pageheading-title editorial">
+      <text class="pageheading-line">小事设置好，</text>
+      <text class="pageheading-line">出发更轻松。</text>
     </view>
+    <view class="pageheading-sub">通知订阅、隐私与应用信息。</view>
+  </header>
+
+  <view class="content tight">
+    <section class="section section-notifications">
+      <view class="chapterhead">
+        <view class="chapterhead-title">通知</view>
+        <view class="chapterhead-rule" aria-hidden="true"></view>
+      </view>
+      <button
+        class="row rowlink rowbutton"
+        bindtap="manageNotifications"
+        disabled="{{actionPending}}"
+        data-notifications
+        aria-label="按次向微信请求活动通知订阅"
+      >
+        <view class="lead">
+          <view class="rowicon rowicon--bell" aria-hidden="true"></view>
+          <view class="rowtext">
+            <view class="rowtext-title">订阅活动通知</view>
+            <view class="rowtext-sub">每次选择以微信授权结果为准</view>
+          </view>
+        </view>
+        <view class="chev" aria-hidden="true"></view>
+      </button>
+      <view
+        wx:if="{{notificationHint}}"
+        class="notice notice--{{notificationHintTone}}"
+        role="status"
+        aria-live="polite"
+      >
+        <text>{{notificationHint}}</text>
+      </view>
+    </section>
+
+    <section class="section section-privacy">
+      <view class="chapterhead">
+        <view class="chapterhead-title">隐私</view>
+        <view class="chapterhead-rule" aria-hidden="true"></view>
+      </view>
+      <button
+        class="row rowlink rowbutton"
+        bindtap="managePrivacy"
+        disabled="{{actionPending}}"
+        data-privacy
+        aria-label="打开微信隐私管理"
+      >
+        <view class="lead">
+          <view class="rowicon rowicon--lock" aria-hidden="true"></view>
+          <view class="rowtext">
+            <view class="rowtext-title">微信隐私管理</view>
+            <view class="rowtext-sub">查看小程序如何保护你的信息</view>
+          </view>
+        </view>
+        <view class="chev" aria-hidden="true"></view>
+      </button>
+      <view class="notice notice--info" role="note">
+        <view class="notice-dot" aria-hidden="true"></view>
+        <text>实名与电话仅本人和审核管理员完整可见；其他骑友只见昵称与同意公开的头像。</text>
+      </view>
+    </section>
+
+    <section class="section section-app">
+      <view class="chapterhead">
+        <view class="chapterhead-title">应用</view>
+        <view class="chapterhead-rule" aria-hidden="true"></view>
+      </view>
+      <button
+        class="row rowlink rowbutton"
+        bindtap="clearSafeCache"
+        disabled="{{actionPending}}"
+        data-cache-clear
+        aria-label="清理可安全重建的缓存"
+      >
+        <view class="lead">
+          <view class="rowicon rowicon--broom" aria-hidden="true"></view>
+          <view class="rowtext">
+            <view class="rowtext-title">清理可重建缓存</view>
+            <view class="rowtext-sub">活动、资料与图片会在下次访问时重新加载</view>
+          </view>
+        </view>
+        <view class="chev" aria-hidden="true"></view>
+      </button>
+      <view class="detailrows" wx:if="{{currentRelease}}" aria-label="App 更新">
+        <view class="detailrow">
+          <view class="detailrow-term">当前版本</view>
+          <view class="detailrow-desc">V{{currentRelease.version}}</view>
+        </view>
+        <view class="detailrow">
+          <view class="detailrow-term">本次更新</view>
+          <view class="detailrow-desc">{{currentRelease.title}}</view>
+        </view>
+      </view>
+    </section>
+
+    <section
+      wx:if="{{isAdmin}}"
+      class="section section-strava"
+      data-admin-only
+    >
+      <view class="chapterhead">
+        <view class="chapterhead-title">Strava 线路同步</view>
+        <view class="chapterhead-aside">平台管理员可见</view>
+      </view>
+      <view class="strava-body">
+        <view class="strava-headline">
+          <view class="rowicon rowicon--route" aria-hidden="true"></view>
+          <view class="rowtext">
+            <view class="rowtext-title">同步 Strava 线路信息</view>
+            <view class="rowtext-sub">{{stravaDescription}}</view>
+          </view>
+        </view>
+        <view class="strava-status">
+          <view class="tag tag--{{stravaState}}">{{stravaStatusLabel}}</view>
+        </view>
+        <button
+          class="btn btn--secondary strava-cta"
+          bindtap="openStravaSync"
+          disabled="{{actionPending}}"
+          aria-label="同步 Strava 线路信息"
+        >{{stravaAction}}</button>
+      </view>
+    </section>
   </view>
 
   <view class="settings-footer">此里 · 持续为每一次出发升级</view>

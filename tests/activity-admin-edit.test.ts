@@ -1402,11 +1402,17 @@ describe('日常活动极简创建与编辑', () => {
     expect(card).not.toContain('人已报名');
     expect(card).toContain("item.route.start || '集合地点待公布'");
     expect(card).not.toContain("item.route.end || '终点待公布'");
-    expect(detail).toContain('class="time-card-primary"');
+    // 新设计：首屏使用 ink/metrics + 起始时间作为头部重点，不再有旧的 time-card-primary
+    expect(detail).toContain('class="ink"');
+    expect(detail).toContain('class="metrics"');
+    expect(detail).toContain("startTime || '集合时间待公布'");
+    // 不再出现「不限 … 报名人数」这种旧话术
     expect(detail).not.toContain('不限</text><text>报名人数');
+    // 终点、费用保持按 registrationUnlimited 隐藏
     expect(detail).toContain('!item.registrationUnlimited && item.route.end');
     expect(detail).toContain('!item.registrationUnlimited && (item.fee');
-    expect(detail).toContain('class="gpx-route-card" wx:if="{{hasRouteDetails}}"');
+    // 可信路线详情块以 route-paper 承载
+    expect(detail).toContain('class="paper route-paper" wx:if="{{hasRouteDetails}}"');
     expect(detail).not.toContain('route-profile-card');
   });
 

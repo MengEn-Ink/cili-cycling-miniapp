@@ -5,14 +5,17 @@
   "wxml": "miniprogram/pages/profile-edit/index.wxml",
   "wxss": "miniprogram/pages/profile-edit/index.wxss",
   "ts": "miniprogram/pages/profile-edit/index.ts",
-  "designIntent": "头像独立即时保存；背景最多 1 张；整表 7 项校验通过后才能保存；性别仅男/女；上传或保存中锁定其他操作。",
+  "designIntent": "骑行影像志 1:1：pageheading（此里 · 关于你 + 宋体双行标题）→ content.tight → section 头像与背景（两条 .upload：头像即时保存 + 背景单张 16:9）→ profile-details fieldset（基础资料 + 紧急联系人）→ notice（7 项提醒）→ btn 保存。性别只允许男/女；头像作为门禁（canEditDetails）决定基础资料是否渲染。",
   "containers": [
-    { "class": "page profile-form-page", "role": "page-root", "order": 1 },
-    { "class": "journal-heading", "role": "page-heading", "order": 2, "note": "此里 · 关于你 + editorial 标题" },
-    { "class": "card form-card journal-section avatar-step-card", "role": "avatar-step", "order": 3, "note": "头像选择 + 独立即时保存状态；未选头像时整表后续区域不渲染" },
-    { "class": "card form-card journal-section", "role": "profile-details", "order": 4, "note": "基础资料：昵称 / 真实姓名 / 性别（男/女）/ 手机号 / 紧急联系人 / 紧急电话" },
-    { "class": "readiness-note", "role": "notice", "order": 5, "note": "7 项整表校验 + 头像即时保存 + 背景随整表保存" },
-    { "class": "btn save-action", "role": "submit", "order": 6, "note": "保存资料：上传/头像繁忙时 disabled" }
+    { "class": "page profile-edit-page", "role": "page-root", "order": 1 },
+    { "class": "pageheading", "role": "page-heading", "order": 2, "note": "eyebrow + 宋体双行标题 + 小字说明" },
+    { "class": "content tight", "role": "content", "order": 3, "note": "设计稿 .content.tight 容器" },
+    { "class": "section section-media", "role": "section-media", "order": 4, "note": "头像与背景 section：两条 .upload" },
+    { "class": "upload upload-avatar", "role": "upload-avatar", "order": 5, "note": "头像 .upload，含 open-type=chooseAvatar 按钮与即时保存状态" },
+    { "class": "upload upload-background", "role": "upload-background", "order": 6, "note": "背景 .upload，16:9 预览，最多 1 张，更换/删除/状态行" },
+    { "class": "profile-details", "role": "profile-details", "order": 7, "optional": true, "note": "canEditDetails 为真时渲染基础资料 + 紧急联系人两个 section" },
+    { "class": "readiness-note", "role": "notice", "order": 8, "note": "7 项整表校验 + 头像即时保存 + 背景随整表保存" },
+    { "class": "btn save-action", "role": "submit", "order": 9, "note": "保存资料：上传/头像繁忙时 disabled" }
   ],
   "interactions": [
     { "trigger": "chooseWechatAvatar", "openType": "chooseAvatar", "note": "微信头像即时保存，通过 open-type=chooseAvatar 触发" },
@@ -20,14 +23,29 @@
     { "trigger": "removeBackgroundPhoto", "note": "删除背景图" },
     { "trigger": "selectGender", "note": "性别单选 radio-group" },
     { "trigger": "set", "note": "基础字段统一回写，data-k 指向字段名" },
+    { "trigger": "previewPhoto", "note": "点击背景缩略图大图预览" },
+    { "trigger": "retryPhotoPreview", "note": "预览失败后手动重试" },
     { "trigger": "save", "note": "整表 7 项校验通过后保存" }
   ],
   "copy": [
     "此里 · 关于你",
-    "让同行的人，认出你。",
+    "让同行的人，",
+    "认出你。",
+    "先选头像，再完善报名与联络资料。",
+    "头像与背景",
+    "个人头像",
+    "选择微信头像",
+    "个人中心顶部背景",
+    "最多 1 张",
     "基础资料",
+    "公开昵称",
+    "真实姓名",
+    "性别",
+    "本人手机号码",
     "紧急联系人",
-    "个人背景图",
+    "联系人姓名",
+    "联系人电话",
+    "保存前请确认 7 项报名资料完整",
     "保存资料"
   ],
   "assets": [
@@ -35,7 +53,9 @@
   ],
   "forbids": [
     { "class": "gender-other", "reason": "性别只允许男/女两档" },
-    { "class": "photo-item-multi", "reason": "背景图最多 1 张，禁止多图网格" }
+    { "class": "photo-item-multi", "reason": "背景图最多 1 张，禁止多图网格" },
+    { "class": "journal-heading", "reason": "设计稿统一使用 pageheading，不再使用 journal-heading" },
+    { "class": "form-card", "reason": "设计稿使用 .upload + section + .field 直接构成，不再使用 .form-card 卡片包装" }
   ],
-  "phase2Note": "本页实现已对齐设计意图；WXML/WXSS 已就位，避免触碰 TS 以避开 PR #341 冲突域。"
+  "designSource": "docs/designs/2026-10-22-cycling-image-journal/pages/profile-edit.html"
 }

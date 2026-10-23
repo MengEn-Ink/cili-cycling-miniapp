@@ -49,11 +49,13 @@ describe('活动详情路线、授权媒体与性能契约', () => {
   it('仅本人缺素材时展示可重试入口，并明确保留昵称', () => {
     const template = read('miniprogram/pages/activity-detail/index.wxml');
     expect(template).toContain('item.isSelf && (!item.avatarUrl || !item.backgroundUrl)');
-    expect(template).toContain('授权获取头像与骑行背景');
+    // 新设计：按钮文案改为“授权头像与背景”，仍保留重试/重新授权态并通过昵称回退展示
+    expect(template).toContain('授权头像与背景');
     expect(template).toContain("attendeeAuthorizationState === 'loading'");
     expect(template).toContain('加载失败，重试');
     expect(template).toContain('重新授权');
-    expect(template).toContain('已保留昵称，可随时重新授权');
+    // 昵称保留逻辑：无头像时仍以 displayName 回退展示
+    expect(template).toContain("item.displayName || '骑友'");
   });
 
   it('授权说明等待期间防重复点击，拒绝和导航失败后均可重试', async () => {

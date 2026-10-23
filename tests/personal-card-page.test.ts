@@ -36,10 +36,11 @@ describe('本人名片合入我的页面', () => {
 
   it('昵称和媒体身份只使用实际字段，不把实名或电话放进摄影身份区', () => {
     const template = read('miniprogram/pages/profile/index.wxml');
-    const hero = template.slice(
-      template.indexOf('<view class="hero-identity">'),
-      template.indexOf('<button class="club-membership-card"'),
-    );
+    const identityStart = template.indexOf('<view class="profile-identity">');
+    const identityEnd = template.indexOf('</section>', identityStart);
+    expect(identityStart).toBeGreaterThan(-1);
+    expect(identityEnd).toBeGreaterThan(identityStart);
+    const hero = template.slice(identityStart, identityEnd);
     expect(hero).toContain('profile.nickname');
     expect(hero).toContain('heroAvatarUrl');
     expect(hero).not.toMatch(/realName|real_name|emergency|\.phone/);

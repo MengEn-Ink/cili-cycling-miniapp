@@ -1,94 +1,129 @@
-<view class="page profile-form-page">
+<!-- 骑行影像志 · 编辑个人资料（1:1 对齐 docs/designs/2026-10-22-cycling-image-journal/pages/profile-edit.html） -->
+<view class="page profile-edit-page">
   <state-view loading="{{loading}}" error="{{!p ? error : ''}}" loading-title="正在读取个人资料" loading-copy="正在加载已保存的个人资料">
   <block wx:if="{{p}}">
-    <view class="journal-heading">
-      <view class="journal-eyebrow">此里 · 关于你</view>
-      <view class="journal-title editorial">让同行的人，认出你。</view>
-      <view class="journal-summary">先保存头像，再完善报名与安全联络资料。</view>
-    </view>
+    <header class="pageheading">
+      <view class="eyebrow">此里 · 关于你</view>
+      <view class="pageheading-title editorial">
+        <text class="pageheading-line">让同行的人，</text>
+        <text class="pageheading-line">认出你。</text>
+      </view>
+      <view class="pageheading-sub">先选头像，再完善报名与联络资料。</view>
+    </header>
 
-    <view class="card form-card journal-section avatar-step-card">
-      <view class="step-kicker">{{canEditDetails ? '头像' : '第 1 步'}}</view>
-      <view class="title">{{canEditDetails ? '更新头像' : '先选择头像'}}</view>
-      <view class="muted form-tip" wx:if="{{!canEditDetails}}">选择头像后即可继续完善个人资料。</view>
-      <view class="avatar-editor">
-        <view class="avatar-preview-shell">
-          <image wx:if="{{avatarPreviewUrl}}" class="avatar-preview" src="{{avatarPreviewUrl}}" data-url="{{avatarPreviewUrl}}" mode="aspectFill" aria-label="预览当前头像" bindtap="previewAvatar" binderror="avatarPreviewError" />
-          <image wx:else class="avatar-preview-placeholder" src="/assets/brand/logo-circle-144.png" mode="aspectFill" aria-label="此里默认头像" />
+    <view class="content tight">
+      <!-- Section：头像与背景 -->
+      <section class="section section-media">
+        <view class="chapterhead">
+          <view class="chapterhead-title">头像与背景</view>
+          <view class="chapterhead-rule" aria-hidden="true"></view>
         </view>
-        <view class="avatar-panel">
-          <view class="muted avatar-note">请选择微信头像，选择后立即保存，并用于个人主页和活动报名中的骑手身份展示。</view>
-          <view class="avatar-actions">
-            <button class="avatar-action avatar-action-wechat" open-type="chooseAvatar" bindchooseavatar="chooseWechatAvatar" disabled="{{avatarBusy || photoBusy || saving}}" aria-label="选择微信头像">选择微信头像</button>
+
+        <view class="upload upload-avatar" data-avatar-editor>
+          <view class="upload-media upload-media-avatar">
+            <image wx:if="{{avatarPreviewUrl}}" class="avatar avatar-preview" src="{{avatarPreviewUrl}}" data-url="{{avatarPreviewUrl}}" mode="aspectFill" aria-label="预览当前头像" bindtap="previewAvatar" binderror="avatarPreviewError" />
+            <image wx:else class="avatar avatar-preview-placeholder" src="/assets/brand/logo-circle-144.png" mode="aspectFill" aria-label="此里默认头像" />
+          </view>
+          <view class="upload-copy">
+            <view class="upload-title">个人头像</view>
+            <view class="upload-sub small muted">通过微信选择头像，选择后立即保存；头像用于个人主页和活动报名中的骑手身份展示。</view>
+            <button class="btn btn--secondary avatar-action" open-type="chooseAvatar" bindchooseavatar="chooseWechatAvatar" disabled="{{avatarBusy || photoBusy || saving}}" aria-label="选择微信头像">选择微信头像</button>
+            <view class="small muted upload-status" role="status" aria-live="polite" aria-atomic="true">{{avatarBusy ? (mediaProgress || '正在更新头像…') : (p.avatarId ? '头像已保存' : '尚未选择头像')}}</view>
           </view>
         </view>
-      </view>
-      <view class="avatar-status" role="status" aria-live="polite" aria-atomic="true">{{avatarBusy ? (mediaProgress || '正在更新头像…') : ''}}</view>
-    </view>
 
-    <block wx:if="{{canEditDetails}}">
-      <view class="card form-card journal-section">
-        <view class="title">基础资料</view>
-        <view class="muted form-tip">请填写真实、常用的信息，便于活动报名、现场联络与安全保障。</view>
-        <view class="privacy-note">敏感信息将安全保存；手机号仅本人和报名审核员可完整查看。</view>
-        <view class="field">
-          <view class="label">昵称</view>
-          <input class="input" type="nickname" value="{{p.nickname}}" data-k="nickname" bindinput="set" bindblur="set" placeholder-class="input-placeholder" placeholder="点击使用微信昵称或自定义" />
-          <view class="muted field-tip">默认取微信昵称，可自行修改，用于个人主页和活动报名的骑手展示。</view>
-        </view>
-        <view class="field">
-          <view class="label">真实姓名</view>
-          <input class="input" value="{{p.realName}}" data-k="realName" bindinput="set" placeholder-class="input-placeholder" placeholder="请输入真实姓名" />
-        </view>
-        <view class="field">
-          <view class="label">性别</view>
-          <radio-group class="gender-options" bindchange="selectGender">
-            <label class="gender-option {{p.gender === '男' ? 'is-selected' : ''}}"><radio value="男" checked="{{p.gender === '男'}}" />男</label>
-            <label class="gender-option {{p.gender === '女' ? 'is-selected' : ''}}"><radio value="女" checked="{{p.gender === '女'}}" />女</label>
-          </radio-group>
-        </view>
-        <view class="field">
-          <view class="label">本人手机号</view>
-          <input class="input" type="number" maxlength="20" value="{{p.phone}}" data-k="phone" bindinput="set" placeholder-class="input-placeholder" placeholder="请输入本人手机号" />
-          <view class="muted field-tip">用于活动联系与安全通知，可直接填写或更换。</view>
-        </view>
-        <view class="field emergency-field">
-          <view class="label">紧急联系人</view>
-          <input class="input" value="{{p.emergencyName}}" data-k="emergencyName" bindinput="set" placeholder-class="input-placeholder" placeholder="请输入紧急联系人姓名" />
-          <view class="muted field-tip">仅在活动中发生紧急情况时使用。</view>
-        </view>
-        <view class="field">
-          <view class="label">紧急联系电话</view>
-          <input class="input" type="number" maxlength="21" value="{{p.emergencyPhone}}" data-k="emergencyPhone" bindinput="set" placeholder-class="input-placeholder" placeholder="请输入紧急联系人手机号" />
-        </view>
-      </view>
-
-      <view class="card form-card journal-section">
-        <view class="title">个人背景图</view>
-        <view class="muted form-tip">最多 1 张，用作个人中心顶部的大图背景。选择后可移动和缩放画面，建议使用横向照片；新图片会替换当前背景图。</view>
-        <view class="photo-actions">
-          <button class="photo-action" bindtap="addPhoto" loading="{{photoBusy}}" disabled="{{photoBusy || saving || avatarBusy}}">{{p.photos.length ? '更换背景图' : '添加背景图'}}</button>
-          <button wx:if="{{p.photos.length}}" class="text-button photo-remove" bindtap="removeBackgroundPhoto" disabled="{{photoBusy || saving || avatarBusy}}">删除背景图</button>
-        </view>
-        <view class="avatar-status" wx:if="{{photoBusy}}" role="status" aria-live="polite" aria-atomic="true">{{mediaProgress || '正在处理背景图…'}}</view>
-        <view class="photo-list" wx:if="{{photoItems.length}}">
-          <view class="photo-item" wx:for="{{photoItems}}" wx:key="id">
-            <view class="photo-preview-button">
-              <image wx:if="{{item.previewUrl}}" class="photo-thumbnail" src="{{item.previewUrl}}" data-id="{{item.id}}" data-url="{{item.previewUrl}}" mode="aspectFill" lazy-load="{{true}}" bindtap="previewPhoto" bindload="photoPreviewLoad" binderror="photoPreviewError" role="button" aria-label="预览个人背景图" />
-              <view wx:elif="{{item.previewState === 'loading'}}" class="photo-placeholder photo-placeholder--loading">背景图加载中…</view>
-              <button wx:else class="photo-placeholder photo-placeholder--failed" data-id="{{item.id}}" bindtap="retryPhotoPreview">图片加载失败，点击重试</button>
+        <view class="upload upload-background">
+          <view class="upload-media upload-media-background">
+            <image wx:if="{{photoItems.length && photoItems[0].previewUrl}}" class="background-image" src="{{photoItems[0].previewUrl}}" data-id="{{photoItems[0].id}}" data-url="{{photoItems[0].previewUrl}}" mode="aspectFill" lazy-load="{{true}}" bindtap="previewPhoto" bindload="photoPreviewLoad" binderror="photoPreviewError" aria-label="预览个人背景图" />
+            <view wx:elif="{{photoItems.length && photoItems[0].previewState === 'loading'}}" class="background-placeholder background-placeholder--loading">背景图加载中…</view>
+            <button wx:elif="{{photoItems.length}}" class="background-placeholder background-placeholder--failed" data-id="{{photoItems[0].id}}" bindtap="retryPhotoPreview">图片加载失败，点击重试</button>
+            <view wx:else class="background-placeholder background-placeholder--empty" aria-hidden="true">尚未添加背景图</view>
+          </view>
+          <view class="upload-copy">
+            <view class="upload-title">个人中心顶部背景</view>
+            <view class="upload-sub small muted">最多 1 张，按 16:9 展示；选择后可移动和缩放画面，建议使用横向照片；上传完成后随资料保存。</view>
+            <view class="upload-actions">
+              <button class="btn btn--secondary photo-action" bindtap="addPhoto" loading="{{photoBusy}}" disabled="{{photoBusy || saving || avatarBusy}}">{{p.photos.length ? '更换背景' : '添加背景'}}</button>
+              <button wx:if="{{p.photos.length}}" class="btn btn--text photo-remove" bindtap="removeBackgroundPhoto" disabled="{{photoBusy || saving || avatarBusy}}">删除背景图</button>
             </view>
+            <view class="small muted upload-status" role="status" aria-live="polite" aria-atomic="true">{{photoBusy ? (mediaProgress || '正在处理背景图…') : (p.photos.length ? '当前背景已就绪' : '尚未设置背景图')}}</view>
           </view>
         </view>
-        <view class="photo-count">{{p.photos.length ? '已设置 1 张背景图' : '尚未设置背景图'}}</view>
+      </section>
+
+      <!-- Fieldset：基础资料 + 紧急联系人（只在选择头像后展开，canEditDetails 作为门禁） -->
+      <view class="profile-details" data-profile-details wx:if="{{canEditDetails}}">
+        <section class="section section-basic">
+          <view class="chapterhead">
+            <view class="chapterhead-title">基础资料</view>
+            <view class="chapterhead-rule" aria-hidden="true"></view>
+          </view>
+          <view class="field">
+            <view class="field-label">公开昵称</view>
+            <input class="field-input" type="nickname" value="{{p.nickname}}" data-k="nickname" bindinput="set" bindblur="set" placeholder-class="field-placeholder" placeholder="点击使用微信昵称或自定义" />
+            <view class="field-help">其他骑友通过昵称认出你。</view>
+          </view>
+          <view class="field">
+            <view class="field-label">真实姓名</view>
+            <input class="field-input" value="{{p.realName}}" data-k="realName" bindinput="set" placeholder-class="field-placeholder" placeholder="请输入真实姓名" />
+            <view class="field-help">仅本人和审核管理员完整可见。</view>
+          </view>
+          <view class="field">
+            <view class="field-label">性别</view>
+            <radio-group class="gender-options" bindchange="selectGender">
+              <label class="gender-option {{p.gender === '男' ? 'is-selected' : ''}}"><radio value="男" checked="{{p.gender === '男'}}" />男</label>
+              <label class="gender-option {{p.gender === '女' ? 'is-selected' : ''}}"><radio value="女" checked="{{p.gender === '女'}}" />女</label>
+            </radio-group>
+          </view>
+          <view class="field">
+            <view class="field-label">本人手机号码</view>
+            <input class="field-input" type="number" maxlength="20" value="{{p.phone}}" data-k="phone" bindinput="set" placeholder-class="field-placeholder" placeholder="请输入本人手机号" />
+            <view class="field-help">用于活动联系与安全通知，可直接填写或更换。</view>
+          </view>
+        </section>
+
+        <section class="section section-emergency">
+          <view class="chapterhead">
+            <view class="chapterhead-title">紧急联系人</view>
+            <view class="chapterhead-rule" aria-hidden="true"></view>
+          </view>
+          <view class="field">
+            <view class="field-label">联系人姓名</view>
+            <input class="field-input" value="{{p.emergencyName}}" data-k="emergencyName" bindinput="set" placeholder-class="field-placeholder" placeholder="请输入紧急联系人姓名" />
+            <view class="field-help">仅在活动中发生紧急情况时使用。</view>
+          </view>
+          <view class="field">
+            <view class="field-label">联系人电话</view>
+            <input class="field-input" type="number" maxlength="21" value="{{p.emergencyPhone}}" data-k="emergencyPhone" bindinput="set" placeholder-class="field-placeholder" placeholder="请输入紧急联系人手机号" />
+          </view>
+        </section>
       </view>
 
-      <view class="danger form-error" wx:if="{{mediaError}}" role="alert" aria-live="assertive" aria-atomic="true">{{mediaError}}</view>
-      <view class="danger form-error" wx:if="{{error}}">{{error}}</view>
-      <view class="readiness-note">保存前请确认 7 项报名资料完整。头像独立即时保存，背景完成上传后再保存整表。</view>
+      <view wx:else class="notice notice--info" role="note">
+        <view class="notice-dot" aria-hidden="true"></view>
+        <text>先选择头像后，再继续完善报名资料。</text>
+      </view>
+
+      <!-- 错误 / 媒体错误 -->
+      <view class="notice notice--danger" wx:if="{{mediaError}}" role="alert" aria-live="assertive" aria-atomic="true">
+        <view class="notice-dot" aria-hidden="true"></view>
+        <text>{{mediaError}}</text>
+      </view>
+      <view class="notice notice--danger" wx:if="{{error}}" role="alert">
+        <view class="notice-dot" aria-hidden="true"></view>
+        <text>{{error}}</text>
+      </view>
+
+      <!-- Readiness notice -->
+      <view class="notice readiness-note" role="note">
+        <view class="notice-dot" aria-hidden="true"></view>
+        <text>保存前请确认 7 项报名资料完整。头像独立即时保存，背景完成上传后再保存整表。</text>
+      </view>
+
       <button class="btn save-action" loading="{{saving}}" disabled="{{saving || photoBusy || avatarBusy}}" bindtap="save">保存资料</button>
-    </block>
-    <view class="danger form-error" wx:elif="{{mediaError}}" role="alert" aria-live="assertive" aria-atomic="true">{{mediaError}}</view>
+    </view>
   </block>
   </state-view>
+
+  <view class="profile-edit-footer" wx:if="{{p}}">此里 · 骑行影像志</view>
 </view>

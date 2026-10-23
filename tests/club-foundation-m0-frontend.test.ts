@@ -147,8 +147,10 @@ describe('M0 俱乐部前端映射与交互契约', () => {
     expect(profileView).toContain('{{profile.clubs[0].name}}');
     expect(profileView).not.toContain('全平台唯一俱乐部');
     expect(profileView).toContain('binderror="clubAvatarError"');
-    expect(profileView).toContain('club-membership-avatar--placeholder');
-    expect(profileView).toContain('club-membership-empty');
+    // 新设计：俱乐部入口以 row.rowlink.row-club 承载，头像兜底以 rowicon-text “俱” 文字占位
+    expect(profileView).toMatch(/class="row rowlink rowbutton row-club"/);
+    expect(profileView).toContain('class="rowicon-text">俱</text>');
+    expect(profileView).toContain('暂未加入俱乐部');
     expect(profileView).not.toContain('club-avatar-stack');
     expect(profileView).not.toContain('clubOverflowCount');
     expect(profileView).not.toContain('可申请创建或查看申请进度');

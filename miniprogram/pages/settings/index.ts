@@ -368,23 +368,28 @@ function openPrivacyContract(): Promise<void> {
 type StravaRowCopy = {
   description: string;
   action: string;
+  statusLabel: string;
 };
 const STRAVA_COPY: Record<'connected' | 'disconnected' | 'pending' | 'error', StravaRowCopy> = {
   disconnected: {
     description: '尚未连接 Strava，连接后可直接粘贴线路地址同步',
-    action: '连接 ›',
+    action: '连接 Strava',
+    statusLabel: '尚未连接',
   },
   connected: {
     description: '已连接',
-    action: '管理 ›',
+    action: '管理同步',
+    statusLabel: '已连接',
   },
   pending: {
     description: '授权链接已复制，请在浏览器完成后返回',
-    action: '刷新 ›',
+    action: '已复制授权链接 · 刷新状态',
+    statusLabel: '等待浏览器完成',
   },
   error: {
     description: '暂时无法获取同步状态，可稍后重试',
-    action: '重试 ›',
+    action: '重试',
+    statusLabel: '暂时不可用',
   },
 };
 
@@ -398,7 +403,10 @@ Page({
     stravaAthleteName: '',
     stravaDescription: STRAVA_COPY.disconnected.description,
     stravaAction: STRAVA_COPY.disconnected.action,
+    stravaStatusLabel: STRAVA_COPY.disconnected.statusLabel,
     stravaAuthorizationUrl: '',
+    notificationHint: '',
+    notificationHintTone: 'info' as 'info' | 'success' | 'warning',
   },
   stravaPollTimer: undefined as ReturnType<typeof setInterval> | undefined,
   onShow() {
@@ -422,6 +430,7 @@ Page({
       stravaDescription:
         connected && readiness.athleteName ? `已连接 ${readiness.athleteName}` : copy.description,
       stravaAction: copy.action,
+      stravaStatusLabel: copy.statusLabel,
     });
     if (connected && this.stravaPollTimer !== undefined) {
       clearInterval(this.stravaPollTimer);
@@ -439,6 +448,7 @@ Page({
         stravaState: 'error',
         stravaDescription: STRAVA_COPY.error.description,
         stravaAction: STRAVA_COPY.error.action,
+        stravaStatusLabel: STRAVA_COPY.error.statusLabel,
       });
     }
   },
@@ -466,6 +476,7 @@ Page({
       stravaState: 'pending',
       stravaDescription: '正在生成授权链接…',
       stravaAction: STRAVA_COPY.pending.action,
+      stravaStatusLabel: STRAVA_COPY.pending.statusLabel,
     });
     try {
       const authorization = await rideService.startStravaRouteAuthorization();
@@ -482,6 +493,7 @@ Page({
         stravaState: 'error',
         stravaDescription: STRAVA_COPY.error.description,
         stravaAction: STRAVA_COPY.error.action,
+        stravaStatusLabel: STRAVA_COPY.error.statusLabel,
       });
     } finally {
       this.setData({ actionPending: false });
@@ -489,19 +501,31 @@ Page({
   },
   async manageNotifications() {
     if (this.data.actionPending) return;
-    this.setData({ actionPending: true });
+    this.setData({ actionPending: true, notificationHint: '' });
     try {
       const templateIds = (await rideService.getReviewNotificationTemplateIds())
         .filter((item, index, values) => Boolean(item && values.indexOf(item) === index))
         .slice(0, MAX_SUBSCRIPTION_TEMPLATES);
       if (!templateIds.length) {
         wx.showToast({ title: '暂无可订阅的活动通知', icon: 'none' });
+        this.setData({
+          notificationHint: '暂无可订阅的活动通知，稍后再来看看。',
+          notificationHintTone: 'warning',
+        });
         return;
       }
       await rideService.requestReviewNotificationSubscription(templateIds);
       wx.showToast({ title: '已完成本次订阅选择', icon: 'success' });
+      this.setData({
+        notificationHint: '已完成本次订阅选择，下一次仍会由微信询问。',
+        notificationHintTone: 'success',
+      });
     } catch {
       wx.showToast({ title: '暂时无法打开通知订阅，请稍后重试', icon: 'none' });
+      this.setData({
+        notificationHint: '暂时无法打开通知订阅，请稍后重试。',
+        notificationHintTone: 'warning',
+      });
     } finally {
       this.setData({ actionPending: false });
     }

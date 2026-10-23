@@ -11,57 +11,79 @@ const app = read('miniprogram/app.wxss');
 const settings = read('miniprogram/pages/settings/index.wxss');
 const tokens = uiTokens(app);
 
-describe('主题 token 与控件契约', () => {
-  it('设置页复用现有颜色语义，行动红只保留在“当前版本”胶囊', () => {
-    // 顶部改为暖纸编辑式页头，不再使用独立卡片或整块行动红。
-    const hero = effectiveBlock(settings, '.settings-hero');
-    expectSemantic(declaration(hero, 'background'), '--color-bg');
-    expectSemantic(declaration(hero, 'color'), '--color-text');
-    expect(declaration(hero, 'background')).not.toContain('--color-action');
-    const heroCopy = effectiveBlock(settings, '.hero-copy');
-    expectSemantic(declaration(heroCopy, 'color'), '--color-muted');
-    expectSemantic(
-      declaration(effectiveBlock(settings, '.release-latest'), 'background'),
-      '--color-action',
-    );
-    expect(settings).not.toContain('var(--color-on-action-muted)');
+describe('设置页 · 骑行影像志设计稿样式契约（settings.html 1:1）', () => {
+  it('暖纸底色与宋体编辑式 pageheading 对齐设计稿，不复用旧行动红大块', () => {
+    const page = effectiveBlock(settings, '.settings-page');
+    expectSemantic(declaration(page, 'background'), '--color-bg');
+    expectSemantic(declaration(page, 'color'), '--color-text');
+
+    const heading = effectiveBlock(settings, '.pageheading');
+    expectSemantic(declaration(heading, 'background'), '--color-bg');
+    expectSemantic(declaration(heading, 'color'), '--color-text');
+    expect(declaration(heading, 'background')).not.toContain('--color-action');
+
+    const headingTitle = effectiveBlock(settings, '.pageheading-title');
+    expect(declaration(headingTitle, 'font-family')).toContain('--font-family-editorial');
+    expect(declaration(headingTitle, 'line-height')).toBe('88rpx');
+
+    const sub = effectiveBlock(settings, '.pageheading-sub');
+    expectSemantic(declaration(sub, 'color'), '--color-muted');
+
+    // 共享 token 仍被页面消费（骑行影像志统一视觉基线）
     expect(tokens['--color-border-subtle']).toBe('var(--color-border)');
     expect(tokens['--font-mono']).toBe('var(--font-family-mono)');
     expect(tokens['--font-family-mono']).toContain('ui-monospace');
     expect(tokens['--font-family-mono']).toContain('monospace');
-
     for (const token of ['--color-border-subtle', '--font-mono']) {
       expect(settings).toContain(`var(${token})`);
     }
   });
 
-  it('设置管理列表保持完整触控区、清晰分隔与中性色操作提示', () => {
-    const row = effectiveBlock(settings, '.management-row');
-    expect(declaration(row, 'min-height')).toBe('116rpx');
+  it('每个 section 的 chapterhead（标题 + 细横线）与 row.rowlink.rowbutton 保持完整触控区', () => {
+    const chapterTitle = effectiveBlock(settings, '.chapterhead-title');
+    expect(declaration(chapterTitle, 'font-family')).toContain('--font-family-editorial');
+    const chapterRule = effectiveBlock(settings, '.chapterhead-rule');
+    expectSemantic(declaration(chapterRule, 'background'), '--color-border');
+
+    const row = effectiveBlock(settings, '.row.rowlink.rowbutton');
+    expect(declaration(row, 'min-height')).toBe('128rpx');
     expectSemantic(declaration(row, 'background'), '--color-surface');
     expectSemantic(declaration(row, 'color'), '--color-text');
-    expect(
-      declaration(effectiveBlock(settings, '.management-row + .management-row'), 'border-top'),
-    ).toContain('--color-border-subtle');
-    expectSemantic(
-      declaration(effectiveBlock(settings, '.management-description'), 'color'),
-      '--color-muted',
-    );
-    expect(declaration(effectiveBlock(settings, '.management-action'), 'color')).not.toContain(
+    expect(declaration(row, 'border')).toContain('var(--color-border)');
+
+    expectSemantic(declaration(effectiveBlock(settings, '.rowtext-sub'), 'color'), '--color-muted');
+    // 行内行动色不应该直接漆到次级操作，避免整页行动红饱和
+    expect(declaration(effectiveBlock(settings, '.rowtext-title'), 'color')).not.toContain(
       '--color-action',
     );
   });
 
-  it('发布日志字号按沸点规格收口为 16px 标题与 12.5px 功能点、约 1.7 行高', () => {
-    expect(declaration(effectiveBlock(settings, '.release-title'), 'font-size')).toBe('32rpx');
-    expect(declaration(effectiveBlock(settings, '.release-title'), 'line-height')).toBe('54rpx');
-    expect(declaration(effectiveBlock(settings, '.release-summary'), 'font-size')).toBe('25rpx');
-    expect(declaration(effectiveBlock(settings, '.release-summary'), 'line-height')).toBe('42rpx');
-    expect(declaration(effectiveBlock(settings, '.release-feature'), 'font-size')).toBe('25rpx');
-    expect(declaration(effectiveBlock(settings, '.release-feature'), 'line-height')).toBe('42rpx');
+  it('应用 section 的 detailrows 承载当前版本与本次更新，使用两列紧凑排版', () => {
+    const detailrows = effectiveBlock(settings, '.detailrows');
+    expectSemantic(declaration(detailrows, 'background'), '--color-surface');
+    expect(declaration(detailrows, 'border')).toContain('var(--color-border)');
+
+    const detailrow = effectiveBlock(settings, '.detailrow');
+    expect(declaration(detailrow, 'display')).toBe('grid');
+    expect(declaration(detailrow, 'grid-template-columns')).toContain('minmax');
+
+    expectSemantic(
+      declaration(effectiveBlock(settings, '.detailrow-term'), 'color'),
+      '--color-muted',
+    );
+    expect(declaration(effectiveBlock(settings, '.detailrow-desc'), 'font-family')).toContain(
+      '--font-mono',
+    );
+
+    // 不再渲染独立 release-card / release-feature 等旧 Oil UI 结构
+    expect(settings).not.toContain('.release-card');
+    expect(settings).not.toContain('.release-feature');
+    expect(settings).not.toContain('.release-list');
+    expect(settings).not.toContain('.management-list');
+    expect(settings).not.toContain('.management-row');
   });
 
-  it('统一按钮触控高度与按钮、输入控件禁用态', () => {
+  it('全局按钮触控高度与按钮、输入控件禁用态仍遵守沸点基线', () => {
     expect(app).toMatch(/button\s*\{[^}]*min-height:\s*var\(--control-height\)/s);
     expect(tokens['--control-height']).toBe('96rpx');
     expect(declaration(effectiveBlock(app, '.btn'), 'min-height')).toBe('var(--control-height)');

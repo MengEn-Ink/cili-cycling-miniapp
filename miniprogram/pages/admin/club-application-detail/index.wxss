@@ -1,234 +1,386 @@
+/* 骑行影像志 · 俱乐部资料编辑 1:1 实现
+ * 对齐 docs/designs/2026-10-22-cycling-image-journal/pages/admin-club-profile.html
+ *   pageheading → content.tight(form) →
+ *     section 头像与背景(upload × 2)
+ *     section 基本资料(field × 3)
+ *     btn 保存
+ */
+
 .club-profile-page {
-  padding-bottom: calc(80rpx + env(safe-area-inset-bottom));
+  min-height: 100vh;
+  padding-bottom: calc(96rpx + env(safe-area-inset-bottom));
   background: var(--color-bg);
+  color: var(--color-text);
 }
-.journal-heading {
-  padding: 28rpx 0 56rpx;
+
+/* --- pageheading --------------------------------------------------------- */
+.pageheading {
+  padding: 32rpx 32rpx 24rpx;
 }
-.journal-eyebrow {
-  display: flex;
+.pageheading .eyebrow {
+  display: inline-flex;
   align-items: center;
   gap: 16rpx;
   color: var(--color-muted);
-  font-size: 24rpx;
-  line-height: 36rpx;
-  font-weight: 800;
+  font-family: var(--font-family-mono);
+  font-size: 22rpx;
+  letter-spacing: 2rpx;
+  text-transform: uppercase;
 }
-.journal-eyebrow::before {
+.pageheading .eyebrow::before {
   width: 40rpx;
   height: 2rpx;
   background: currentColor;
   content: '';
 }
-.journal-heading .page-title {
-  margin-top: 16rpx;
-  font-size: 64rpx;
-  line-height: 80rpx;
+.pageheading-title {
+  display: flex;
+  flex-direction: column;
+  margin-top: 20rpx;
+  font-family: var(--font-family-editorial);
+  font-size: 72rpx;
+  line-height: 88rpx;
+  font-weight: 900;
   letter-spacing: -2rpx;
+  color: var(--color-text);
 }
-.club-media-canvas {
-  position: fixed;
-  top: 0;
-  left: -2000px;
-  width: 1280px;
-  height: 720px;
-  pointer-events: none;
-}
-.club-profile-head {
-  margin-top: 28rpx;
+.pageheading-sub {
+  margin-top: 16rpx;
+  color: var(--color-muted);
+  font-size: 28rpx;
+  line-height: 44rpx;
 }
 .club-profile-badge {
-  color: var(--color-muted);
-  font-size: 24rpx;
-  line-height: 36rpx;
-  font-weight: 800;
-}
-.page-sub {
-  margin-top: 12rpx;
-  color: var(--color-muted);
-  font-size: 32rpx;
-  line-height: 48rpx;
-}
-.club-profile-card {
-  margin-top: 64rpx;
-  padding: 40rpx 32rpx;
+  display: inline-flex;
+  margin-top: 16rpx;
+  padding: 6rpx 18rpx;
   border: 2rpx solid var(--color-border);
-  border-radius: var(--radius-card);
+  border-radius: 999rpx;
   background: var(--color-surface);
-  box-shadow: none;
+  color: var(--color-text);
+  letter-spacing: 1rpx;
 }
-.journal-heading + .club-profile-card {
-  margin-top: 0;
+
+/* --- content ------------------------------------------------------------ */
+.content {
+  display: flex;
+  flex-direction: column;
+  padding: 0 32rpx;
 }
-.club-profile-section-head {
+.content > form {
+  display: flex;
+  flex-direction: column;
+  gap: 32rpx;
+}
+
+/* --- section + chapterhead -------------------------------------------- */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  padding: 28rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: 24rpx;
+  background: var(--color-surface);
+}
+.chapterhead {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16rpx;
 }
-.club-profile-section-hint {
-  margin-top: 12rpx;
+.chapterhead-title {
+  color: var(--color-text);
+  font-family: var(--font-family-editorial);
+  font-size: 34rpx;
+  line-height: 48rpx;
+  font-weight: 900;
+}
+.chapterhead-aside {
   color: var(--color-muted);
-  font-size: 24rpx;
-  line-height: 36rpx;
+  font-family: var(--font-family-mono);
+  font-size: 22rpx;
+  letter-spacing: 1rpx;
 }
-.club-avatar-editor {
+
+/* --- upload ------------------------------------------------------------- */
+.upload {
   display: flex;
-  align-items: center;
-  gap: 24rpx;
-  margin-top: 24rpx;
+  gap: 20rpx;
+  padding: 20rpx;
+  border: 2rpx dashed var(--color-border);
+  border-radius: 20rpx;
+  background: var(--color-bg);
 }
-.club-avatar-preview {
-  position: relative;
+.upload-preview {
   flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 180rpx;
-  height: 180rpx;
+  position: relative;
   overflow: hidden;
-  border: 2rpx dashed var(--color-border-strong);
-  border-radius: var(--radius-sm);
+  border-radius: 16rpx;
   background: var(--color-raised);
 }
-.club-avatar-img {
-  width: 180rpx;
-  height: 180rpx;
+.club-cover-preview {
+  width: 272rpx;
+  aspect-ratio: 16 / 9;
+}
+.club-avatar-preview {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 24rpx;
+}
+.upload-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.upload-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6rpx;
+  padding: 12rpx;
+  color: var(--color-muted);
+  text-align: center;
+  font-size: 24rpx;
 }
 .club-avatar-empty {
   color: var(--color-text);
-  font-size: 64rpx;
-  font-weight: 900;
-}
-.club-avatar-progress {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-overlay);
-  color: var(--color-on-media);
-  font-size: 28rpx;
-  font-weight: 900;
-}
-.club-avatar-panel {
-  flex: 1;
-  min-width: 0;
-}
-.club-avatar-tip {
-  margin-bottom: 16rpx;
-  color: var(--color-muted);
-  font-size: 24rpx;
-  line-height: 36rpx;
-}
-.club-media-btn {
-  width: 100%;
-  min-height: var(--control-height);
-}
-.club-media-status {
-  margin-top: 16rpx;
-  color: var(--color-muted);
-  font-size: 24rpx;
-  line-height: 36rpx;
-}
-.club-cover-preview {
-  position: relative;
-  margin-top: 24rpx;
-  overflow: hidden;
-  border: 2rpx dashed var(--color-border-strong);
-  border-radius: var(--radius-md);
-  background: var(--color-raised);
-}
-.club-cover-img {
-  display: block;
-  width: 100%;
-  height: 320rpx;
-}
-.club-cover-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8rpx;
-  height: 320rpx;
-  padding: 0 var(--space-4);
-  text-align: center;
+  font-size: 56rpx;
+  font-weight: 300;
 }
 .club-cover-empty-title {
   color: var(--color-text);
-  font-size: 30rpx;
-  line-height: 44rpx;
-  font-weight: 900;
-}
-.club-cover-empty-sub {
-  color: var(--color-muted);
   font-size: 24rpx;
-  line-height: 36rpx;
+  font-weight: 800;
 }
-.club-cover-progress {
+.upload-progress {
   position: absolute;
   inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12rpx;
-  background: var(--color-overlay);
+  gap: 10rpx;
+  background: rgba(12, 10, 7, 0.56);
+  color: #fff;
+  font-size: 24rpx;
 }
 .club-cover-progress-text {
-  color: var(--color-on-media);
-  font-size: 26rpx;
   font-weight: 800;
 }
 .club-cover-progress-bar {
-  width: 60%;
+  width: 70%;
   height: 8rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.3);
   overflow: hidden;
-  border-radius: 4rpx;
-  background: var(--color-media-muted);
 }
 .club-cover-progress-inner {
   height: 100%;
-  background: var(--color-brand);
+  background: #fff;
 }
-.club-cover-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16rpx;
-  margin-top: 20rpx;
+.club-avatar-progress {
+  font-weight: 800;
 }
-.club-cover-remove {
+.upload-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+.upload-title {
   color: var(--color-text);
+  font-size: 28rpx;
+  font-weight: 800;
 }
-.club-field-meta {
+.upload-sub {
+  color: var(--color-muted);
+  font-size: 24rpx;
+  line-height: 36rpx;
+}
+.upload-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+.upload-status {
+  color: var(--color-muted);
+  font-size: 22rpx;
+}
+
+/* --- field ------------------------------------------------------------- */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+.field-label {
+  color: var(--color-text);
+  font-size: 26rpx;
+  font-weight: 800;
+}
+.field-label .required {
+  margin-left: 8rpx;
+  color: var(--color-muted);
+  font-weight: 500;
+  font-size: 22rpx;
+}
+.input {
+  min-height: 88rpx;
+  padding: 18rpx 24rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: 20rpx;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 28rpx;
+  line-height: 40rpx;
+}
+.input-placeholder {
+  color: var(--color-muted);
+}
+.textarea {
+  min-height: 180rpx;
+  padding: 20rpx 24rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: 20rpx;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 28rpx;
+  line-height: 44rpx;
+}
+.field-meta {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16rpx;
-  margin-top: 8rpx;
-  min-height: 36rpx;
 }
-.club-field-count {
-  margin-left: auto;
+.field-count {
   color: var(--color-muted);
+  font-size: 22rpx;
+}
+.field-error {
+  color: var(--color-status-warning, #c0321f);
   font-size: 24rpx;
   line-height: 36rpx;
-  font-variant-numeric: tabular-nums;
 }
-.club-profile-action-error {
-  margin-top: var(--card-gap);
+.field-msg.is-error {
+  color: var(--color-status-warning, #c0321f);
+  font-size: 26rpx;
+  padding: 16rpx 20rpx;
+  border: 2rpx solid var(--color-status-warning, #c0321f);
+  border-radius: 16rpx;
+  background: var(--color-status-warning-soft, rgba(192, 50, 31, 0.08));
+}
+
+/* --- notice ----------------------------------------------------------- */
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+  padding: 20rpx 24rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: 16rpx;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 24rpx;
+  line-height: 36rpx;
+}
+.notice-dot {
+  flex: none;
+  width: 12rpx;
+  height: 12rpx;
+  margin-top: 12rpx;
+  border-radius: 50%;
+  background: var(--color-text);
+}
+
+/* --- empty state ------------------------------------------------------- */
+.empty {
+  margin: 32rpx;
+  padding: 40rpx 32rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  border: 2rpx dashed var(--color-border);
+  border-radius: 20rpx;
+  background: var(--color-surface);
+  text-align: center;
+}
+.empty-title {
+  font-size: 32rpx;
+  font-weight: 900;
+  color: var(--color-text);
+}
+.empty-copy {
+  color: var(--color-muted);
+  font-size: 26rpx;
+  line-height: 38rpx;
+}
+.empty .btn {
+  align-self: center;
+}
+
+/* --- btn ------------------------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 88rpx;
+  padding: 0 32rpx;
+  border: 2rpx solid var(--color-text);
+  border-radius: 999rpx;
+  background: var(--color-text);
+  color: var(--color-on-action);
+  font-size: 28rpx;
+  line-height: 40rpx;
+  font-weight: 800;
+}
+.btn::after {
+  display: none;
+}
+.btn.secondary {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.btn[disabled] {
+  opacity: 0.6;
 }
 .club-profile-submit {
-  width: 100%;
-  min-height: 96rpx;
-  margin-top: 48rpx;
+  align-self: stretch;
 }
-.club-profile-retry {
-  width: 100%;
-  margin-top: 24rpx;
+
+.small {
+  font-size: 22rpx;
+  line-height: 32rpx;
 }
-@media (max-width: 340px) {
-  .club-cover-actions {
-    grid-template-columns: 1fr;
+.muted {
+  color: var(--color-muted);
+}
+
+/* --- offscreen canvas used by club-media utility --------------------- */
+.club-media-canvas {
+  position: fixed;
+  top: -9999rpx;
+  left: -9999rpx;
+  width: 1280rpx;
+  height: 720rpx;
+  pointer-events: none;
+  opacity: 0;
+}
+
+@media (max-width: 350px) {
+  .pageheading-title {
+    font-size: 56rpx;
+    line-height: 72rpx;
+  }
+  .upload {
+    flex-direction: column;
+  }
+  .club-cover-preview {
+    width: 100%;
   }
 }

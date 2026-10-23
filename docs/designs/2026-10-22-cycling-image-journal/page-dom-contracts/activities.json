@@ -1,38 +1,60 @@
 {
   "slug": "activities",
   "pagePath": "pages/activities/index",
-  "title": "骑行活动",
+  "title": "活动列表",
   "wxml": "miniprogram/pages/activities/index.wxml",
   "wxss": "miniprogram/pages/activities/index.wxss",
   "ts": "miniprogram/pages/activities/index.ts",
+  "designIntent": "设计稿 pages/activities.html 一比一映射：pageheading(宋体双行标题) + segment（近期活动/往期影像 + 紧凑切换）+ 影像故事列表（photo + storyfacts + storymeta）；真实业务保留 day-chip 日期筛选、沉浸/紧凑双布局、分页 loadMore 与刷新 retry。",
   "containers": [
     { "class": "page activities-page", "role": "page-root", "order": 1 },
-    { "class": "activities-intro", "role": "page-heading", "order": 2, "note": "intro-kicker + page-title + intro-copy 承载骑行影像志刊首语。" },
-    { "class": "timeline-tabs", "role": "tablist", "order": 3, "note": "即将开始 / 历史活动 两个 role=tab 的切换；绑定 switchView。" },
-    { "class": "day-chip-shell", "role": "day-chips", "order": 4, "optional": true, "note": "future 视图下保留日期筛选 chip（真实业务）；design 原型未强制，但不得移除。" },
-    { "class": "list-toolbar", "role": "toolbar", "order": 5, "note": "list-count 文案 + layout-switch（沉浸/紧凑） 密度切换。" },
-    { "class": "activity-story-list", "role": "list", "order": 6, "note": "card 模式下的影像纵向列表，内部复用 activity-card 组件。" },
-    { "class": "compact-list", "role": "list", "order": 7, "note": "compact 模式下的紧凑列表；两种 layout 必须同时存在。" }
+    { "class": "pageheading", "role": "page-heading", "order": 2, "note": "eyebrow + 宋体双行标题 + 小字说明" },
+    { "class": "segment", "role": "tablist", "order": 3, "note": "近期活动 / 往期影像 + 紧凑切换按钮；绑定 switchView 与 switchLayout" },
+    { "class": "day-chip-shell", "role": "day-chips", "order": 4, "optional": true, "note": "future 视图下保留日期筛选 chip（真实业务）；设计稿未画但产品必需" },
+    { "class": "list-toolbar", "role": "toolbar", "order": 5, "optional": true, "note": "分段标题 + 场次计数，items.length > 0 时展示" },
+    { "class": "story-list", "role": "list", "order": 6, "optional": true, "note": "沉浸视图：影像故事列表" },
+    { "class": "compact-list", "role": "list", "order": 7, "optional": true, "note": "紧凑视图：行版列表；两种 layout 必须同时存在但由 wx:if 二选一渲染" },
+    { "class": "story", "role": "card", "order": 8, "optional": true, "note": "story 卡元素：photo + storyfacts + storymeta" },
+    { "class": "photo", "role": "media", "order": 9, "optional": true, "note": "story 卡顶部影像容器" },
+    { "class": "storyfacts", "role": "metrics", "order": 10, "optional": true, "note": "三指标：距离 / 爬升 / 骑行" },
+    { "class": "storymeta", "role": "meta", "order": 11, "optional": true, "note": "集合地点 + 查看活动指示" }
   ],
   "interactions": [
     { "trigger": "switchView", "dataAttr": "data-view", "note": "切换 future / history" },
-    { "trigger": "selectDay", "dataAttr": "data-index", "note": "day chip 筛选（真实业务保留）" },
     { "trigger": "switchLayout", "dataAttr": "data-mode", "note": "切换沉浸 / 紧凑布局" },
+    { "trigger": "selectDay", "dataAttr": "data-index", "note": "day chip 日期筛选（真实业务保留）" },
     { "trigger": "open", "dataAttr": "data-id", "note": "打开活动详情" },
-    { "trigger": "loadMore", "note": "加载更多活动" }
+    { "trigger": "loadMore", "note": "加载更多活动" },
+    { "trigger": "load", "note": "state-view bind:retry 重新加载" }
   ],
   "copy": [
     "此里 · 一起出发",
-    "把周末，交给山路。",
+    "把周末，",
+    "交给山路。",
     "每一次转弯，都有值得记住的风景。",
-    "即将开始",
-    "历史活动",
-    "沉浸",
-    "紧凑"
+    "近期活动",
+    "往期影像",
+    "切换紧凑浏览"
   ],
-  "assets": [],
+  "assets": [
+    { "class": "photo", "note": "story 封面容器；缺失封面时使用 generated-activity-cover 兜底" }
+  ],
   "forbids": [
-    { "class": "hero--compact", "reason": "旧 Oil UI hero 已退役，禁止重新引入。" },
-    { "class": "activities-hero", "reason": "旧 Oil UI hero 已退役，禁止重新引入。" }
-  ]
+    { "class": "activities-intro", "reason": "旧 Oil UI intro 已退役，由 pageheading 取代。" },
+    { "class": "intro-kicker", "reason": "旧 Oil UI 标签已退役，由 pageheading .eyebrow 取代。" },
+    { "class": "page-title", "reason": "旧 Oil UI 标题已退役，由 pageheading-title 取代。" },
+    { "class": "intro-copy", "reason": "旧 Oil UI 说明已退役，由 pageheading-sub 取代。" },
+    { "class": "timeline-tabs", "reason": "旧 Oil UI tab 已退役，由 segment 取代。" },
+    { "class": "timeline-tab", "reason": "旧 Oil UI tab item 已退役，由 segment-item 取代。" },
+    { "class": "list-count", "reason": "旧 Oil UI 计数区已退役，由 list-toolbar 取代。" },
+    { "class": "layout-switch", "reason": "旧 Oil UI 布局切换已退役，由 segment-end iconbutton 取代。" },
+    { "class": "activity-story-list", "reason": "旧 Oil UI 列表容器已退役，由 story-list 取代。" },
+    { "class": "activity-story", "reason": "旧 Oil UI 故事卡壳已退役，由 story-shell 取代。" },
+    { "class": "activity-card", "reason": "旧 activity-card 组件外壳已不再被活动列表直接复用；本页使用 story 骨架。" },
+    { "class": "card-media", "reason": "旧 activity-card 媒体容器已退役，由 photo 取代。" },
+    { "class": "card-caption", "reason": "旧 activity-card 文案区已退役，由 caption 取代。" },
+    { "class": "card-facts", "reason": "旧 activity-card metrics 外壳已退役，由 storyfacts 取代。" },
+    { "class": "activity-card-skeleton", "reason": "旧骨架 class 已退役，由 activity-skeleton 取代。" }
+  ],
+  "designSource": "docs/designs/2026-10-22-cycling-image-journal/pages/activities.html"
 }

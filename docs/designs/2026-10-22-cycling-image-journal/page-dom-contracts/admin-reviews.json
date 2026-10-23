@@ -5,36 +5,44 @@
   "wxml": "miniprogram/pages/admin/reviews/index.wxml",
   "wxss": "miniprogram/pages/admin/reviews/index.wxss",
   "ts": "miniprogram/pages/admin/reviews/index.ts",
-  "designIntent": "六项状态筛选平铺（候补/待审核/已通过/已签到/已驳回/全部）；每条报名完整展示身份、活动、集合方式、经验、提交时间；可发送活动提醒。",
+  "designIntent": "骑行影像志 1:1：pageheading(宋体双行标题 + 当前活动摘要) → content.tight → info-bar(当前活动待审核计数 + 切换活动 picker) → filters(六段状态：候补/待审核/已通过/已签到/已驳回/全部) → reviewitem-list(头像 + 真实姓名 + 昵称 + 活动名 + 电话/集合方式/骑行经验 + 提交时间 + CTA) → paper.reminder-card(仅对已通过骑友的活动提醒) → notice(审核管理员视图下的实名电话全量展示)。",
   "containers": [
     { "class": "page review-page", "role": "page-root", "order": 1 },
-    { "class": "journal-heading", "role": "page-heading", "order": 2, "note": "此里 · 审核工作台 + editorial 标题" },
-    { "class": "filter-tabs", "role": "tablist", "order": 3, "note": "六项筛选 tab：候补/待审核/已通过/已签到/已驳回/全部" },
-    { "class": "review-list", "role": "list", "order": 4, "note": "报名审批列表，每项 review-card" },
-    { "class": "card reminder-card", "role": "reminder", "order": 5, "optional": true, "note": "活动提醒卡：仅在有可审批活动时渲染" }
+    { "class": "pageheading", "role": "page-heading", "order": 2, "note": "宋体 editorial 双行标题 + 当前活动摘要副标题" },
+    { "class": "content tight", "role": "content", "order": 3 },
+    { "class": "info-bar", "role": "activity-switcher", "order": 4, "optional": true, "note": "当前活动待审核数 + 切换活动 picker" },
+    { "class": "filters", "role": "status-filter", "order": 5, "note": "六段式状态筛选" },
+    { "class": "reviewitem-list", "role": "list", "order": 6, "optional": true, "note": "数据到位时才渲染；骨架/空态/错误用 skeleton 与 empty" },
+    { "class": "paper reminder-card", "role": "reminder", "order": 7, "optional": true, "note": "仅对已通过骑友发送活动提醒" },
+    { "class": "notice", "role": "privacy-notice", "order": 8, "note": "审核管理员视图下实名与电话完整可见提示" }
   ],
   "interactions": [
-    { "trigger": "tab", "dataAttr": "data-v", "note": "切换状态筛选" },
-    { "trigger": "choose", "note": "切换当前审批活动 picker" },
-    { "trigger": "open", "dataAttr": "data-id", "note": "打开报名详情" },
-    { "trigger": "load", "note": "重新加载审批列表" },
-    { "trigger": "sendReminders", "note": "向已通过骑友发送活动提醒（不重复发送）" }
+    { "trigger": "choose", "note": "picker 切换当前审批活动" },
+    { "trigger": "tab", "dataAttr": "data-v", "note": "切换报名状态" },
+    { "trigger": "open", "dataAttr": "data-id", "note": "进入某条报名详情" },
+    { "trigger": "avatarError", "dataAttr": "data-id", "note": "头像加载失败回退首字母" },
+    { "trigger": "load", "note": "错误态点击再试一次" },
+    { "trigger": "sendReminders", "note": "向已通过骑友发送出发提醒" }
   ],
   "copy": [
     "此里 · 审核工作台",
-    "报名审批",
     "候补",
     "待审核",
     "已通过",
     "已签到",
     "已驳回",
     "全部",
+    "切换活动",
     "活动提醒",
-    "发送活动提醒"
+    "发送活动提醒",
+    "审核管理员"
   ],
   "assets": [],
   "forbids": [
-    { "class": "bulk-approve-button", "reason": "不提供批量通过，必须逐条审核" }
+    { "class": "journal-heading", "reason": "过渡 heading 已退役，统一使用 pageheading" },
+    { "class": "filter-tabs", "reason": "旧 tabs 已被 filters 取代" },
+    { "class": "review-card", "reason": "旧 Oil UI 卡片已被 reviewitem 列表取代" },
+    { "class": "review-list", "reason": "旧列表容器已被 reviewitem-list 取代" }
   ],
-  "phase2Note": "本页实现已对齐设计意图；仅做契约化。"
+  "designSource": "docs/designs/2026-10-22-cycling-image-journal/pages/admin-reviews.html"
 }

@@ -7,13 +7,15 @@
   "ts": "miniprogram/pages/registration-form/index.ts",
   "containers": [
     { "class": "page form-page", "role": "page-root", "order": 1 },
-    { "class": "form-head journal-heading", "role": "page-heading", "order": 2, "note": "journal-eyebrow + journal-title editorial + journal-summary + step-line + activity-context（可选）。" },
-    { "class": "step-line", "role": "list", "order": 3, "note": "三步：填写报名(active) → 组织审核 → 获取凭证；aria-label 必须说明当前阶段。" },
-    { "class": "form-section form-card identity-card", "role": "section", "order": 4, "note": "报名资料：真实姓名 / 微信昵称 / 性别 / 联系电话 + 编辑个人资料入口。" },
-    { "class": "form-section form-card gathering-card", "role": "section", "order": 5, "note": "集合方式：多模式活动展示 choice-group；默认活动展示 gathering-default。" },
-    { "class": "form-section form-card capability-card", "role": "section", "order": 6, "note": "能力自评：三档 experience-segment。" },
-    { "class": "form-section form-card", "role": "section", "order": 7, "note": "备注与安全：textarea remark + safety-box 紧急联系人 + privacy-note。" },
-    { "class": "fixed action-bar", "role": "fixed-cta", "order": 8, "note": "固定底栏：返回活动 + 提交报名；disabled-hint 承载 submitBlockedHint。" }
+    { "class": "pageheading", "role": "page-heading", "order": 2, "note": "eyebrow + pageheading-title editorial + pageheading-sub + 可选 meta。" },
+    { "class": "content tight", "role": "content-wrapper", "order": 3, "note": "紧凑栏：timeline + form + section × 4 + check + 两条 notice + 底部提示。" },
+    { "class": "timeline", "role": "list", "order": 4, "note": "三步：1 填写报名(active) → 2 组织者审核 → 3 获取凭证。" },
+    { "class": "section section-identity", "role": "section", "order": 5, "note": "确认你的资料：paper + detailrows + row rowlink rowbutton 修改资料入口 + profileErrors notice。" },
+    { "class": "section section-gathering", "role": "section", "order": 6, "note": "怎么去集合点：多模式时 choice-group；默认时 paper + detailrows 展示自行前往。" },
+    { "class": "section section-experience", "role": "section", "order": 7, "note": "你的骑行经验：experience-segment 三档 + teamId / teamParameterError notice。" },
+    { "class": "section section-remark", "role": "section", "order": 8, "note": "还有什么想说：textarea 备注 + 字数计。" },
+    { "class": "check", "role": "legal-check", "order": 9, "note": "行前约定复选框。" },
+    { "class": "actionbar", "role": "fixed-cta", "order": 10, "note": "固定底栏：返回活动 + 提交报名；actionbar-hint 承载 submitBlockedHint。" }
   ],
   "interactions": [
     { "trigger": "set", "dataAttr": "data-key", "note": "统一字段录入：gatheringMode / experience / remark。" },
@@ -23,20 +25,30 @@
   ],
   "copy": [
     "此里 · 留下一个位置",
-    "下一站，山顶。",
+    "下一站，",
+    "山顶。",
     "填写报名",
-    "组织审核",
+    "组织者审核",
     "获取凭证",
-    "报名资料",
-    "集合方式",
-    "能力自评",
-    "备注与安全",
+    "确认你的资料",
+    "怎么去集合点",
+    "你的骑行经验",
+    "还有什么想说",
+    "修改个人资料",
     "紧急联系人",
     "返回活动",
     "提交报名"
   ],
   "assets": [],
   "forbids": [
-    { "class": "form-surface", "reason": "旧 Oil UI 外包装已退役。" }
+    { "class": "form-surface", "reason": "旧 Oil UI 外包装已退役。" },
+    { "class": "form-head journal-heading", "reason": "journal- 前缀的旧 pageheading 已被 pageheading 替换。" },
+    { "class": "step-line", "reason": "旧 step-line 已被 timeline 替换。" },
+    { "class": "form-section form-card identity-card", "reason": "旧 form-card 容器已被 section + paper 替换。" },
+    { "class": "form-section form-card gathering-card", "reason": "同上。" },
+    { "class": "form-section form-card capability-card", "reason": "同上。" },
+    { "class": "fixed action-bar", "reason": "fixed action-bar 已被 actionbar 替换。" },
+    { "class": "safety-box", "reason": "旧紧急联系人安全盒已改为 detailrows 行。" },
+    { "class": "privacy-note", "reason": "privacy-note 旧盒子已被 notice--info 替换。" }
   ]
 }

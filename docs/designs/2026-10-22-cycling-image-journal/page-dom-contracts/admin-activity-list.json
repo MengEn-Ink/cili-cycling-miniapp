@@ -5,12 +5,16 @@
   "wxml": "miniprogram/pages/admin/activity-list/index.wxml",
   "wxss": "miniprogram/pages/admin/activity-list/index.wxss",
   "ts": "miniprogram/pages/admin/activity-list/index.ts",
-  "designIntent": "编辑与审核两条路径分开；主操作是创建活动草稿；按状态筛选活动，每张卡片显示报名/待审核/已通过三项真实指标。",
+  "designIntent": "骑行影像志 1:1：pageheading(宋体双行标题 + eyebrow) → content.tight → metrics(已发布/草稿/待审核) → filters(六段式状态筛选) → section 列表（草稿走 paper，其余走 ticket，内嵌 management-metrics 真实报名指标与 buttonpair 真实上下架/审核/编辑） → page-actions buttonpair（管理员走报名审批 secondary + 创建活动草稿 primary）→ modal-sheet（从此活动创建草稿）。",
   "containers": [
     { "class": "page activity-list-page", "role": "page-root", "order": 1 },
-    { "class": "journal-heading", "role": "page-heading", "order": 2, "note": "此里 · 组织一场出发 + 我的活动 editorial 标题" },
-    { "class": "status-filters", "role": "tablist", "order": 3, "note": "活动状态筛选 tablist：全部/已下架/待审核/已驳回/已上线/已结束" },
-    { "class": "page-actions", "role": "primary-actions", "order": 4, "note": "底部管理员报名审批 secondary + 创建活动草稿 btn" }
+    { "class": "pageheading", "role": "page-heading", "order": 2, "note": "宋体 editorial 双行标题 + 组织一场出发 eyebrow" },
+    { "class": "content tight", "role": "content", "order": 3 },
+    { "class": "metrics", "role": "metrics-overview", "order": 4, "note": "顶部三格当前已加载计数：已发布 / 草稿 / 待审核；不冒充服务端全量汇总" },
+    { "class": "filters", "role": "status-filter", "order": 5, "note": "六段式状态筛选：全部/已下架/待审核/已驳回/已上线/已结束" },
+    { "class": "section section-list", "role": "list-section", "order": 6, "optional": true, "note": "包含 chapterhead 与活动卡片列表；无数据时折叠" },
+    { "class": "management-metrics metrics metrics--inline", "role": "per-ticket-metrics", "order": 7, "optional": true, "note": "每张非草稿活动卡上的报名/待审核/已通过三格真实指标" },
+    { "class": "page-actions buttonpair", "role": "primary-actions", "order": 8, "note": "底部管理员报名审批 secondary + 创建活动草稿 btn" }
   ],
   "interactions": [
     { "trigger": "selectStatusFilter", "dataAttr": "data-status", "note": "切换活动状态筛选" },
@@ -20,23 +24,36 @@
     { "trigger": "confirmDelete", "dataAttr": "data-id", "note": "草稿删除确认" },
     { "trigger": "startClone", "dataAttr": "data-id", "note": "从此活动创建新草稿" },
     { "trigger": "create", "note": "创建活动草稿主按钮" },
-    { "trigger": "reviews", "note": "进入报名审批" }
+    { "trigger": "reviews", "note": "进入报名审批" },
+    { "trigger": "retryLoad", "note": "加载失败重试" },
+    { "trigger": "loadMore", "note": "分页加载更多" },
+    { "trigger": "onRowTouchStart", "note": "草稿卡左滑删除手势起点" },
+    { "trigger": "cloneField", "dataAttr": "data-name", "note": "克隆面板表单输入" },
+    { "trigger": "cancelClone", "note": "取消克隆草稿" },
+    { "trigger": "confirmClone", "note": "确认创建克隆草稿" }
   ],
   "copy": [
     "此里 · 组织一场出发",
-    "我的活动",
+    "已发布",
+    "草稿",
+    "待审核",
     "全部",
     "已下架",
-    "待审核",
     "已驳回",
     "已上线",
     "已结束",
     "创建活动草稿",
-    "报名审批"
+    "报名审批",
+    "报名",
+    "已通过",
+    "从此活动创建"
   ],
   "assets": [],
   "forbids": [
-    { "class": "activity-list-create-fab", "reason": "创建入口以底部主按钮为准，不复用 FAB" }
+    { "class": "activity-list-create-fab", "reason": "创建入口以底部主按钮为准，不复用 FAB" },
+    { "class": "journal-heading", "reason": "过渡 heading 已退役，统一使用 pageheading" },
+    { "class": "status-filters", "reason": "旧 filter 命名已被 filters 替代" },
+    { "class": "activity-row", "reason": "旧 Oil UI 活动行已退役，草稿走 paper、其余走 ticket" }
   ],
-  "phase2Note": "本页实现已对齐设计意图；仅做契约化。"
+  "designSource": "docs/designs/2026-10-22-cycling-image-journal/pages/admin-activity-list.html"
 }

@@ -1,14 +1,29 @@
-<view class="route-analysis-page">
+<!--
+  骑行影像志 · 完整路线分析（1:1 对齐 docs/designs/2026-10-22-cycling-image-journal/pages/route-analysis.html）
+  - 骨架：pageheading → ink(metrics) → map large → content(section × N) → fixed actionbar(下载 GPX)
+  - 真实业务保留：原生 map + markers + 全线/聚焦 / 起点导航、canvas 海拔联动、关键公里点 + anchor-strip、坡段 segments、路线策略、风险、装备、state-view 加载/错误/空
+-->
+<view class="page route-analysis-page">
   <state-view loading="{{loading}}" error="{{error}}" empty="{{empty}}" retryable="{{true}}" bindretry="retry" loading-title="正在分析路线" loading-copy="正在整理路线走向与坡段" empty-title="暂无路线分析" empty-copy="活动尚未提供可展示的路线信息">
-    <view class="analysis-header">
-      <view class="brand-line"><image src="/assets/brand/logo-circle-144.png" mode="aspectFit" aria-label="此里品牌标志" /><text>CILI · ROUTE ANALYSIS</text></view>
-      <view class="analysis-title">{{routeTitle}}</view>
-      <view class="analysis-route">{{activityTitle}}</view>
-      <view class="analysis-summary" wx:if="{{routeSummary}}">{{routeSummary}}</view>
+    <header class="pageheading">
+      <view class="eyebrow">此里 · 路线手记</view>
+      <view class="pageheading-title editorial">
+        <text class="pageheading-line">{{routeTitle || '一路向山。'}}</text>
+      </view>
+      <view class="pageheading-sub">{{activityTitle}}</view>
+      <view class="pageheading-sub pageheading-sub--secondary" wx:if="{{routeSummary}}">{{routeSummary}}</view>
+    </header>
+
+    <view class="ink">
+      <view class="metrics">
+        <view wx:for="{{overviewItems}}" wx:key="label">
+          <strong>{{item.value}}<text class="unit">{{item.unit}}</text></strong>
+          <text>{{item.label}}</text>
+        </view>
+      </view>
     </view>
 
-    <metric-grid class="overview-grid" items="{{overviewItems}}" columns="2" narrow-columns="2" aria-label="路线核心指标" />
-
+    <!-- 核心结论 panel -->
     <view class="conclusion-panel" wx:if="{{strategySummary.length}}">
       <view class="conclusion-label">核心结论</view>
       <view class="conclusion-copy">{{strategySummary[0]}}</view>
@@ -16,13 +31,18 @@
       <view class="strategy-tags"><text wx:for="{{strategySummary}}" wx:key="*this">{{index + 1 < 10 ? '0' + (index + 1) : index + 1}} / {{item}}</text></view>
     </view>
 
-    <view class="analysis-card map-card" wx:if="{{mapAvailable || mapFailed}}">
-      <view class="section-head"><view><view class="section-eyebrow">ROUTE / MAP</view><view class="section-title">路线走向 · 关键地名</view></view><view class="section-count" wx:if="{{hasRealKeyPoints}}">{{keyPointCount}} 点</view></view>
+    <!-- 地图 large：路线走向 · 关键地名 -->
+    <view class="map large" wx:if="{{mapAvailable || mapFailed}}">
+      <view class="map-head">
+        <view class="chapterhead-eyebrow">ROUTE / MAP</view>
+        <view class="chapterhead-title">路线走向 · 关键地名</view>
+        <view class="map-count" wx:if="{{hasRealKeyPoints}}">{{keyPointCount}} 点</view>
+      </view>
       <view class="map-direction"><text>沿红色箭头查看骑行顺序<text wx:if="{{hasRealKeyPoints}}"> · 点击地图标记查看详情</text></text><button wx:if="{{mapFocused}}" class="map-reset" bindtap="showFullRoute" aria-label="查看完整路线">查看全线</button></view>
       <map id="route-analysis-map" wx:if="{{mapAvailable}}" wx:key="{{mapRenderKey}}" class="route-map" latitude="{{mapLatitude}}" longitude="{{mapLongitude}}" scale="{{mapScale}}" markers="{{markers}}" polyline="{{polylines}}" include-points="{{mapPoints}}" bindmarkertap="markerTap" binderror="mapError" show-location="{{false}}" aria-label="路线走向地图，可点击标记查看关键点"></map>
-      <view wx:elif="{{mapFailed}}" class="analysis-empty map-fallback">
-        <view>地图暂时无法显示，路线数据仍可查看</view>
-        <button class="map-retry-button" bindtap="retryMap">重试地图</button>
+      <view wx:elif="{{mapFailed}}" class="notice map-fallback">
+        <view class="notice-dot" aria-hidden="true"></view>
+        <view class="map-fallback-copy"><view>地图暂时无法显示，路线数据仍可查看</view><button class="btn secondary map-retry" bindtap="retryMap">重试地图</button></view>
       </view>
       <view class="map-legend" wx:if="{{legendItems.length}}">
         <text wx:for="{{legendItems}}" wx:key="marker"><text class="legend-dot {{item.dotClass}}">{{item.marker}}</text>{{item.label}}</text>
@@ -31,7 +51,7 @@
         <view class="selected-name">{{selectedPoint.name}}</view>
         <view class="map-detail-purpose">{{selectedPoint.purpose}}</view>
         <view class="point-note" wx:if="{{selectedPoint.note}}">{{selectedPoint.note}}</view>
-        <button wx:if="{{selectedPoint.canNavigate}}" class="start-navigation-button" bindtap="navigateToStart" aria-label="导航到起点 {{selectedPoint.name}}">导航到起点</button>
+        <button wx:if="{{selectedPoint.canNavigate}}" class="btn secondary start-navigation-button" bindtap="navigateToStart" aria-label="导航到起点 {{selectedPoint.name}}">导航到起点</button>
       </view>
       <view class="map-detail" wx:elif="{{selectedPoint}}">
         <view class="map-detail-head"><view><text class="point-type">{{selectedPoint.typeLabel}}</text><text wx:if="{{selectedPoint.computed}}" class="point-computed">计算值</text><view class="selected-name">{{selectedPoint.name}}</view></view><text class="selected-km">{{selectedPoint.kmText}}</text></view>
@@ -44,49 +64,76 @@
       </view>
     </view>
 
-    <view class="analysis-card" wx:if="{{profileAvailable}}">
-      <view class="section-head"><view><view class="section-eyebrow">ELEVATION</view><view class="section-title">海拔剖面与锚点</view></view><view class="section-count" wx:if="{{hasRealKeyPoints}}">{{keyPointCount}} 点</view></view>
-      <canvas id="route-analysis-elevation" type="2d" class="elevation-chart" aria-label="路线海拔剖面与当前选择"></canvas>
-      <scroll-view class="anchor-strip" wx:if="{{hasRealKeyPoints}}" scroll-x enhanced show-scrollbar="{{false}}" aria-label="海拔关键锚点">
-        <view class="anchor-strip-inner">
-          <button class="anchor-item {{selectedPointId === point.id ? 'is-selected' : ''}}" wx:for="{{keyPoints}}" wx:for-item="point" wx:key="id" data-id="{{point.id}}" bindtap="selectPoint" aria-label="选择{{point.name}}，{{point.kmText}}{{point.computed ? '（计算值）' : ''}}" aria-pressed="{{selectedPointId === point.id}}"><text>{{point.typeLabel}}<text wx:if="{{point.computed}}" class="anchor-computed">计算值</text></text><text>{{point.kmText}}</text></button>
+    <view class="content">
+      <!-- 施工警示 notice -->
+      <view class="notice notice--warning" wx:if="{{analysisDisclaimer}}">
+        <view class="notice-dot" aria-hidden="true"></view>
+        <text>{{analysisDisclaimer}}</text>
+      </view>
+
+      <!-- 先读懂这段爬升：海拔剖面 -->
+      <section class="section" wx:if="{{profileAvailable}}">
+        <view class="chapterhead"><view class="chapterhead-title">先读懂这段爬升</view><view class="chapterhead-aside" wx:if="{{hasRealKeyPoints}}">{{keyPointCount}} 点</view></view>
+        <view class="elevation">
+          <canvas id="route-analysis-elevation" type="2d" class="elevation-chart" aria-label="路线海拔剖面与当前选择"></canvas>
         </view>
-      </scroll-view>
-    </view>
+        <scroll-view class="anchor-strip" wx:if="{{hasRealKeyPoints}}" scroll-x enhanced show-scrollbar="{{false}}" aria-label="海拔关键锚点">
+          <view class="anchor-strip-inner">
+            <button class="anchor-item {{selectedPointId === point.id ? 'is-selected' : ''}}" wx:for="{{keyPoints}}" wx:for-item="point" wx:key="id" data-id="{{point.id}}" bindtap="selectPoint" aria-label="选择{{point.name}}，{{point.kmText}}{{point.computed ? '（计算值）' : ''}}" aria-pressed="{{selectedPointId === point.id}}"><text>{{point.typeLabel}}<text wx:if="{{point.computed}}" class="anchor-computed">计算值</text></text><text>{{point.kmText}}</text></button>
+          </view>
+        </scroll-view>
+      </section>
 
-    <view class="analysis-card" wx:if="{{segments.length}}">
-      <view class="section-head"><view><view class="section-eyebrow">SEGMENTS</view><view class="section-title">路线分段</view></view><view class="section-count">{{segments.length}} 段</view></view>
-      <view class="segments-hint">分段按里程与海拔剖面计算，非真实地名；坡度不可用时以实际路况为准。</view>
-      <view class="segment-list">
-        <button class="segment-item {{selectedSegmentId === segment.id ? 'is-selected' : ''}}" wx:for="{{segments}}" wx:for-item="segment" wx:key="id" data-id="{{segment.id}}" bindtap="selectSegment" aria-label="选择{{segment.name}}分段">
-          <view class="segment-index">{{index + 1 < 10 ? '0' + (index + 1) : index + 1}}</view>
-          <view class="segment-content"><view class="segment-head"><text class="segment-name">{{segment.name}}</text><text class="difficulty difficulty--{{segment.difficulty}}">{{segment.difficulty}}</text></view><view class="segment-range">{{segment.rangeText}}<text wx:if="{{segment.hasGrade}}"> · {{segment.gradeText}}</text></view><view class="segment-change" wx:if="{{segment.hasChange}}">{{segment.changeText}}</view><view class="segment-strategy">{{segment.strategy}}</view></view>
-        </button>
-      </view>
-    </view>
+      <!-- 主要坡段 segments -->
+      <section class="section" wx:if="{{segments.length}}">
+        <view class="chapterhead"><view class="chapterhead-title">主要坡段</view><view class="chapterhead-aside">{{segments.length}} 段</view></view>
+        <view class="segments-hint muted">分段按里程与海拔剖面计算，非真实地名；坡度不可用时以实际路况为准。</view>
+        <view class="segment-list">
+          <button class="segment-item {{selectedSegmentId === segment.id ? 'is-selected' : ''}}" wx:for="{{segments}}" wx:for-item="segment" wx:key="id" data-id="{{segment.id}}" bindtap="selectSegment" aria-label="选择{{segment.name}}分段">
+            <view class="segment-index">{{index + 1 < 10 ? '0' + (index + 1) : index + 1}}</view>
+            <view class="segment-content"><view class="segment-head"><text class="segment-name">{{segment.name}}</text><text class="difficulty difficulty--{{segment.difficulty}}">{{segment.difficulty}}</text></view><view class="segment-range">{{segment.rangeText}}<text wx:if="{{segment.hasGrade}}"> · {{segment.gradeText}}</text></view><view class="segment-change" wx:if="{{segment.hasChange}}">{{segment.changeText}}</view><view class="segment-strategy">{{segment.strategy}}</view></view>
+          </button>
+        </view>
+      </section>
 
-    <view class="analysis-card" wx:if="{{hasRealKeyPoints}}">
-      <view class="section-head"><view><view class="section-eyebrow">KEY POINTS</view><view class="section-title">关键公里点</view></view></view>
-      <view class="point-list">
-        <button class="point-item {{selectedPointId === point.id ? 'is-selected' : ''}}" wx:for="{{keyPoints}}" wx:for-item="point" wx:key="id" data-id="{{point.id}}" bindtap="selectPoint" aria-label="选择{{point.name}}{{point.computed ? '（计算值）' : ''}}">
-          <view class="point-symbol">{{point.shortType}}</view><view class="point-main"><view class="point-name-row"><text class="point-name">{{point.name}}</text><text wx:if="{{point.computed}}" class="point-computed">计算值</text></view><text class="point-purpose">{{point.purpose}}</text></view><view class="point-metric"><text>{{point.kmText}}</text><text wx:if="{{point.hasElevation}}">{{point.elevationText}}</text></view>
-        </button>
-      </view>
-    </view>
+      <!-- 路上的几个停顿 / 关键公里点 point -->
+      <section class="section" wx:if="{{hasRealKeyPoints}}">
+        <view class="chapterhead"><view class="chapterhead-title">路上的几个停顿</view><view class="chapterhead-aside">{{keyPointCount}} 点</view></view>
+        <view class="point-list">
+          <button class="point {{selectedPointId === point.id ? 'is-selected' : ''}}" wx:for="{{keyPoints}}" wx:for-item="point" wx:key="id" data-id="{{point.id}}" bindtap="selectPoint" aria-label="选择{{point.name}}{{point.computed ? '（计算值）' : ''}}">
+            <view class="distance">{{point.distanceKmShort || point.kmText}}<text>km</text></view>
+            <view class="point-main"><view class="point-name-row"><text class="point-name">{{point.name}}</text><text wx:if="{{point.computed}}" class="point-computed">计算值</text></view><text class="point-purpose">{{point.purpose}}</text><text class="point-elevation" wx:if="{{point.hasElevation}}">海拔 {{point.elevationText}}</text></view>
+          </button>
+        </view>
+      </section>
 
-    <view class="analysis-card" wx:if="{{risks.length}}">
-      <view class="section-head"><view><view class="section-eyebrow">RISK</view><view class="section-title">坡段风险</view></view></view>
-      <view class="risk-row" wx:for="{{risks}}" wx:key="*this"><text>!</text><text>{{item}}</text></view>
-    </view>
+      <!-- 坡段风险 -->
+      <section class="section" wx:if="{{risks.length}}">
+        <view class="chapterhead"><view class="chapterhead-title">坡段风险</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
+        <view class="paper">
+          <view class="risk-row" wx:for="{{risks}}" wx:key="*this"><text class="risk-mark">!</text><text>{{item}}</text></view>
+        </view>
+      </section>
 
-    <view class="analysis-card" wx:if="{{strategySummary.length}}">
-      <view class="section-head"><view><view class="section-eyebrow">STRATEGY</view><view class="section-title">路线策略</view></view></view>
-      <view class="strategy-row" wx:for="{{strategySummary}}" wx:key="*this"><text>{{index + 1 < 10 ? '0' + (index + 1) : index + 1}}</text><text>{{item}}</text></view>
-    </view>
+      <!-- 路线策略 -->
+      <section class="section" wx:if="{{strategySummary.length}}">
+        <view class="chapterhead"><view class="chapterhead-title">路线策略</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
+        <view class="paper">
+          <view class="strategy-row" wx:for="{{strategySummary}}" wx:key="*this"><text>{{index + 1 < 10 ? '0' + (index + 1) : index + 1}}</text><text>{{item}}</text></view>
+        </view>
+      </section>
 
-    <view class="analysis-card equipment-card" wx:if="{{equipment.length}}">
-      <view class="section-head"><view><view class="section-eyebrow">EQUIPMENT</view><view class="section-title">装备建议</view></view></view>
-      <view class="equipment-row" wx:for="{{equipment}}" wx:key="*this"><text>✓</text><text>{{item}}</text></view>
+      <!-- 带上这些 装备建议 -->
+      <section class="section equipment-card" wx:if="{{equipment.length}}">
+        <view class="chapterhead"><view class="chapterhead-title">带上这些</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
+        <view class="paper">
+          <view class="equipment-row" wx:for="{{equipment}}" wx:key="*this"><text class="check">✓</text><text>{{item}}</text></view>
+        </view>
+      </section>
     </view>
   </state-view>
+
+  <view class="actionbar">
+    <button class="btn" bindtap="backToActivity" aria-label="返回活动详情下载 GPX">返回活动页下载 GPX</button>
+  </view>
 </view>
