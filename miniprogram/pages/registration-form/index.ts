@@ -170,7 +170,12 @@ Page({
     const errors = validateRegistration(this.data);
     if (this.data.teamParameterError) errors.push(this.data.teamParameterError);
     if (!this.data.activityCanSubmit) errors.push(this.data.activityAction.label);
-    if (errors.length) return this.setData({ errors });
+    if (errors.length) {
+      this.setData({ errors }, () => {
+        wx.pageScrollTo?.({ selector: '#registration-errors', offsetTop: -16, duration: 180 });
+      });
+      return;
+    }
     const requestId = ++this.submitRequestId;
     this.submissionPending = true;
     this.setData({ submitting: true, errors: [], submitFeedback: '正在提交报名，请稍候' });

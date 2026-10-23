@@ -13,7 +13,7 @@
 
 /* --- pageheading --------------------------------------------------------- */
 .pageheading {
-  padding: 32rpx 0 32rpx;
+  padding: 24rpx 0;
 }
 .pageheading .eyebrow {
   display: inline-flex;

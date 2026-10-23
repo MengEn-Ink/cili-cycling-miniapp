@@ -89,9 +89,9 @@ describe('沸点首批六页尺寸契约', () => {
     expect(app).toContain('padding: 32rpx var(--page-gutter);');
     // pageheading 字号与设计稿双行宋体对齐
     expect(declaration(effectiveBlock(styles, '.pageheading-title'), 'line-height')).toBe('80rpx');
-    // row.rowlink.rowbutton 使用 60px 无卡片分隔行（对齐设计稿 .row.rowlink.rowbutton）
+    // row.rowlink.rowbutton 使用 52px 紧凑分隔行（保留完整触控区）
     const row = effectiveBlock(styles, '.row.rowlink.rowbutton');
-    expect(declaration(row, 'min-height')).toBe('120rpx');
+    expect(declaration(row, 'min-height')).toBe('104rpx');
     expect(declaration(row, 'background')).toBe('transparent');
     expect(declaration(row, 'border-bottom')).toContain('var(--color-border)');
     // detailrows 用来承载"当前版本/本次更新"，不再是整块 release-card

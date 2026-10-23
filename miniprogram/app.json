@@ -5,10 +5,13 @@
     "pages/registrations/index",
     "pages/credential/index",
     "pages/profile/index",
-    "pages/settings/index",
     "pages/capability-card/index"
   ],
   "subpackages": [
+    {
+      "root": "pages/settings",
+      "pages": ["index"]
+    },
     {
       "root": "pages/activity-detail",
       "pages": ["index"]

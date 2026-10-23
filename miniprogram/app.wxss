@@ -336,6 +336,11 @@ button::after {
 .btn:active,
 .button--primary:active {
   background: var(--button-bg-active) !important;
+  transform: scale(0.985);
+}
+.rowbutton:active,
+.rowlink:active {
+  transform: scale(0.985);
 }
 .btn[disabled],
 .secondary[disabled],

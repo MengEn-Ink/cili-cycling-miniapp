@@ -13,7 +13,7 @@
 
 /* --- pageheading --------------------------------------------------------- */
 .pageheading {
-  padding: 32rpx 0 24rpx;
+  padding: 24rpx 0 16rpx;
 }
 .pageheading .eyebrow {
   display: inline-flex;
@@ -71,8 +71,8 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12rpx;
-  padding: 20rpx;
-  border: 2rpx solid var(--color-border);
+  padding: 12rpx;
+  border: var(--border-width-hairline) solid var(--color-border);
   border-radius: 20rpx;
   background: var(--color-surface);
 }

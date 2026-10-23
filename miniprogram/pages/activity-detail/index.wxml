@@ -79,6 +79,22 @@
           </view>
         </view>
 
+        <!-- 费用与名额前置，先回答用户是否能参加 -->
+        <view class="section section-fee" wx:if="{{!item.registrationUnlimited && (item.fee || (item.feeIncluded && item.feeIncluded.length) || (item.feeExcluded && item.feeExcluded.length))}}">
+          <view class="chapterhead"><view class="chapterhead-title">费用说明</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
+          <view class="paper">
+            <view class="section-prose" wx:if="{{item.fee}}">{{item.fee}}</view>
+            <view class="fee-block" wx:if="{{item.feeIncluded && item.feeIncluded.length}}">
+              <view class="fee-block-title">费用包含</view>
+              <view class="fee-item" wx:for="{{item.feeIncluded}}" wx:for-item="fee" wx:key="*this"><text class="fee-mark fee-included">+</text><text>{{fee}}</text></view>
+            </view>
+            <view class="fee-block" wx:if="{{item.feeExcluded && item.feeExcluded.length}}">
+              <view class="fee-block-title">费用不包含</view>
+              <view class="fee-item" wx:for="{{item.feeExcluded}}" wx:for-item="fee" wx:key="*this"><text class="fee-mark fee-excluded">−</text><text>{{fee}}</text></view>
+            </view>
+          </view>
+        </view>
+
         <!-- 山路有迹可循：路线入口 -->
         <view class="section section-route" wx:if="{{canAnalyzeRoute || hasRouteDetails}}">
           <view class="chapterhead"><view class="chapterhead-title">山路，有迹可循</view><view class="chapterhead-aside" wx:if="{{item.route.distanceKm > 0}}">{{item.route.distanceKm}} km / {{item.route.elevationM || 0}} m</view></view>
@@ -95,8 +111,9 @@
               <button wx:if="{{hasGpxRoute}}" class="btn secondary" loading="{{downloadingGpx}}" disabled="{{downloadingGpx}}" bindtap="downloadGpx" aria-label="下载 GPX 路线">{{downloadingGpx ? '下载中…' : '下载 GPX 路线'}}</button>
               <button wx:if="{{officialRouteId}}" class="btn secondary" bindtap="copyOfficialRoute" aria-label="复制 Strava 官方路线链接">复制 Strava 官方链接</button>
             </view>
-            <view wx:if="{{copyFeedback === 'success'}}" class="notice notice--success" role="status">✓ 路线链接已复制</view>
-            <view wx:elif="{{copyFeedback === 'error'}}" class="notice notice--warning" role="alert">! 复制失败，请稍后重试</view>
+            <async-status-card wx:if="{{downloadingGpx}}" title="路线文件准备中" detail="正在校验并准备 GPX 文件，请保持页面打开" state="pending" />
+            <async-status-card wx:if="{{copyFeedback === 'success'}}" title="路线链接已复制" detail="可前往 Strava 或浏览器打开" state="success" />
+            <async-status-card wx:elif="{{copyFeedback === 'error'}}" title="路线链接复制失败" detail="请检查系统剪贴板权限后重试" state="failed" action-label="重新复制" bind:action="copyOfficialRoute" />
           </view>
           <button wx:if="{{canAnalyzeRoute}}" class="btn secondary route-analysis-cta" bindtap="openRouteAnalysis" aria-label="查看完整路线分析">查看完整路线分析 →</button>
         </view>
@@ -153,22 +170,6 @@
               <view class="detailrow" wx:if="{{item.route.endLocation && item.route.endLocation.address && item.route.endLocation.address !== item.route.end}}"><text class="detailrow-term">终点地址</text><text class="detailrow-desc">{{item.route.endLocation.address}}</text></view>
             </view>
             <button wx:if="{{item.route.endLocation}}" class="btn secondary meeting-cta" data-target="end" bindtap="navigate">地图导航到终点</button>
-          </view>
-        </view>
-
-        <!-- 费用说明 -->
-        <view class="section section-fee" wx:if="{{!item.registrationUnlimited && (item.fee || (item.feeIncluded && item.feeIncluded.length) || (item.feeExcluded && item.feeExcluded.length))}}">
-          <view class="chapterhead"><view class="chapterhead-title">费用说明</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
-          <view class="paper">
-            <view class="section-prose" wx:if="{{item.fee}}">{{item.fee}}</view>
-            <view class="fee-block" wx:if="{{item.feeIncluded && item.feeIncluded.length}}">
-              <view class="fee-block-title">费用包含</view>
-              <view class="fee-item" wx:for="{{item.feeIncluded}}" wx:for-item="fee" wx:key="*this"><text class="fee-mark fee-included">+</text><text>{{fee}}</text></view>
-            </view>
-            <view class="fee-block" wx:if="{{item.feeExcluded && item.feeExcluded.length}}">
-              <view class="fee-block-title">费用不包含</view>
-              <view class="fee-item" wx:for="{{item.feeExcluded}}" wx:for-item="fee" wx:key="*this"><text class="fee-mark fee-excluded">−</text><text>{{fee}}</text></view>
-            </view>
           </view>
         </view>
 
