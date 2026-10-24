@@ -62,19 +62,19 @@ describe('设置页', () => {
     await import('../miniprogram/pages/settings/index');
   });
 
-  it('当前版本为 2026.10.24.3 且 latest 唯一，上一版转为历史项', () => {
-    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.24.3');
-    expect(page.data.releaseNotes).toHaveLength(32);
+  it('当前版本为 2026.10.24.4 且 latest 唯一，上一版转为历史项', () => {
+    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.24.4');
+    expect(page.data.releaseNotes).toHaveLength(33);
     expect(page.data.currentRelease).toBe(page.data.releaseNotes[0]);
     expect(page.data.currentRelease).toMatchObject({
-      version: '2026.10.24.3',
+      version: '2026.10.24.4',
       date: '2026-10-24',
-      title: '个人中心权限状态更直观',
+      title: '资料状态与图片反馈更准确',
       latest: true,
     });
     expect(page.data.releaseNotes[1]).toMatchObject({
-      version: '2026.10.24.2',
-      title: '头像授权和页面加载更清晰',
+      version: '2026.10.24.3',
+      title: '个人中心权限状态更直观',
       latest: false,
     });
     expect(page.data.releaseNotes.filter((note: { latest: boolean }) => note.latest)).toHaveLength(
