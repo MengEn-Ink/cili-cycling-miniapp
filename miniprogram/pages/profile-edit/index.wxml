@@ -17,14 +17,14 @@
         <view class="permission-card-main">
           <view class="permission-card-copy">
             <view class="permission-card-title">资料展示权限</view>
-            <view class="permission-card-status">{{p.avatarVisibility === 'public' ? (p.avatarId && p.photos.length ? '头像与背景已公开' : '部分资料已公开') : '仅自己可见'}}</view>
+            <view class="permission-card-status">{{p.avatarVisibility === 'public' ? (p.avatarId && (p.backgroundPhoto || p.photos.length) ? '头像与背景已公开' : '部分资料已公开') : '仅自己可见'}}</view>
           </view>
           <view class="permission-badge {{p.avatarVisibility === 'public' ? 'permission-badge--active' : ''}}">{{p.avatarVisibility === 'public' ? '已授权' : '未授权'}}</view>
         </view>
         <button class="permission-card-action" bindtap="togglePermissionDetails" aria-expanded="{{permissionDetailsVisible}}">{{permissionDetailsVisible ? '收起详情' : '查看详情'}}</button>
         <view wx:if="{{permissionDetailsVisible}}" class="permission-details">
-          <view>活动页：公开昵称及已同意展示的头像、背景</view>
-          <view>报名审核：实名与联系方式仅本人和管理员可见</view>
+          <view>活动页：昵称与已授权头像、背景</view>
+          <view>报名审核：实名与联系方式仅审核人员可见</view>
           <button class="btn btn--text permission-reset" bindtap="showConsent">重新查看授权说明</button>
         </view>
       </view>
@@ -38,7 +38,7 @@
 
         <view class="upload upload-avatar" data-avatar-editor>
           <view class="upload-media upload-media-avatar">
-            <image wx:if="{{avatarPreviewUrl}}" class="avatar avatar-preview" src="{{avatarPreviewUrl}}" data-url="{{avatarPreviewUrl}}" mode="aspectFill" aria-label="预览当前头像" bindtap="previewAvatar" binderror="avatarPreviewError" />
+            <image wx:if="{{avatarPreviewUrl}}" class="avatar avatar-preview" src="{{avatarPreviewUrl}}" data-url="{{avatarPreviewUrl}}" mode="aspectFill" fade-in="{{true}}" aria-label="预览当前头像" bindtap="previewAvatar" binderror="avatarPreviewError" />
             <image wx:else class="avatar avatar-preview-placeholder" src="/assets/brand/logo-circle-144.png" mode="aspectFill" aria-label="此里默认头像" />
           </view>
           <view class="upload-copy">
@@ -51,7 +51,7 @@
 
         <view class="upload upload-background">
           <view class="upload-media upload-media-background">
-            <image wx:if="{{photoItems.length && photoItems[0].previewUrl}}" class="background-image" src="{{photoItems[0].previewUrl}}" data-id="{{photoItems[0].id}}" data-url="{{photoItems[0].previewUrl}}" mode="aspectFill" lazy-load="{{true}}" bindtap="previewPhoto" bindload="photoPreviewLoad" binderror="photoPreviewError" aria-label="预览个人背景图" />
+            <image wx:if="{{photoItems.length && photoItems[0].previewUrl}}" class="background-image" src="{{photoItems[0].previewUrl}}" data-id="{{photoItems[0].id}}" data-url="{{photoItems[0].previewUrl}}" mode="aspectFill" lazy-load="{{true}}" fade-in="{{true}}" bindtap="previewPhoto" bindload="photoPreviewLoad" binderror="photoPreviewError" aria-label="预览个人背景图" />
             <view wx:elif="{{photoItems.length && photoItems[0].previewState === 'loading'}}" class="background-placeholder background-placeholder--loading">背景图加载中…</view>
             <button wx:elif="{{photoItems.length}}" class="background-placeholder background-placeholder--failed" data-id="{{photoItems[0].id}}" bindtap="retryPhotoPreview">图片加载失败，点击重试</button>
             <view wx:else class="background-placeholder background-placeholder--empty" aria-hidden="true">尚未添加背景图</view>

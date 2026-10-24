@@ -5,7 +5,7 @@
   "wxml": "miniprogram/pages/profile/index.wxml",
   "wxss": "miniprogram/pages/profile/index.wxss",
   "ts": "miniprogram/pages/profile/index.ts",
-  "designIntent": "骑行影像志 1:1：profile-hero（全幅背景 + 我的骑行名片 label + 头像身份卡）→ content（已登录 status / 完整度 / 三条 row.rowlink.rowbutton：俱乐部 / 报名资料 / 设置 → 平台管理员 section → 隐私 notice）。联系电话仅本人与审核员完整可见；100% 完整度不再出现完整度卡片。",
+  "designIntent": "骑行影像志 1:1：profile-hero（全幅背景 + 我的骑行名片 label + 头像身份卡）→ content（已登录 status / 权限状态卡 / 完整度 / 三条 row.rowlink.rowbutton：俱乐部 / 报名资料 / 设置 → 平台管理员 section → 隐私 notice）。权限状态可直接进入资料编辑；实名与电话仅本人与审核人员可见；100% 完整度不再出现完整度卡片。",
   "containers": [
     { "class": "page profile-page", "role": "page-root", "order": 1 },
     { "class": "profile-hero", "role": "hero", "order": 2, "note": "全幅背景（swiper 多张 / 包装 svg 兜底 / CSS 山岭兜底）+ 名片 label + 底部头像、昵称、性别" },
@@ -38,7 +38,9 @@
     "平台管理员可见",
     "活动管理",
     "俱乐部管理",
-    "实名与电话仅本人和审核管理员完整可见"
+    "资料展示权限",
+    "实名与电话仅本人和审核人员可见",
+    "骑友只见已公开资料"
   ],
   "assets": [
     { "class": "profile-background-image", "note": "背景照片实图" }

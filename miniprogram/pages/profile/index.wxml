@@ -10,7 +10,7 @@
 <image class="profile-background-image" src="{{item.url}}" mode="aspectFill" fade-in="{{true}}" aria-label="查看完整背景照片" data-url="{{item.url}}" data-index="{{index}}" bindtap="previewHeroImage" binderror="heroBackgroundError" />
 </swiper-item>
 </swiper>
-<image wx:elif="{{heroFallbackImageUrl}}" class="profile-background profile-background-fallback" src="{{heroFallbackImageUrl}}" mode="aspectFill" aria-hidden="true" data-url="{{heroFallbackImageUrl}}" binderror="heroFallbackBackgroundError" />
+<image wx:elif="{{heroFallbackImageUrl}}" class="profile-background profile-background-fallback" src="{{heroFallbackImageUrl}}" mode="aspectFill" fade-in="{{true}}" aria-hidden="true" data-url="{{heroFallbackImageUrl}}" binderror="heroFallbackBackgroundError" />
 <view wx:else class="profile-background hero-alpine" aria-hidden="true"></view>
 <view class="profile-background-shade" aria-hidden="true"></view>
 <view class="profile-label">我的骑行名片</view>
@@ -133,7 +133,7 @@
 </view>
 <view class="notice notice--info" role="note">
 <view class="notice-dot" aria-hidden="true"></view>
-<text>实名与电话仅本人和审核管理员完整可见；其他骑友只见昵称与同意公开的头像。</text>
+<text>实名与电话仅本人和审核人员可见；骑友只见已公开资料。</text>
 </view>
 </view>
 <view class="profile-footer">此里 · 骑行影像志</view>

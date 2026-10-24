@@ -602,8 +602,8 @@ describe('个人中心加载状态', () => {
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
     expect(template).toContain('报名资料');
     expect(template).toContain('设置');
-    expect(template).toContain('实名与电话仅本人和审核管理员完整可见');
-    expect(template).toContain('其他骑友只见昵称与同意公开的头像');
+    expect(template).toContain('实名与电话仅本人和审核人员可见');
+    expect(template).toContain('骑友只见已公开资料');
     expect(template).not.toMatch(/报名成功|审核中|已报名|报名状态/);
   });
 
