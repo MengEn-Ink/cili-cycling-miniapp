@@ -19,6 +19,7 @@ const MAX_BACKGROUND_SOURCE_BYTES = 20 * 1024 * 1024;
 const BACKGROUND_COMPRESS_QUALITY = 82;
 const BACKGROUND_COMPRESS_WIDTH = 1600;
 const BACKGROUND_COMPRESS_HEIGHT = 900;
+const PROFILE_CONSENT_STORAGE_KEY = 'cili-profile-media-consent-v1';
 const PROFILE_BACKGROUND_CATEGORY = 'ride' as const;
 type MediaStage = 'selection' | 'authorize' | 'upload' | 'finalize' | 'setAvatar' | 'preview';
 type SelectedImage = { path: string; size?: number };
@@ -471,9 +472,18 @@ Page({
     avatarPreviewUrl: '',
     canEditDetails: false,
     photoItems: [] as PhotoItem[],
+    consentVisible: false,
+    permissionDetailsVisible: false,
   },
   async onLoad() {
     this.unloaded = false;
+    let consentAcknowledged = false;
+    try {
+      consentAcknowledged = Boolean(wx.getStorageSync(PROFILE_CONSENT_STORAGE_KEY));
+    } catch {
+      // 本地存储不可用时仍允许用户通过本次确认继续。
+    }
+    this.safeSetData({ consentVisible: !consentAcknowledged });
     const state = await runPageTask(() => rideService.getProfile(), '资料加载失败');
     const loadedProfile = normalizeBackgroundProfile(state.data || null);
     this.loadedSensitive = sensitiveValues(loadedProfile);
@@ -496,6 +506,25 @@ Page({
     );
     await Promise.all([this.loadAvatarPreview(cardPromise), this.loadPhotoPreviews(cardPromise)]);
   },
+  acknowledgeConsent() {
+    try {
+      wx.setStorageSync(PROFILE_CONSENT_STORAGE_KEY, true);
+    } catch {
+      // 确认结果写入失败不阻断本次编辑。
+    }
+    this.safeSetData({ consentVisible: false });
+  },
+  deferConsent() {
+    this.safeSetData({ consentVisible: false });
+    wx.navigateBack?.();
+  },
+  showConsent() {
+    this.safeSetData({ consentVisible: true });
+  },
+  togglePermissionDetails() {
+    this.safeSetData({ permissionDetailsVisible: !this.data.permissionDetailsVisible });
+  },
+  keepConsentSheet() {},
   onHide() {
     this.avatarPreviewRequestId += 1;
     this.photoPreviewRequestId += 1;

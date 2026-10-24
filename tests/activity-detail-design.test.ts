@@ -725,7 +725,7 @@ describe('活动详情官方路线、分享与 GPX 下载', () => {
     expect(context.data).not.toHaveProperty('hasRouteOutline');
     expect(context.data).not.toHaveProperty('routeStartCoordinate');
     expect(context.data).not.toHaveProperty('routeEndCoordinate');
-    expect(context.data.estimatedRideTime).toBe('4 小时');
+    expect(context.data.estimatedRideTime).toBe('4h');
     expect(context.data.officialRouteId).toBe('');
   });
 
