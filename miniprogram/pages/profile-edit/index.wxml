@@ -13,6 +13,22 @@
     </view>
 
     <view class="content tight">
+      <view class="permission-card" role="status" aria-label="资料展示权限状态">
+        <view class="permission-card-main">
+          <view class="permission-card-copy">
+            <view class="permission-card-title">资料展示权限</view>
+            <view class="permission-card-status">{{p.avatarVisibility === 'public' ? (p.avatarId && p.photos.length ? '头像与背景已公开' : '部分资料已公开') : '仅自己可见'}}</view>
+          </view>
+          <view class="permission-badge {{p.avatarVisibility === 'public' ? 'permission-badge--active' : ''}}">{{p.avatarVisibility === 'public' ? '已授权' : '未授权'}}</view>
+        </view>
+        <button class="permission-card-action" bindtap="togglePermissionDetails" aria-expanded="{{permissionDetailsVisible}}">{{permissionDetailsVisible ? '收起详情' : '查看详情'}}</button>
+        <view wx:if="{{permissionDetailsVisible}}" class="permission-details">
+          <view>活动页：公开昵称及已同意展示的头像、背景</view>
+          <view>报名审核：实名与联系方式仅本人和管理员可见</view>
+          <button class="btn btn--text permission-reset" bindtap="showConsent">重新查看授权说明</button>
+        </view>
+      </view>
+
       <!-- Section：头像与背景 -->
       <view class="section section-media">
         <view class="chapterhead">
@@ -127,4 +143,20 @@
   </state-view>
 
   <view class="profile-edit-footer" wx:if="{{p}}">此里 · 骑行影像志</view>
+
+  <view wx:if="{{consentVisible}}" class="consent-mask" bindtap="deferConsent" catchtouchmove="keepConsentSheet">
+    <view class="consent-sheet" catchtap="keepConsentSheet" role="dialog" aria-label="资料授权确认">
+      <view class="consent-handle" aria-hidden="true"></view>
+      <view class="consent-kicker">填写前确认</view>
+      <view class="consent-title editorial">这些资料会用在哪里？</view>
+      <view class="consent-copy">仅在你确认后使用，之后可在本页随时查看状态或调整。</view>
+      <view class="consent-list">
+        <view><text>公开身份</text><text>昵称、头像和背景用于活动页骑友展示</text></view>
+        <view><text>报名审核</text><text>实名与手机号仅本人和活动管理员可见</text></view>
+        <view><text>安全联络</text><text>紧急联系人仅在活动安全场景使用</text></view>
+      </view>
+      <button class="btn consent-primary" bindtap="acknowledgeConsent">确认并继续填写</button>
+      <button class="btn btn--text consent-later" bindtap="deferConsent">稍后再说</button>
+    </view>
+  </view>
 </view>

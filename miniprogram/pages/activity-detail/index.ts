@@ -124,8 +124,8 @@ function formatRideDuration(seconds?: number) {
   const totalMinutes = Math.round(seconds / 60);
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
-  if (!hours) return `${minutes} 分钟`;
-  return minutes ? `${hours} 小时 ${minutes} 分` : `${hours} 小时`;
+  if (!hours) return `${minutes}min`;
+  return minutes ? `${hours}h ${minutes}min` : `${hours}h`;
 }
 
 function officialRouteId(route: any): string {

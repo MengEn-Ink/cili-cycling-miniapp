@@ -125,7 +125,7 @@
             <view class="riderlist-inner">
               <view class="rider {{item.isSelf && (!item.avatarUrl || !item.backgroundUrl) ? 'rider--authorization' : ''}}" wx:for="{{attendees}}" wx:key="id" data-index="{{index}}" bindtap="openAttendeeCard" role="button" aria-label="查看 {{item.displayName}} 的公开骑行名片">
                 <image wx:if="{{item.avatarUrl}}" class="avatar {{item.genderClass}}" src="{{item.avatarUrl}}" mode="aspectFill" lazy-load="{{true}}" data-index="{{index}}" data-url="{{item.avatarUrl}}" bindload="attendeeAvatarLoad" binderror="attendeeAvatarError" />
-                <view wx:else class="avatar initialavatar">{{item.displayName ? item.displayName : '骑'}}</view>
+                <view wx:else class="avatar initialavatar" aria-label="{{item.displayName || '骑友'}}尚未公开头像">骑</view>
                 <text class="rider-name">{{item.displayName || '骑友'}}</text>
                 <text class="rider-meta">{{item.status === 'checked_in' ? '已签到' : '已报名'}}</text>
                 <button wx:if="{{item.isSelf && (!item.avatarUrl || !item.backgroundUrl)}}" class="rider-authorize" loading="{{attendeeAuthorizationState === 'loading'}}" disabled="{{attendeeAuthorizationState === 'loading'}}" catchtap="authorizeAttendeeMedia">{{attendeeAuthorizationState === 'loading' ? '正在打开…' : attendeeAuthorizationState === 'failed' ? '加载失败，重试' : attendeeAuthorizationState === 'declined' ? '重新授权' : '授权头像与背景'}}</button>
@@ -211,7 +211,7 @@
       <button class="dialog-close" bindtap="closeAttendeeCard" aria-label="关闭骑行名片">×</button>
       <swiper class="rider-dialog-swiper" current="{{selectedAttendeeIndex}}" circular="{{attendees.length > 1}}" previous-margin="{{attendees.length > 1 ? '28rpx' : '0'}}" next-margin="{{attendees.length > 1 ? '28rpx' : '0'}}" bindchange="attendeeCardChange">
         <swiper-item wx:for="{{attendees}}" wx:for-item="rider" wx:key="id">
-          <view class="rider-dialog-photo" aria-label="{{rider.displayName}} 的完整公开骑行名片">
+          <view class="rider-dialog-photo {{rider.backgroundUrl ? '' : 'rider-dialog-photo--fallback'}}" aria-label="{{rider.displayName}} 的完整公开骑行名片">
             <image wx:if="{{rider.backgroundUrl}}" class="rider-dialog-photo__image" src="{{rider.backgroundUrl}}" mode="aspectFill" lazy-load="{{true}}" data-index="{{index}}" data-url="{{rider.backgroundUrl}}" bindload="selectedAttendeeBackgroundLoad" binderror="selectedAttendeeBackgroundError" />
             <view class="rider-dialog-photo__scrim"></view>
             <view class="rider-dialog-photo__identity">
