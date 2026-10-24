@@ -7,7 +7,7 @@
 <view class="profile-hero">
 <swiper wx:if="{{heroBackgrounds.length}}" class="profile-background profile-background-swiper" circular="{{heroBackgrounds.length > 1}}" indicator-dots="{{heroBackgrounds.length > 1}}" bindchange="heroSwiperChange">
 <swiper-item wx:for="{{heroBackgrounds}}" wx:key="url">
-<image class="profile-background-image" src="{{item.url}}" mode="aspectFill" aria-label="查看完整背景照片" data-url="{{item.url}}" data-index="{{index}}" bindtap="previewHeroImage" binderror="heroBackgroundError" />
+<image class="profile-background-image" src="{{item.url}}" mode="aspectFill" fade-in="{{true}}" aria-label="查看完整背景照片" data-url="{{item.url}}" data-index="{{index}}" bindtap="previewHeroImage" binderror="heroBackgroundError" />
 </swiper-item>
 </swiper>
 <image wx:elif="{{heroFallbackImageUrl}}" class="profile-background profile-background-fallback" src="{{heroFallbackImageUrl}}" mode="aspectFill" aria-hidden="true" data-url="{{heroFallbackImageUrl}}" binderror="heroFallbackBackgroundError" />
@@ -39,6 +39,17 @@
 <text>{{authError || identityHintText || '微信身份暂未同步，部分功能需要登录'}}</text>
 <button class="profile-status-action" bindtap="retryAuth">重新登录</button>
 </view>
+<button class="profile-permission {{profile.avatarVisibility === 'public' ? 'profile-permission--active' : ''}}" wx:if="{{profile}}" bindtap="edit" aria-label="查看和调整资料展示权限">
+<view class="profile-permission-head">
+<view class="profile-permission-copy">
+<view class="profile-permission-title">资料展示权限</view>
+<view class="profile-permission-note">{{profile.avatarVisibility === 'public' ? (profile.avatarId && (profile.backgroundPhoto || profile.photos.length) ? '头像与背景已公开' : '部分资料已公开') : '头像与背景仅自己可见'}}</view>
+</view>
+<view class="profile-permission-badge">{{profile.avatarVisibility === 'public' ? '已授权' : '未授权'}}</view>
+</view>
+<view class="profile-permission-scope">公开身份用于活动页展示，实名和联系方式仅报名审核可见</view>
+<view class="profile-permission-action">查看与调整 <text aria-hidden="true">›</text></view>
+</button>
 <view class="profile-progress" wx:if="{{profile && profile.completeness < 100}}">
 <view class="profile-progress-head"><text>资料完整度</text><text>{{profile.completeness}}%</text></view>
 <view class="profile-progress-track"><view class="profile-progress-value" style="width: {{profile.completeness}}%"></view></view>
@@ -48,7 +59,7 @@
 <button class="row rowlink rowbutton row-club" wx:if="{{profile}}" bindtap="openClubCenter" aria-label="打开我的俱乐部">
 <view class="lead">
 <view class="rowicon rowicon--club rowicon--avatar" aria-hidden="true">
-<image wx:if="{{profile.clubs.length && profile.clubs[0].avatarUrl && !clubAvatarFailed}}" class="rowicon-image" src="{{profile.clubs[0].avatarUrl}}" mode="aspectFill" binderror="clubAvatarError" />
+<image wx:if="{{profile.clubs.length && profile.clubs[0].avatarUrl && !clubAvatarFailed}}" class="rowicon-image" src="{{profile.clubs[0].avatarUrl}}" mode="aspectFill" lazy-load="{{true}}" fade-in="{{true}}" binderror="clubAvatarError" />
 <text wx:else class="rowicon-text">俱</text>
 </view>
 <view class="rowtext">
