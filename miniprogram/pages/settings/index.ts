@@ -13,9 +13,21 @@ const RELEASE_NOTES = [
   {
     version: CLIENT_RELEASE_VERSION,
     date: '2026-10-25',
+    title: '按钮触控与页面间距更统一',
+    summary: '统一全页面按钮触控高度、标题内边距与颜色变量，落实大字号、呼吸感与 44px 触控范围。',
+    latest: true,
+    features: [
+      '按钮触控高度统一提升至 88rpx，小号按钮 72rpx',
+      '10 个页面标题上下内边距统一为 32rpx / 24rpx',
+      '移除硬编码颜色兜底，统一使用设计变量',
+    ],
+  },
+  {
+    version: '2026.10.25.1',
+    date: '2026-10-25',
     title: '个人资料页面阅读更紧凑',
     summary: '收紧个人中心与编辑资料页面的上下留白，让状态、权限和表单内容衔接更自然。',
-    latest: true,
+    latest: false,
     features: [
       '个人中心登录状态与资料展示权限衔接更紧凑',
       '资料展示权限说明完整呈现，不再被局促空间截断',

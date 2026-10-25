@@ -12,7 +12,7 @@
 
 /* --- pageheading --------------------------------------------------------- */
 .pageheading {
-  padding: 40rpx var(--page-gutter) 32rpx;
+  padding: 32rpx var(--page-gutter) 24rpx;
 }
 .pageheading .eyebrow {
   display: inline-flex;

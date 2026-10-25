@@ -13,7 +13,7 @@
 
 /* --- pageheading --------------------------------------------------------- */
 .pageheading {
-  padding: 24rpx 0 16rpx;
+  padding: 32rpx 0 24rpx;
 }
 .pageheading .eyebrow {
   display: inline-flex;
@@ -95,7 +95,7 @@
   letter-spacing: 2rpx;
 }
 .trip-stat--review .trip-stat__value {
-  color: var(--color-status-warning, #c0321f);
+  color: var(--color-status-warning);
 }
 .trip-stat--ready .trip-stat__value {
   color: var(--color-text);
@@ -111,7 +111,7 @@
   letter-spacing: 1rpx;
 }
 .refresh-error {
-  color: var(--color-status-warning, #c0321f);
+  color: var(--color-status-warning);
 }
 .trip-skeleton {
   display: flex;
@@ -210,7 +210,7 @@
   align-items: center;
   justify-content: center;
   gap: 6rpx;
-  background: var(--color-status-warning, #c0321f);
+  background: var(--color-status-warning);
   color: #fff;
   font-size: 22rpx;
   letter-spacing: 2rpx;
@@ -443,21 +443,21 @@
   align-items: center;
   justify-content: center;
   gap: 8rpx;
-  min-height: 72rpx;
+  min-height: 88rpx;
   padding: 0 28rpx;
   border: 2rpx solid var(--color-text);
   border-radius: 999rpx;
   background: var(--color-text);
   color: var(--color-on-action);
-  font-size: 24rpx;
-  line-height: 32rpx;
+  font-size: 26rpx;
+  line-height: 36rpx;
   font-weight: 800;
 }
 .btn::after {
   display: none;
 }
 .btn.tiny {
-  min-height: 56rpx;
+  min-height: 72rpx;
   padding: 0 20rpx;
   font-size: 22rpx;
 }

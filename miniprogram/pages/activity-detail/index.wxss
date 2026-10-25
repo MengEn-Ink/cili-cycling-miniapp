@@ -417,13 +417,13 @@
 }
 .notice--success {
   border-style: solid;
-  border-color: var(--color-status-success, #2a7f3e);
-  color: var(--color-status-success, #2a7f3e);
+  border-color: var(--color-status-success);
+  color: var(--color-status-success);
 }
 .notice--warning {
   border-style: solid;
-  border-color: var(--color-status-warning, #c0321f);
-  color: var(--color-status-warning, #c0321f);
+  border-color: var(--color-status-warning);
+  color: var(--color-status-warning);
 }
 
 /* --- 一起出发的骑友 ------------------------------------------------------- */
