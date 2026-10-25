@@ -16,7 +16,7 @@
 
 /* --- pageheading（宋体双行标题）--------------------------------------------- */
 .pageheading {
-  padding: 32rpx 0;
+  padding: 32rpx 0 24rpx;
 }
 .pageheading .eyebrow {
   display: inline-flex;

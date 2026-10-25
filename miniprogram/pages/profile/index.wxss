@@ -148,7 +148,7 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 24rpx;
   padding: 32rpx var(--page-gutter) 0;
 }
 .profile-status {

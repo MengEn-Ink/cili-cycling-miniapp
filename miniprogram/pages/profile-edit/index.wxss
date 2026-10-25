@@ -6,7 +6,7 @@
   padding: 0 var(--page-gutter) calc(96rpx + env(safe-area-inset-bottom));
 }
 .pageheading {
-  padding: 24rpx 0 20rpx;
+  padding: 32rpx 0 24rpx;
   background: var(--color-bg);
   color: var(--color-text);
 }

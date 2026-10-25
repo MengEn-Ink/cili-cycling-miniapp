@@ -12,7 +12,7 @@
 }
 
 .pageheading {
-  padding: 40rpx var(--page-gutter) 32rpx;
+  padding: 32rpx var(--page-gutter) 24rpx;
 }
 .pageheading .eyebrow {
   display: inline-flex;
@@ -279,10 +279,10 @@
   line-height: 44rpx;
 }
 .textarea.is-error {
-  border-color: var(--color-status-warning, #c0321f);
+  border-color: var(--color-status-warning);
 }
 .field-error {
-  color: var(--color-status-warning, #c0321f);
+  color: var(--color-status-warning);
   font-size: 24rpx;
 }
 
@@ -312,12 +312,12 @@
   background: var(--color-raised);
 }
 .notice--warn {
-  border-color: var(--color-status-warning, #c0321f);
+  border-color: var(--color-status-warning);
   background: var(--color-status-warning-soft, rgba(192, 50, 31, 0.08));
-  color: var(--color-status-warning, #c0321f);
+  color: var(--color-status-warning);
 }
 .notice--warn .notice-dot {
-  background: var(--color-status-warning, #c0321f);
+  background: var(--color-status-warning);
 }
 
 /* --- skeleton + empty --------------------------------------------------- */

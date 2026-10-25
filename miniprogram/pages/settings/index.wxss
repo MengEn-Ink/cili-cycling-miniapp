@@ -7,7 +7,7 @@
 }
 
 .pageheading {
-  padding: 32rpx 0;
+  padding: 32rpx 0 24rpx;
   background: var(--color-bg);
   color: var(--color-text);
 }
@@ -78,8 +78,8 @@
   flex: none;
   color: var(--color-text);
   font-family: var(--font-family-editorial);
-  font-size: 44rpx;
-  line-height: 56rpx;
+  font-size: 36rpx;
+  line-height: 48rpx;
   font-weight: 800;
   letter-spacing: -0.5rpx;
 }

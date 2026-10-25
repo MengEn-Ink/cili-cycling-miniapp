@@ -13,7 +13,7 @@
 
 /* --- pageheading --------------------------------------------------------- */
 .pageheading {
-  padding: 32rpx 0 32rpx;
+  padding: 32rpx 0 24rpx;
 }
 .pageheading .eyebrow {
   display: inline-flex;
@@ -604,8 +604,8 @@
 }
 .notice--warning {
   border-style: solid;
-  border-color: var(--color-status-warning, #c0321f);
-  color: var(--color-status-warning, #c0321f);
+  border-color: var(--color-status-warning);
+  color: var(--color-status-warning);
 }
 
 /* --- btn + actionbar ---------------------------------------------------- */
