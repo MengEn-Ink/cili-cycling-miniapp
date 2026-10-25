@@ -7,10 +7,10 @@
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:cca1155861fdb53ab35f76a8f37986f2a4db38637032ecd45ea26e75000f00ed"
+    "digest": "sha256:97314603448fa170bf31ac2c21ab74a01a9d070e45b916ad005cbd3dca174bd3"
   },
   "prototype": {
-    "digest": "sha256:89461e3d7e10123a6b78cce68bb929d4a43000574aa29c30e83fe220e50d4688"
+    "digest": "sha256:537d9c728f0a4ea666a1eadcfec63fc9a42926d6d952b6f46578b5ff675b1633"
   },
   "routes": [
     {
