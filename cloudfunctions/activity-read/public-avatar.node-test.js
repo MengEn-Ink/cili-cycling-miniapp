@@ -3,7 +3,12 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
-const { canonicalPublicAvatar, mediaDocumentId, publicAvatarSource } = require('./public-avatar');
+const {
+  canonicalPublicAvatar,
+  compatibleProfileCategory,
+  mediaDocumentId,
+  publicAvatarSource,
+} = require('./public-avatar');
 
 const MEDIA_SECRET = 'activity-read-test-media-secret-32-bytes';
 const OWNER_OPENID = 'member-openid';
@@ -119,4 +124,25 @@ test('canonicalPublicAvatar 对任一非法媒体元数据或 secret 均 fail cl
   for (const [name, candidateRecord, secret] of invalidCases) {
     assert.equal(canonicalPublicAvatar(profile, candidateRecord, OWNER_OPENID, secret), '', name);
   }
+});
+
+test('canonicalPublicAvatar 接受生产登记类别 profile-avatar', () => {
+  const { profile, record } = canonicalFixture();
+  const productionRecord = { ...record, category: 'profile-avatar', origin: 'wechat' };
+  const wechatProfile = { ...profile, avatar_source: 'wechat' };
+  assert.equal(
+    canonicalPublicAvatar(wechatProfile, productionRecord, OWNER_OPENID, MEDIA_SECRET),
+    record.canonical_file_id,
+  );
+});
+
+test('compatibleProfileCategory 映射 profile-avatar↔other 与 profile-background↔ride', () => {
+  assert.equal(compatibleProfileCategory('other', 'other'), true);
+  assert.equal(compatibleProfileCategory('profile-avatar', 'other'), true);
+  assert.equal(compatibleProfileCategory('other', 'profile-avatar'), false);
+  assert.equal(compatibleProfileCategory('ride', 'ride'), true);
+  assert.equal(compatibleProfileCategory('profile-background', 'ride'), true);
+  assert.equal(compatibleProfileCategory('ride', 'profile-background'), false);
+  assert.equal(compatibleProfileCategory('activity-image', 'other'), false);
+  assert.equal(compatibleProfileCategory('bike', 'ride'), false);
 });

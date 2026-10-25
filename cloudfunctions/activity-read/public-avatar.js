@@ -47,6 +47,16 @@ function validPhoto(value) {
   );
 }
 
+// 媒体登记使用 profile-avatar / profile-background，而公开资料字段沿用 other / ride。
+// 与 profile/core.js 的 compatibleProfileCategory 保持一致，避免授权后头像与背景无法解析。
+function compatibleProfileCategory(recordCategory, profileCategory) {
+  return (
+    recordCategory === profileCategory ||
+    (recordCategory === 'profile-background' && profileCategory === 'ride') ||
+    (recordCategory === 'profile-avatar' && profileCategory === 'other')
+  );
+}
+
 function canonicalPublicMedia(
   sourceFileId,
   record,
@@ -67,7 +77,7 @@ function canonicalPublicMedia(
     record.file_id !== sourceFileId ||
     record.source_file_id !== sourceFileId ||
     record.owner_openid !== ownerOpenid ||
-    record.category !== expectedCategory ||
+    !compatibleProfileCategory(record.category, expectedCategory) ||
     record.origin !== expectedOrigin ||
     record.status !== 'active' ||
     typeof record.canonical_file_id !== 'string' ||
@@ -117,6 +127,7 @@ function canonicalPublicBackground(profile, record, ownerOpenid, secretValue) {
 module.exports = {
   canonicalPublicAvatar,
   canonicalPublicBackground,
+  compatibleProfileCategory,
   mediaDocumentId,
   publicAvatarSource,
   publicBackgroundSource,
