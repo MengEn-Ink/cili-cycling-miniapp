@@ -110,14 +110,24 @@ function baselineUiDigest(ref) {
 }
 
 function currentPrototypeDigest() {
-  return digestFiles(new Map(PROTOTYPE_FILES.map((file) => [file, readFileSync(file)])));
+  return digestFiles(new Map(PROTOTYPE_FILES.map((file) => [file, readNormalized(file)])));
 }
 
 function currentUiDigest() {
   const files = lines(
     gitText(['ls-files', '--cached', '--others', '--exclude-standard', '--', ...UI_PATHS]),
   ).filter((file) => classifyUiPath(file).ui);
-  return digestFiles(new Map([...new Set(files)].map((file) => [file, readFileSync(file)])));
+  return digestFiles(new Map([...new Set(files)].map((file) => [file, readNormalized(file)])));
+}
+
+// 统一 LF：CI checkout 的文件均为 LF，Windows 工作区可能是 CRLF。
+// 用 git show HEAD:file 读取仓库 blob（LF），未跟踪文件则规范化 CRLF→LF。
+function readNormalized(file) {
+  try {
+    return gitBuffer(['show', `HEAD:${file}`]).toString('utf8');
+  } catch {
+    return readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
+  }
 }
 
 function readManifest() {

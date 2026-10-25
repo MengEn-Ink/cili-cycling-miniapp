@@ -12,10 +12,21 @@ const MAX_SUBSCRIPTION_TEMPLATES = 3;
 const RELEASE_NOTES = [
   {
     version: CLIENT_RELEASE_VERSION,
+    date: '2026-10-26',
+    title: '活动头像与背景授权后可正常加载',
+    summary: '补齐活动公开媒体的头像与背景类别兼容，修复授权后头像和背景无法解析的问题。',
+    latest: true,
+    features: [
+      '活动公开媒体兼容头像与背景类别，授权后可正确签发访问地址',
+      '骑行名片弹窗补充头像占位符，避免加载前出现空白',
+    ],
+  },
+  {
+    version: '2026.10.25.2',
     date: '2026-10-25',
     title: '按钮触控与页面间距更统一',
     summary: '统一全页面按钮触控高度、标题内边距与颜色变量，落实大字号、呼吸感与 44px 触控范围。',
-    latest: true,
+    latest: false,
     features: [
       '按钮触控高度统一提升至 88rpx，小号按钮 72rpx',
       '10 个页面标题上下内边距统一为 32rpx / 24rpx',

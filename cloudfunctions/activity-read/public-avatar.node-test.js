@@ -3,7 +3,12 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
-const { canonicalPublicAvatar, compatibleProfileCategory, mediaDocumentId, publicAvatarSource } = require('./public-avatar');
+const {
+  canonicalPublicAvatar,
+  compatibleProfileCategory,
+  mediaDocumentId,
+  publicAvatarSource,
+} = require('./public-avatar');
 
 const MEDIA_SECRET = 'activity-read-test-media-secret-32-bytes';
 const OWNER_OPENID = 'member-openid';
