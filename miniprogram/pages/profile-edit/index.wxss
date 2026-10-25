@@ -6,7 +6,7 @@
   padding: 0 var(--page-gutter) calc(96rpx + env(safe-area-inset-bottom));
 }
 .pageheading {
-  padding: 40rpx 0 36rpx;
+  padding: 24rpx 0 20rpx;
   background: var(--color-bg);
   color: var(--color-text);
 }
@@ -31,7 +31,7 @@
   display: flex;
   flex-direction: column;
   gap: 4rpx;
-  margin-top: 20rpx;
+  margin-top: 12rpx;
   font-family: var(--font-family-editorial);
   font-size: 64rpx;
   line-height: 80rpx;
@@ -43,7 +43,7 @@
   display: block;
 }
 .pageheading-sub {
-  margin-top: 20rpx;
+  margin-top: 12rpx;
   color: var(--color-muted);
   font-size: 28rpx;
   line-height: 44rpx;
@@ -51,10 +51,10 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: 64rpx;
+  gap: 48rpx;
 }
 .content.tight {
-  gap: 56rpx;
+  gap: 40rpx;
 }
 .section {
   display: flex;
@@ -64,7 +64,7 @@
 .profile-details {
   display: flex;
   flex-direction: column;
-  gap: 48rpx;
+  gap: 36rpx;
   margin: 0;
   padding: 0;
   border: 0;
@@ -73,7 +73,7 @@
   display: flex;
   align-items: center;
   gap: 20rpx;
-  margin-bottom: 4rpx;
+  margin-bottom: 0;
 }
 .chapterhead-title {
   flex: none;
@@ -355,7 +355,7 @@
   margin-top: 8rpx;
 }
 .profile-edit-footer {
-  margin-top: 72rpx;
+  margin-top: 48rpx;
   color: var(--color-muted);
   font-size: 24rpx;
   line-height: 36rpx;
@@ -382,8 +382,8 @@
 
 /* 资料授权确认与权限状态 */
 .permission-card {
-  margin-bottom: 32rpx;
-  padding: 32rpx;
+  margin-bottom: 16rpx;
+  padding: 24rpx 28rpx;
   border: 1rpx solid var(--color-border);
   border-radius: var(--radius-card);
   background: var(--color-surface);

@@ -12,10 +12,22 @@ const MAX_SUBSCRIPTION_TEMPLATES = 3;
 const RELEASE_NOTES = [
   {
     version: CLIENT_RELEASE_VERSION,
+    date: '2026-10-25',
+    title: '个人资料页面阅读更紧凑',
+    summary: '收紧个人中心与编辑资料页面的上下留白，让状态、权限和表单内容衔接更自然。',
+    latest: true,
+    features: [
+      '个人中心登录状态与资料展示权限衔接更紧凑',
+      '资料展示权限说明完整呈现，不再被局促空间截断',
+      '编辑资料的章节、字段标签与输入区域更连贯',
+    ],
+  },
+  {
+    version: '2026.10.24.4',
     date: '2026-10-24',
     title: '资料状态与图片反馈更准确',
     summary: '核查并修正权限状态判断、隐私说明和头像背景加载反馈。',
-    latest: true,
+    latest: false,
     features: [
       '背景照片可正确参与完整公开状态判断，不再误报部分公开',
       '隐私说明更精简，窄屏阅读不再被长句打断',
