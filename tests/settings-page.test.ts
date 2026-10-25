@@ -62,19 +62,19 @@ describe('设置页', () => {
     await import('../miniprogram/pages/settings/index');
   });
 
-  it('当前版本为 2026.10.24.4 且 latest 唯一，上一版转为历史项', () => {
-    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.24.4');
-    expect(page.data.releaseNotes).toHaveLength(33);
+  it('当前版本为 2026.10.25.1 且 latest 唯一，上一版转为历史项', () => {
+    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.25.1');
+    expect(page.data.releaseNotes).toHaveLength(34);
     expect(page.data.currentRelease).toBe(page.data.releaseNotes[0]);
     expect(page.data.currentRelease).toMatchObject({
-      version: '2026.10.24.4',
-      date: '2026-10-24',
-      title: '资料状态与图片反馈更准确',
+      version: '2026.10.25.1',
+      date: '2026-10-25',
+      title: '个人资料页面阅读更紧凑',
       latest: true,
     });
     expect(page.data.releaseNotes[1]).toMatchObject({
-      version: '2026.10.24.3',
-      title: '个人中心权限状态更直观',
+      version: '2026.10.24.4',
+      title: '资料状态与图片反馈更准确',
       latest: false,
     });
     expect(page.data.releaseNotes.filter((note: { latest: boolean }) => note.latest)).toHaveLength(
