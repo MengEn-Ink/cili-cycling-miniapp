@@ -77,9 +77,11 @@ PR B 先完成表达层迁移，不改变任何视觉值。每个现存颜色字
 | line | `#ededed` | 保值（当前值） | 白色面上的弱分隔 |
 | strong line | `#9a9186` | 保值（当前值） | 需要更清晰边界的控件与可访问状态 |
 
-当前页面 scrim 基色与透明度同样必须原值迁移。现存 `rgba(12, 10, 7, …)` 的 `0 / 0.05 / 0.1 / 0.42 / 0.56 / 0.68 / 0.72 / 0.78` 以及现存白色叠层（最深 `0.86`）分别获得真实语义 token；PR B 不把它们归一成近似值。
+当前 49 处 rgba 分属 `rgba(12, 10, 7, α)`、`rgba(255, 255, 255, α)`、`rgba(192, 50, 31, 0.08)`、`rgba(0, 0, 0, α)` 与 `rgba(165, 42, 28, 0.92)` 五个基色族。散文不复制完整 alpha 枚举，避免后续统计漂移；`pr-b-literal-token-map.md` 是 53 处字面量位置、基色、alpha 与目标 token 的唯一权威完整清单。所有基色族和 alpha 都必须原值迁移，禁止遗漏或就近归并。
 
 PR B 必须新增版本化的 `docs/designs/2026-10-27-ui-revamp-v1/pr-b-literal-token-map.md`，完整列出 53 处颜色字面量的 `文件:行号 → 当前字面量 → 新 token → token 当前值`。每一行都要求「当前字面量 = token 当前值」且能由 `check:design` 机械复算；还需单列 `components/activity-card/index.wxss` 的字体族字面量到 `--font-family-editorial` 的映射。缺行、近似归并或像素漂移均使 PR B fail-closed。
+
+其中 3 处 `var(--color-status-warning-soft, rgba(192, 50, 31, 0.08))` fallback 也计入上述 53 行。PR B 必须先用契约测试证明 `--color-status-warning-soft` 在 `app.wxss` 全局存在且当前值等于该 fallback，再把页面写法收口为 `var(--color-status-warning-soft)`；`check:design` 随后拒绝页面或组件 WXSS 中任何颜色字面量 fallback。不得为 fallback 新增豁免，也不得把这 3 处从映射清单扣除。
 
 ### V1 目标叠层：仅 UI 分片启用
 
