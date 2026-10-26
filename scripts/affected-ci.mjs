@@ -215,6 +215,12 @@ export function runAffectedPlan(plan) {
   runNpm('lint');
   runNpm('typecheck');
 
+  if (plan.deployment) {
+    // 上传脚本契约等 node 测试会直接加载 tools/miniprogram-ci，依赖安装必须
+    // 先于任何 node 测试，否则 targeted 模式下这些测试必然因缺依赖失败。
+    runNpm('tool:install');
+  }
+
   if (plan.mode === 'docs') {
     run('npx', ['vitest', 'run', 'tests/showcase-pages-contract.test.ts']);
     if (plan.prototype) runNpm('test:ui-sync');
@@ -231,8 +237,7 @@ export function runAffectedPlan(plan) {
     runNpm('check:ui-sync');
   }
   if (plan.deployment) {
-    // 部署测试会直接调用 tools/miniprogram-ci；目标检查必须先准备独立工具依赖，不能依赖全量门禁的前置步骤。
-    runNpm('tool:install');
+    // 部署测试会直接调用 tools/miniprogram-ci；工具依赖已在上方前置安装。
     runNpm('test:deploy');
   }
   if (plan.bootstrap) runNpm('test:bootstrap');
