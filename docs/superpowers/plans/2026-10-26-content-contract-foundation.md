@@ -26,7 +26,7 @@
 
 - [x] 提取同源 `content.js`；不复制 runtime content-contract 副本，不接 profile/activity/club。
 - [x] 执行七项原测试，确认全部通过。
-- [x] 核对模块引用、prepare 和函数列表，确认只有本协议测试使用 `./content`，当前生产入口没有引用。
+- [x] 核对模块引用、prepare 和函数列表，确认只有本协议测试使用 `./content.cjs`，当前生产入口没有引用。
 
 ## Task 3: 接入当前测试入口
 
@@ -38,7 +38,7 @@
 
 最终预检将最初的 `cloudfunctions/` 目录归类为产品变更并要求更新客户端说明。基础片不启用运行行为，因此协议迁入脚本契约目录，CommonJS 使用现有 ESLint 已覆盖的 `.cjs`；后续实际业务接入再按正常产品版本门禁迁入运行时，不修改分类器或版本规则。
 
-- [ ] 最终 clean commit 固定后生成描述与最终 diff 统计，运行 `pr:preflight`。
-- [ ] 推送独立 PR，核对当前 head 的 CI / CodeQL 与无未解决 review；正常 squash 合并。
-- [ ] 核对最终 main CI 和两条发布工作流的实际 receipt 或有证据的无副作用跳过；不将源码测试当作业务上线。
-- [ ] 在 #341 描述记录已拆出 PR、剩余完整链路、确定缺陷和配置前置，不关闭原始来源分支。
+- [x] 最终 clean commit `2765458b` 固定后生成描述与最终 diff 统计，运行 `pr:preflight`，全量 Harness 通过。
+- [x] PR #370 的 CI / CodeQL 通过，无 review/threads；正常 squash 合入 `0c7463e3`。
+- [x] 主线 CI / CodeQL / Pages 全部通过；微信 `40281488762` 的 `0.0.374.1` 实际 receipt、云 `40281488773` 的可信累计范围 SKIPPED outcome 核对通过，无新增业务审核上线。
+- [x] 已更新 #341 描述，记录 #370、剩余完整链路、确定缺陷和配置前置；保持 Draft，source `0908a021` 未变。
