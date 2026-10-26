@@ -6,3 +6,8 @@ package-lock.json
 .trae
 
 docs/**
+
+# PR 草稿产物：表头需保持单空格字面格式以通过 check-pr-description，
+# prettier 的表格对齐会破坏该格式，故整文件排除。
+.pr-body.md
+.pr-title.txt
