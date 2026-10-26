@@ -112,7 +112,7 @@ export function canReuseSourceEvidence(expected, evidence, bytes) {
     return (
       report.schemaVersion === 2 &&
       report.selection === 'affected' &&
-      report.mode === 'run' &&
+      report.mode === 'github-actions' &&
       report.commitSha === evidence.mergeCommit &&
       report.outcome === 'passed' &&
       report.tasks?.length === 1 &&

@@ -13,6 +13,7 @@ source 与 metadata 并发组隔离，描述或标签更新不取消源码运行
 - PASS：内容、head/base、tree、校验器、锁文件、旧 schema、run/attempt、平台和 Harness 摘要反例。
 - PASS：源码 job 成功而描述失败、fork、取消、下载失败、缺失/篡改证据及未执行 Harness 回退。
 - PASS：真实 Git 内容身份、checkout 不匹配拒绝；CLI 生成实际 Harness 证据并经真实 zip 校验。
+- 首次 GitHub source run 的 Harness 已通过，但生成证据时暴露 fixture 的 mode 与实际报告不一致；实际为 `github-actions`。已用 Harness 自身生成器重现三个失败用例，再修复接受该 mode，并拒绝 `local` / `run`。后续远端实际命中另行核对。
 - PASS：27 项源码证据与 CI 契约；1294 项 Vitest、全量 `validate`、覆盖率、high 审计、治理和严格 UI 同步。
 - NOT_EXECUTED：生产发布、真机与普通成员写链路。本地 fixture 不证明 GitHub 真实元数据事件已命中复用，远端验证另行记录。
 

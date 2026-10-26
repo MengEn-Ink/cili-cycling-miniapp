@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 
+import { createHarnessReport } from './harness.mjs';
 import {
   sourceIdentity,
   canReuseSourceEvidence,
@@ -27,16 +28,16 @@ const expected = {
   nodeMajor: 24,
   runnerOS: 'Linux',
 };
-const report = Buffer.from(
-  JSON.stringify({
-    schemaVersion: 2,
-    selection: 'affected',
-    mode: 'run',
-    commitSha: 'f'.repeat(40),
-    outcome: 'passed',
-    tasks: [{ name: 'affected', status: 'passed', exitCode: 0 }],
-  }),
-);
+const actualReport = createHarnessReport({
+  selection: 'affected',
+  mode: 'github-actions',
+  commitSha: 'f'.repeat(40),
+  taskNames: ['affected'],
+});
+actualReport.outcome = 'passed';
+actualReport.tasks[0].status = 'passed';
+actualReport.tasks[0].exitCode = 0;
+const report = Buffer.from(JSON.stringify(actualReport));
 const evidence = {
   ...expected,
   workflowRunId: '30',
@@ -68,7 +69,16 @@ test('仅同内容、实际 Harness 成功且绑定 run attempt 的源码证据�
       canReuseSourceEvidence(expected, evidence, Buffer.from(JSON.stringify({ outcome }))),
       false,
     );
+  for (const mode of ['local', 'run']) {
+    const bytes = Buffer.from(JSON.stringify({ ...actualReport, mode }));
+    const harnessDigest = digestFor(bytes);
+    assert.equal(canReuseSourceEvidence(expected, { ...evidence, harnessDigest }, bytes), false);
+  }
 });
+
+function digestFor(bytes) {
+  return `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
+}
 
 function fixture(overrides = {}) {
   const run = {
