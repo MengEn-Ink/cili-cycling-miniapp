@@ -14,6 +14,10 @@ const outputPath = path.resolve(
 const modulePath =
   process.env.MINIPROGRAM_AUTOMATOR_PATH ||
   path.join(os.homedir(), '.cili-devtools-e2e', 'node_modules', 'miniprogram-automator');
+const STARTUP_BUDGET_MS = 90_000;
+const FRAMEWORK_TIMEOUT_MS = 30_000;
+const MAX_STARTUP_ATTEMPTS = 2;
+const DIAGNOSTIC_LIMIT = 200;
 
 function loadAutomator() {
   try {
@@ -28,6 +32,159 @@ function loadAutomator() {
       );
     }
   }
+}
+
+function recordBoundedDiagnostic({ report, field, payload, redactDiagnostic, now = Date.now }) {
+  const droppedField = `${field}Dropped`;
+  if (!Array.isArray(report[field])) report[field] = [];
+  if (!Number.isInteger(report[droppedField])) report[droppedField] = 0;
+  if (report[field].length >= DIAGNOSTIC_LIMIT) {
+    report[droppedField] += 1;
+    return;
+  }
+  report[field].push({
+    at: new Date(now()).toISOString(),
+    message: String(redactDiagnostic(payload)).slice(0, 2048),
+  });
+}
+
+async function launchWithStartupRecovery({
+  automator,
+  cliPath,
+  projectPath,
+  report,
+  waitForFrameworkReady,
+  classifyReadError,
+  redactDiagnostic,
+  now = Date.now,
+  startupBudgetMs = STARTUP_BUDGET_MS,
+  frameworkTimeoutMs = FRAMEWORK_TIMEOUT_MS,
+}) {
+  const startedAtMs = now();
+  const deadlineMs = startedAtMs + startupBudgetMs;
+  let frameworkEverReady = false;
+  report.startup ||= {
+    budgetMs: startupBudgetMs,
+    frameworkTimeoutMs,
+    attempts: [],
+  };
+  report.startup.attempts ||= [];
+  report.recoveredStartupFailure = false;
+
+  const addEvent = (attemptReport, type, detail = {}) => {
+    attemptReport.events.push({
+      type,
+      at: new Date(now()).toISOString(),
+      elapsedMs: Math.max(0, now() - startedAtMs),
+      ...detail,
+    });
+  };
+  const block = (attemptReport, code) => {
+    report.startupOutcome = 'BLOCKED';
+    report.productVerdict = 'NOT_EXECUTED';
+    if (!report.blockers.includes(code)) report.blockers.push(code);
+    addEvent(attemptReport, 'blocked', { code });
+    return { miniProgram: null, framework: null };
+  };
+
+  for (let attempt = 1; attempt <= MAX_STARTUP_ATTEMPTS; attempt += 1) {
+    const attemptReport = { attempt, events: [], errors: [] };
+    report.startup.attempts.push(attemptReport);
+    const remainingBeforeLaunch = Math.max(0, deadlineMs - now());
+    if (remainingBeforeLaunch === 0) return block(attemptReport, 'DEVTOOLS_STARTUP_BLOCKED');
+    addEvent(attemptReport, 'spawn');
+
+    let miniProgram;
+    try {
+      miniProgram = await automator.launch({
+        cliPath,
+        projectPath,
+        timeout: remainingBeforeLaunch,
+      });
+    } catch (error) {
+      attemptReport.errors.push({
+        kind: 'STARTUP_LAUNCH_ERROR',
+        at: new Date(now()).toISOString(),
+        elapsedMs: Math.max(0, now() - startedAtMs),
+        message: redactDiagnostic(error),
+      });
+      return block(attemptReport, 'DEVTOOLS_STARTUP_BLOCKED');
+    }
+
+    addEvent(attemptReport, 'connect');
+    miniProgram.on('console', (payload) =>
+      recordBoundedDiagnostic({ report, field: 'console', payload, redactDiagnostic, now }),
+    );
+    miniProgram.on('exception', (payload) =>
+      recordBoundedDiagnostic({ report, field: 'exceptions', payload, redactDiagnostic, now }),
+    );
+
+    try {
+      const framework = await waitForFrameworkReady({
+        readPage: async () => {
+          const page = await miniProgram.currentPage();
+          return { page, path: page?.path, data: await page?.data() };
+        },
+        timeoutMs: Math.min(frameworkTimeoutMs, Math.max(0, deadlineMs - now())),
+        deadlineMs,
+        onReadError: ({ error, elapsedMs }) => {
+          const kind = classifyReadError(error, { attempt, frameworkEverReady });
+          attemptReport.errors.push({
+            kind: kind || 'STARTUP_READ_ERROR',
+            at: new Date(now()).toISOString(),
+            elapsedMs,
+            message: redactDiagnostic(error),
+          });
+          addEvent(attemptReport, 'framework_error', { kind: kind || 'STARTUP_READ_ERROR' });
+        },
+      });
+      frameworkEverReady = true;
+      addEvent(attemptReport, 'framework_ready', { path: framework.page.path });
+      report.startupOutcome = report.recoveredStartupFailure
+        ? 'PASS_WITH_STARTUP_RECOVERY'
+        : 'PASS';
+      report.activeStartupAttempt = attempt;
+      return { miniProgram, framework };
+    } catch (error) {
+      const recoverableKinds = new Set(['STARTUP_PAGE_META_NULL', 'STARTUP_AUTOMATOR_TIMEOUT']);
+      const recoverable =
+        attempt === 1 &&
+        !frameworkEverReady &&
+        attemptReport.errors.length > 0 &&
+        attemptReport.errors.every((entry) => recoverableKinds.has(entry.kind)) &&
+        deadlineMs - now() > 0;
+      if (!recoverable) {
+        try {
+          await miniProgram.close();
+          addEvent(attemptReport, 'close');
+        } catch (closeError) {
+          attemptReport.errors.push({
+            kind: 'STARTUP_SESSION_CLOSE_ERROR',
+            at: new Date(now()).toISOString(),
+            elapsedMs: Math.max(0, now() - startedAtMs),
+            message: redactDiagnostic(closeError),
+          });
+        }
+        return block(attemptReport, 'DEVTOOLS_STARTUP_BLOCKED');
+      }
+
+      try {
+        await miniProgram.close();
+        addEvent(attemptReport, 'close');
+      } catch (closeError) {
+        attemptReport.errors.push({
+          kind: 'STARTUP_SESSION_CLOSE_ERROR',
+          at: new Date(now()).toISOString(),
+          elapsedMs: Math.max(0, now() - startedAtMs),
+          message: redactDiagnostic(closeError),
+        });
+        return block(attemptReport, 'DEVTOOLS_STARTUP_BLOCKED');
+      }
+      report.recoveredStartupFailure = true;
+    }
+  }
+
+  return { miniProgram: null, framework: null };
 }
 
 function naturalTime(value) {
@@ -652,6 +809,7 @@ async function main() {
 }
 
 module.exports = {
+  launchWithStartupRecovery,
   opaqueColorHex,
   translucentColorOnWhiteHex,
   attendeeMediaSummary,

@@ -22,6 +22,262 @@ test('开发者工具冷启动使用 automator 支持的 timeout 参数', () => 
   assert.doesNotMatch(source, /launchTimeout/);
 });
 
+test('启动恢复共享 90 秒预算且只创建两个 session', async () => {
+  let clock = 1_000;
+  const launchTimeouts = [];
+  const sessions = [
+    { close: async () => {}, on: () => {} },
+    { close: async () => {}, on: () => {} },
+  ];
+  let frameworkCalls = 0;
+  const report = {
+    console: [],
+    consoleDropped: 0,
+    exceptions: [],
+    exceptionsDropped: 0,
+    blockers: [],
+    recoveredStartupFailure: false,
+    startup: { attempts: [] },
+  };
+  const result = await driver.launchWithStartupRecovery({
+    automator: {
+      launch: async ({ timeout }) => {
+        launchTimeouts.push(timeout);
+        clock += 5_000;
+        return sessions.shift();
+      },
+    },
+    cliPath: '/cli',
+    projectPath: '/project',
+    report,
+    now: () => clock,
+    waitForFrameworkReady: async ({ timeoutMs, deadlineMs, onReadError }) => {
+      frameworkCalls += 1;
+      assert.equal(timeoutMs, 30_000);
+      assert.equal(deadlineMs, 91_000);
+      if (frameworkCalls === 1) {
+        clock += 30_000;
+        onReadError({
+          error: new Error('timeout waiting for automator response'),
+          elapsedMs: 30_000,
+        });
+        throw Object.assign(new Error('页面框架未就绪'), {
+          code: 'PAGE_FRAMEWORK_NOT_READY',
+        });
+      }
+      clock += 1_000;
+      return {
+        page: { path: 'pages/activities/index' },
+        data: { loading: true },
+      };
+    },
+    classifyReadError: (error, context) =>
+      !context.frameworkEverReady &&
+      context.attempt === 1 &&
+      error.message.includes('timeout waiting for automator response')
+        ? 'STARTUP_AUTOMATOR_TIMEOUT'
+        : null,
+    redactDiagnostic: (value) => String(value?.message || value),
+  });
+  assert.ok(result.miniProgram);
+  assert.deepEqual(launchTimeouts, [90_000, 55_000]);
+  assert.equal(frameworkCalls, 2);
+  assert.equal(report.startupOutcome, 'PASS_WITH_STARTUP_RECOVERY');
+  assert.equal(report.recoveredStartupFailure, true);
+  assert.equal(report.startup.attempts.length, 2);
+});
+
+test('运行时 console 和 exception 各保留 200 条并截断脱敏文本', async () => {
+  const handlers = {};
+  const report = {
+    console: [],
+    consoleDropped: 0,
+    exceptions: [],
+    exceptionsDropped: 0,
+    blockers: [],
+    startup: { attempts: [] },
+  };
+  await driver.launchWithStartupRecovery({
+    automator: {
+      launch: async () => ({
+        close: async () => {},
+        on: (event, handler) => {
+          handlers[event] = handler;
+        },
+      }),
+    },
+    cliPath: '/cli',
+    projectPath: '/project',
+    report,
+    now: () => 1_000,
+    waitForFrameworkReady: async () => {
+      for (let index = 0; index < 201; index += 1) {
+        handlers.console(`console-${index}`);
+        handlers.exception(`exception-${index}`);
+      }
+      return { page: { path: 'pages/activities/index' }, data: {} };
+    },
+    classifyReadError: () => null,
+    redactDiagnostic: (value) => `${value}:${'x'.repeat(4_096)}`,
+  });
+  assert.equal(report.console.length, 200);
+  assert.equal(report.consoleDropped, 1);
+  assert.equal(report.exceptions.length, 200);
+  assert.equal(report.exceptionsDropped, 1);
+  assert.equal(
+    report.console.every((entry) => entry.message.length <= 2_048),
+    true,
+  );
+  assert.equal(
+    report.exceptions.every((entry) => entry.message.length <= 2_048),
+    true,
+  );
+});
+
+test('未知框架错误不恢复并标记 runner blocked', async () => {
+  let launches = 0;
+  const report = {
+    console: [],
+    exceptions: [],
+    blockers: [],
+    startup: { attempts: [] },
+  };
+  const result = await driver.launchWithStartupRecovery({
+    automator: {
+      launch: async () => {
+        launches += 1;
+        return { close: async () => {}, on: () => {} };
+      },
+    },
+    cliPath: '/cli',
+    projectPath: '/project',
+    report,
+    now: () => 1_000,
+    waitForFrameworkReady: async ({ onReadError }) => {
+      onReadError({ error: new Error('unknown framework error'), elapsedMs: 1 });
+      throw Object.assign(new Error('页面框架未就绪'), { code: 'PAGE_FRAMEWORK_NOT_READY' });
+    },
+    classifyReadError: () => null,
+    redactDiagnostic: (value) => String(value?.message || value),
+  });
+  assert.equal(result.miniProgram, null);
+  assert.equal(launches, 1);
+  assert.equal(report.startupOutcome, 'BLOCKED');
+  assert.equal(report.productVerdict, 'NOT_EXECUTED');
+});
+
+test('第二次启动仍失败后停止且不创建第三个 session', async () => {
+  let launches = 0;
+  const report = {
+    console: [],
+    exceptions: [],
+    blockers: [],
+    startup: { attempts: [] },
+  };
+  const result = await driver.launchWithStartupRecovery({
+    automator: {
+      launch: async () => {
+        launches += 1;
+        return { close: async () => {}, on: () => {} };
+      },
+    },
+    cliPath: '/cli',
+    projectPath: '/project',
+    report,
+    now: () => 1_000,
+    waitForFrameworkReady: async ({ onReadError }) => {
+      onReadError({
+        error: new Error('timeout waiting for automator response'),
+        elapsedMs: 1,
+      });
+      throw Object.assign(new Error('页面框架未就绪'), { code: 'PAGE_FRAMEWORK_NOT_READY' });
+    },
+    classifyReadError: (error, { attempt }) =>
+      attempt === 1 && error.message.includes('timeout') ? 'STARTUP_AUTOMATOR_TIMEOUT' : null,
+    redactDiagnostic: (value) => String(value?.message || value),
+  });
+  assert.equal(result.miniProgram, null);
+  assert.equal(launches, 2);
+  assert.equal(report.startup.attempts.length, 2);
+  assert.equal(report.startupOutcome, 'BLOCKED');
+});
+
+test('首次 session 关闭失败时阻断且不发起恢复 session', async () => {
+  let launches = 0;
+  const report = {
+    console: [],
+    exceptions: [],
+    blockers: [],
+    startup: { attempts: [] },
+  };
+  const result = await driver.launchWithStartupRecovery({
+    automator: {
+      launch: async () => {
+        launches += 1;
+        return {
+          close: async () => {
+            throw new Error('close failed');
+          },
+          on: () => {},
+        };
+      },
+    },
+    cliPath: '/cli',
+    projectPath: '/project',
+    report,
+    now: () => 1_000,
+    waitForFrameworkReady: async ({ onReadError }) => {
+      onReadError({
+        error: new Error('timeout waiting for automator response'),
+        elapsedMs: 1,
+      });
+      throw Object.assign(new Error('页面框架未就绪'), { code: 'PAGE_FRAMEWORK_NOT_READY' });
+    },
+    classifyReadError: () => 'STARTUP_AUTOMATOR_TIMEOUT',
+    redactDiagnostic: (value) => String(value?.message || value),
+  });
+  assert.equal(result.miniProgram, null);
+  assert.equal(launches, 1);
+  assert.equal(report.startupOutcome, 'BLOCKED');
+  assert.equal(report.startup.attempts[0].errors.at(-1).kind, 'STARTUP_SESSION_CLOSE_ERROR');
+});
+
+test('绝对预算耗尽后不创建恢复 session', async () => {
+  let clock = 1_000;
+  let launches = 0;
+  const report = {
+    console: [],
+    exceptions: [],
+    blockers: [],
+    startup: { attempts: [] },
+  };
+  const result = await driver.launchWithStartupRecovery({
+    automator: {
+      launch: async () => {
+        launches += 1;
+        return { close: async () => {}, on: () => {} };
+      },
+    },
+    cliPath: '/cli',
+    projectPath: '/project',
+    report,
+    now: () => clock,
+    waitForFrameworkReady: async ({ onReadError }) => {
+      clock = 91_000;
+      onReadError({
+        error: new Error('timeout waiting for automator response'),
+        elapsedMs: 90_000,
+      });
+      throw Object.assign(new Error('页面框架未就绪'), { code: 'PAGE_FRAMEWORK_NOT_READY' });
+    },
+    classifyReadError: () => 'STARTUP_AUTOMATOR_TIMEOUT',
+    redactDiagnostic: (value) => String(value?.message || value),
+  });
+  assert.equal(result.miniProgram, null);
+  assert.equal(launches, 1);
+  assert.equal(report.startupOutcome, 'BLOCKED');
+});
+
 test('审核详情宽度探针跟随当前标题元信息结构且元素缺失时不会中断后续路由', () => {
   assert.match(source, /page\.\$\('\.pageheading-meta'\)/);
   assert.match(source, /page\.\$\('\.pageheading-meta \.tag'\)/);
