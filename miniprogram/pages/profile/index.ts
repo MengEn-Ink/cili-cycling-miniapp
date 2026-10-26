@@ -9,6 +9,7 @@ import {
   applyCachedImages,
   clearProfilePageCache,
   discardPersistedProfileCardImages,
+  getProfilePageCacheRevision,
   isProfilePageCacheFresh,
   persistProfileCardImages,
   readProfilePageCache,
@@ -101,10 +102,12 @@ function cardView(card: PersonalCapabilityCard, images: Record<string, string> =
 Page({
   loadRequestId: 0,
   lifecycleRevision: 0,
+  cacheRevision: getProfilePageCacheRevision(),
   pageVisible: false,
   loadPromise: null as {
     forceIdentity: boolean;
     forceData: boolean;
+    cacheRevision: number;
     promise: Promise<void>;
   } | null,
   cardLoadPromise: null as Promise<void> | null,
@@ -137,12 +140,31 @@ Page({
     hasGuidance: false,
   },
   hydrateCache() {
-    if (this.hydratedCache) return this.hydratedCache;
+    const cacheRevision = getProfilePageCacheRevision();
+    if (this.cacheRevision !== cacheRevision) this.clearCachedContent();
+    this.cacheRevision = cacheRevision;
     const cache = readProfilePageCache();
     this.hydratedCache = cache;
     if (cache && appStore.openid && cache.ownerOpenid === appStore.openid)
       this.applyHydratedCache(cache);
     return cache;
+  },
+  clearCachedContent() {
+    this.hydratedCache = null;
+    this.setData({
+      profile: null,
+      heroBackgrounds: [],
+      heroAvatarUrl: '',
+      heroCard: null,
+      hasGuidance: false,
+      usingCache: false,
+      updatedAtText: '',
+      loading: false,
+      refreshing: false,
+      refreshFailed: false,
+      refreshMessage: '',
+      error: '',
+    });
   },
   applyHydratedCache(cache: ProfilePageCache) {
     this.setData({
@@ -188,7 +210,8 @@ Page({
     // 刷新结果通过 refreshing/refreshFailed/refreshMessage 顶部非阻断提示反馈，不遮挡当前内容。
   },
   async load(forceIdentity = false, forceData = true) {
-    const current = this.loadPromise;
+    const cacheRevision = getProfilePageCacheRevision();
+    const current = this.loadPromise?.cacheRevision === cacheRevision ? this.loadPromise : null;
     if (current && (!forceIdentity || current.forceIdentity) && (!forceData || current.forceData))
       return current.promise;
     if (current) {
@@ -196,16 +219,46 @@ Page({
       await current.promise;
       // 页面隐藏或重新展示后，旧生命周期中排队的刷新不再发起网络请求。
       if (!this.pageVisible || queuedAtRevision !== this.lifecycleRevision) return;
+      return this.load(forceIdentity, forceData);
     }
     const run = this.performLoad(forceIdentity, forceData);
     const tracked = run.finally(() => {
       if (this.loadPromise?.promise === tracked) this.loadPromise = null;
     });
-    this.loadPromise = { forceIdentity, forceData, promise: tracked };
+    this.loadPromise = { forceIdentity, forceData, cacheRevision, promise: tracked };
     return tracked;
   },
   async performLoad(forceIdentity = false, forceData = true) {
     const requestId = ++this.loadRequestId;
+    const cacheRevision = getProfilePageCacheRevision();
+    const requestOpenid = appStore.openid;
+    if (this.cacheRevision !== cacheRevision) this.hydrateCache();
+    const isCurrent = () => {
+      if (requestId !== this.loadRequestId) return false;
+      const currentRevision = getProfilePageCacheRevision();
+      if (cacheRevision === currentRevision) return true;
+      if (this.cacheRevision !== currentRevision) {
+        this.clearCachedContent();
+        this.cacheRevision = currentRevision;
+      }
+      return false;
+    };
+    const reconcileIdentityRevision = (identityError: string) => {
+      if (requestId !== this.loadRequestId) return 'stale';
+      const currentRevision = getProfilePageCacheRevision();
+      if (cacheRevision === currentRevision) return 'current';
+      if (this.cacheRevision !== currentRevision) {
+        this.clearCachedContent();
+        this.cacheRevision = currentRevision;
+      }
+      this.setData(identityViewData(identityError));
+      return this.pageVisible &&
+        appStore.authStatus === 'authenticated' &&
+        appStore.openid &&
+        appStore.openid !== requestOpenid
+        ? 'reload'
+        : 'stale';
+    };
     const hasContent = Boolean(this.data.profile || this.data.heroCard);
     this.setData({
       loading: !hasContent,
@@ -223,21 +276,14 @@ Page({
 
     if (!forceData && this.hydratedCache && isProfilePageCacheFresh(this.hydratedCache)) {
       const identityState = await identityTask;
-      if (requestId !== this.loadRequestId) return;
+      const identityRevision = reconcileIdentityRevision(identityState.error);
+      if (identityRevision === 'reload') return this.load(false, true);
+      if (identityRevision !== 'current') return;
       const cacheBelongsToCurrentUser =
         Boolean(appStore.openid) && this.hydratedCache.ownerOpenid === appStore.openid;
       if (!cacheBelongsToCurrentUser) {
         clearProfilePageCache();
-        this.hydratedCache = null;
-        this.setData({
-          profile: null,
-          heroBackgrounds: [],
-          heroAvatarUrl: '',
-          heroCard: null,
-          hasGuidance: false,
-          usingCache: false,
-          updatedAtText: '',
-        });
+        this.clearCachedContent();
         return this.performLoad(false, true);
       }
       this.applyHydratedCache(this.hydratedCache);
@@ -257,7 +303,7 @@ Page({
 
     const cardUpdate = Promise.all([profileTask, cardTask]).then(
       async ([profileState, cardState]) => {
-        if (requestId !== this.loadRequestId) return;
+        if (!isCurrent()) return;
         const profile = profileState.data || null;
         const card = cardState?.data || null;
         if (!card) {
@@ -291,8 +337,8 @@ Page({
         if (!profile) return;
         const ownerOpenid = appStore.openid || previousCache?.ownerOpenid || '';
         const previousImages = previousCache?.images || {};
-        const persisted = await persistProfileCardImages(card, previousImages);
-        if (requestId !== this.loadRequestId) {
+        const persisted = await persistProfileCardImages(card, previousImages, cacheRevision);
+        if (!isCurrent()) {
           discardPersistedProfileCardImages(persisted.created);
           return;
         }
@@ -302,6 +348,7 @@ Page({
           card,
           persisted.images,
           cachedAt,
+          cacheRevision,
         );
         if (!committed) {
           discardPersistedProfileCardImages(persisted.created);
@@ -317,23 +364,17 @@ Page({
     this.cardLoadPromise = trackedCardUpdate;
 
     const [identityState, profileState] = await Promise.all([identityTask, profileTask]);
-    if (requestId !== this.loadRequestId) return;
+    const identityRevision = reconcileIdentityRevision(identityState.error);
+    if (identityRevision === 'reload') return this.load(false, true);
+    if (identityRevision !== 'current') return;
     this.setData(identityViewData(identityState.error));
 
     let cache = this.hydratedCache;
     if (cache && appStore.openid && cache.ownerOpenid && cache.ownerOpenid !== appStore.openid) {
       clearProfilePageCache();
       cache = null;
-      this.hydratedCache = null;
-      this.setData({
-        profile: null,
-        heroBackgrounds: [],
-        heroAvatarUrl: '',
-        heroCard: null,
-        hasGuidance: false,
-        usingCache: false,
-        updatedAtText: '',
-      });
+      this.clearCachedContent();
+      return this.load(false, true);
     }
 
     if (profileState.error) {
@@ -389,6 +430,7 @@ Page({
     this.heroMediaRecoveryPending = true;
     repositoryCache.invalidateProfiles();
     clearProfilePageCache();
+    this.cacheRevision = getProfilePageCacheRevision();
     this.hydratedCache = null;
     void this.load(false, true);
   },
@@ -421,6 +463,7 @@ Page({
       const profile = await rideService.updateProfile({ hasCompletedGuidance: true });
       this.setData({ hasGuidance: false, profile, ...clubViewData() });
       clearProfilePageCache();
+      this.cacheRevision = getProfilePageCacheRevision();
       this.hydratedCache = null;
     } catch {
       wx.showToast({ title: '操作失败', icon: 'none' });

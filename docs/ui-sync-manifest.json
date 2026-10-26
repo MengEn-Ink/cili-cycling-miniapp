@@ -1,16 +1,16 @@
 {
   "schemaVersion": 2,
-  "syncedThrough": "3fd6abfd6acdb872b87ced8404c7219c4e32b1a8",
-  "syncedAt": "2026-10-26T07:58:33.235Z",
+  "syncedThrough": "a1b335c5d2df0709fc9beb7ba35f75d51a8d2130",
+  "syncedAt": "2026-10-26T09:57:03.781Z",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:cb2cabd54cb400d48ca78a4bc12c3b45460896b022f19cc2c2981a843a252d00"
+    "digest": "sha256:f67ae16f6629d8701016a22cd4beae1ecb190ba3d5eebfa74065a90b2b84aae8"
   },
   "prototype": {
-    "digest": "sha256:1479e9ba27654b6a72223a6364935ecb22c92e7866d62588d76c66bbcd46a45d"
+    "digest": "sha256:e5f0c10871963e1d7eada3fa9dfb189aa14c5c36f59ee233995510ebbe7136ca"
   },
   "routes": [
     {
@@ -156,7 +156,7 @@
         "id": "settings",
         "devtools": "settings-devtools.png",
         "pages": "settings-pages.png",
-        "state": "管理员 · 本地客户端 2026.10.26.3",
+        "state": "管理员 · 本地客户端 2026.10.26.4",
         "data": "sanitized-runtime",
         "review": "differences",
         "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。本地客户端版本及管理员入口与原型示例不同。照片与个人信息按 redaction-record.json 不透明遮挡。公开骑友媒体本次已通过；普通成员写链路和双物理设备仍未验收。"

@@ -263,10 +263,12 @@ export class CachingRepository implements RideRepository {
       },
       (error: unknown) => {
         // 失败时仅清理自己持有的并发标记；仅在离线兜底窗口内返回上次数据。
-        if (this.inflight.get(key) === request) this.inflight.delete(key);
-        if (persisted && persisted.expiresAt + this.staleMs > this.now()) {
-          this.metrics.staleReads++;
-          return persisted.value;
+        if (this.inflight.get(key) === request) {
+          this.inflight.delete(key);
+          if (persisted && persisted.expiresAt + this.staleMs > this.now()) {
+            this.metrics.staleReads++;
+            return persisted.value;
+          }
         }
         throw error;
       },

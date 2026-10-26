@@ -3,6 +3,12 @@ import type { PersonalCapabilityCard, Profile } from '../models';
 const STORAGE_KEY = 'cili-profile-page-cache-v3';
 const CACHE_VERSION = 3;
 export const PROFILE_PAGE_CACHE_TTL_MS = 6 * 60 * 60_000;
+let cacheRevision = 0;
+let cacheInvalidated = false;
+
+export function getProfilePageCacheRevision() {
+  return cacheRevision;
+}
 
 type CachedProfile = Pick<
   Profile,
@@ -43,6 +49,7 @@ function safeRemoveSavedFile(filePath: string) {
 }
 
 export function readProfilePageCache(): ProfilePageCache | null {
+  if (cacheInvalidated) return null;
   try {
     const value: unknown = wx.getStorageSync(STORAGE_KEY);
     if (!isRecord(value)) return null;
@@ -72,8 +79,9 @@ export function writeProfilePageCache(
   card: PersonalCapabilityCard,
   images: ImageCache = {},
   cachedAt = Date.now(),
+  revision = cacheRevision,
 ) {
-  if (!ownerOpenid) return false;
+  if (!ownerOpenid || revision !== cacheRevision) return false;
   const previous = readProfilePageCache();
   const cache: ProfilePageCache = {
     version: CACHE_VERSION,
@@ -91,6 +99,7 @@ export function writeProfilePageCache(
   };
   try {
     wx.setStorageSync(STORAGE_KEY, cache);
+    cacheInvalidated = false;
     // 新缓存提交成功后才能回收旧文件，避免页面隐藏或写缓存失败破坏仍在展示的图片。
     const retained = new Set(Object.values(images));
     for (const path of Object.values(previous?.images || {}))
@@ -104,23 +113,18 @@ export function writeProfilePageCache(
 
 export function clearProfilePageCache() {
   const previous = readProfilePageCache();
+  cacheRevision += 1;
+  cacheInvalidated = true;
   try {
     wx.removeStorageSync(STORAGE_KEY);
   } catch {
-    // 清理失败时仍允许后续网络请求覆盖旧数据。
+    // 删除失败也不再读取旧卡片，直到当前 revision 的新缓存提交成功。
   }
   for (const path of Object.values(previous?.images || {})) safeRemoveSavedFile(path);
 }
 
 export function invalidateProfilePageCache() {
-  const previous = readProfilePageCache();
-  if (!previous) return;
-  try {
-    // 保留旧图片供返回个人中心时平滑展示，仅把缓存标记为过期以触发后台刷新。
-    wx.setStorageSync(STORAGE_KEY, { ...previous, cachedAt: 0 });
-  } catch {
-    // 失效标记失败不影响资料保存主流程。
-  }
+  clearProfilePageCache();
 }
 
 export function applyCachedImages(
@@ -142,8 +146,9 @@ export function applyCachedImages(
   };
 }
 
-function saveImage(sourceUrl: string): Promise<string> {
+function saveImage(sourceUrl: string, revision: number): Promise<string> {
   if (
+    revision !== cacheRevision ||
     !/^https:\/\//.test(sourceUrl) ||
     typeof wx.getImageInfo !== 'function' ||
     typeof wx.saveFile !== 'function'
@@ -153,9 +158,20 @@ function saveImage(sourceUrl: string): Promise<string> {
     wx.getImageInfo({
       src: sourceUrl,
       success: ({ path }: { path: string }) => {
+        if (revision !== cacheRevision) {
+          resolve('');
+          return;
+        }
         wx.saveFile({
           tempFilePath: path,
-          success: ({ savedFilePath }: { savedFilePath: string }) => resolve(savedFilePath),
+          success: ({ savedFilePath }: { savedFilePath: string }) => {
+            if (revision !== cacheRevision) {
+              safeRemoveSavedFile(savedFilePath);
+              resolve('');
+              return;
+            }
+            resolve(savedFilePath);
+          },
           fail: () => resolve(''),
         });
       },
@@ -177,7 +193,9 @@ export function discardPersistedProfileCardImages(paths: string[]) {
 export async function persistProfileCardImages(
   card: PersonalCapabilityCard,
   previous: ImageCache = {},
+  revision = cacheRevision,
 ): Promise<PersistedProfileCardImages> {
+  if (revision !== cacheRevision) return { images: {}, created: [], complete: false };
   const sources = [card.profile.avatarUrl, ...card.backgrounds.map((item) => item.url)].filter(
     (value): value is string => Boolean(value),
   );
@@ -193,13 +211,17 @@ export async function persistProfileCardImages(
         next[key] = cached;
         return;
       }
-      const saved = await saveImage(source);
+      const saved = await saveImage(source, revision);
       if (saved) {
         next[key] = saved;
         created.add(saved);
       }
     }),
   );
+  if (revision !== cacheRevision) {
+    discardPersistedProfileCardImages([...created]);
+    return { images: {}, created: [], complete: false };
+  }
   const complete = distinctSources.every(([key]) => Boolean(next[key]));
   // 成功项可独立复用；未保存的项不写映射，渲染时自然回退远端 URL。
   return { images: next, created: [...created], complete };

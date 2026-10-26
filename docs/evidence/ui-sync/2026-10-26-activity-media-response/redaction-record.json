@@ -1,12 +1,20 @@
 {
   "schemaVersion": 1,
-  "captureGit": "bf55d7bd254a36d31ecf8536ed0f5d64b70ba16a",
-  "captureDirty": false,
-  "captureDirtyReason": "干净提交运行",
-  "sourceUiDigest": "sha256:cb2cabd54cb400d48ca78a4bc12c3b45460896b022f19cc2c2981a843a252d00",
-  "prototypeDigest": "sha256:1479e9ba27654b6a72223a6364935ecb22c92e7866d62588d76c66bbcd46a45d",
-  "devtoolsCapturedAt": "2026-10-26T08:11:24.584Z",
-  "pagesCapturedAt": "2026-10-26T07:58:33.235Z",
+  "captureGit": "a1b335c5d2df0709fc9beb7ba35f75d51a8d2130",
+  "captureDirty": true,
+  "captureDirtyReason": "origin/main@a1b335c5 加缓存失效、身份 revision 闭合、版本说明与证据文件未提交改动",
+  "releaseVersion": "2026.10.26.4",
+  "sourceUiDigest": "sha256:f67ae16f6629d8701016a22cd4beae1ecb190ba3d5eebfa74065a90b2b84aae8",
+  "prototypeDigest": "sha256:e5f0c10871963e1d7eada3fa9dfb189aa14c5c36f59ee233995510ebbe7136ca",
+  "devtoolsCapturedAt": "2026-10-26T09:55:25.386Z",
+  "pagesCapturedAt": "2026-10-26T09:13:15.898Z",
+  "devtoolsSummary": {
+    "outcome": "passed",
+    "passed": 30,
+    "failed": 0,
+    "exceptions": 0,
+    "registeredRoutes": 17
+  },
   "mode": "real-cloud-readonly",
   "devtoolsData": "sanitized-runtime",
   "pagesData": "synthetic-fixture",
@@ -59,7 +67,7 @@
             1664
           ]
         ],
-        "redactedSha256": "3d64d329741ef50933cee59489b1e35d2f735b4c69f40910930b3dbb788badd0"
+        "redactedSha256": "231b1ededaa5d148b94feaed1681cdf2e1fed833abe367135c0169b8c88a48db"
       },
       "prototype": {
         "dimensions": [
@@ -115,7 +123,7 @@
             1664
           ]
         ],
-        "redactedSha256": "e6927fa73f88e618ec6a887fcb572f76ede58c314cd95a5eb9a9d637566d6ddf"
+        "redactedSha256": "f5f9341728733daa8b403467a9d6736fb3d5ee998037fd05cce2a06388c13698"
       },
       "prototype": {
         "dimensions": [
@@ -165,7 +173,7 @@
             1664
           ]
         ],
-        "redactedSha256": "a0122270e4613dbadb17a7ec0ca1ba0f0c01c443e889aa1bb9cf0845c3b6645d"
+        "redactedSha256": "851c460fedc0b8a3913fc43d3f86198787db031e5ca28832ab20f3ea573a595b"
       },
       "prototype": {
         "dimensions": [
@@ -221,7 +229,7 @@
             1664
           ]
         ],
-        "redactedSha256": "94c1c479b64b17340872cce3c25d421502799be2b146ad8a54399c9e18dfa60e"
+        "redactedSha256": "14831b6aa4c9283630c3079c13077334a48c741cfa739fc75cc4d2b9d1f252ac"
       },
       "prototype": {
         "dimensions": [
@@ -284,7 +292,7 @@
             1664
           ]
         ],
-        "redactedSha256": "2282fffc710bd879049d04e1b91cd9a9d3d1875b9cea68b3578adb85370a5fca"
+        "redactedSha256": "e989cdd72549e9dc5d40fdb57d2d78ac884ecd5b4e6405041337e30ef087df84"
       },
       "prototype": {
         "dimensions": [
@@ -352,7 +360,7 @@
             1664
           ]
         ],
-        "redactedSha256": "30f12f9cff9f6c9549b831975754fc2d17c8651ad00f100b12331b23bd8f4c70"
+        "redactedSha256": "b84eead76fcf7908bcfbe32b75ef438268789a162f07d36b31044c3223886e4a"
       },
       "prototype": {
         "dimensions": [
@@ -415,7 +423,7 @@
             1664
           ]
         ],
-        "redactedSha256": "8da27b6e61b16da94ef6431ad4a452456ca930092e812e5d2cacc86f8f01a14d"
+        "redactedSha256": "c21023e38255a099565e5c67dd35974947a35f03a1790064c7103bbda05ff52b"
       },
       "prototype": {
         "dimensions": [
@@ -431,7 +439,7 @@
     },
     {
       "id": "settings",
-      "state": "管理员 · 本地客户端 2026.10.26.3",
+      "state": "管理员 · 本地客户端 2026.10.26.4",
       "devtools": "settings-devtools.png",
       "pages": "settings-pages.png",
       "runtime": {
@@ -465,7 +473,7 @@
             1664
           ]
         ],
-        "redactedSha256": "55109f04db3ad6d6a78a9a48ef913f72458fc9e1023739e926ab74cfcb8bd2de"
+        "redactedSha256": "0a7d7d4b0c622abbb2713917b48f92de9564f2ab241e575c1e6ef6d1a30efae5"
       },
       "prototype": {
         "dimensions": [
@@ -473,7 +481,7 @@
           844
         ],
         "opaqueRectangles": [],
-        "redactedSha256": "37827d2f501f151cb05abb82929936cba7c77b51f7674abec2466bbd88b6687d"
+        "redactedSha256": "cd59d2cd0403e53cb9d1d3a344a5fa66a6a3c1503ff9656f4cfa7ffbb910d2b0"
       },
       "review": "本地客户端版本及管理员入口与原型示例不同。",
       "pagesOverflow": false,
@@ -521,7 +529,7 @@
             1664
           ]
         ],
-        "redactedSha256": "8da27b6e61b16da94ef6431ad4a452456ca930092e812e5d2cacc86f8f01a14d"
+        "redactedSha256": "c21023e38255a099565e5c67dd35974947a35f03a1790064c7103bbda05ff52b"
       },
       "prototype": {
         "dimensions": [
@@ -571,7 +579,7 @@
             1664
           ]
         ],
-        "redactedSha256": "0db32e6a954ea77b3952bd46f5ff6d475045bcb30d7ce0b53567473a7f15f6a6"
+        "redactedSha256": "3903cf5c08ecdc06b293e6f34529551fe70482c236350696b0e69e438f9a4707"
       },
       "prototype": {
         "dimensions": [
@@ -628,7 +636,7 @@
             1664
           ]
         ],
-        "redactedSha256": "023014b051a4578103013d3a800d38cdc45754b15dddc6adcd0aed74a4328a74"
+        "redactedSha256": "c2583e174d8d1e2c73d4bdac7ee6da513a4a6a8846c8e6d13345f187204c5af0"
       },
       "prototype": {
         "dimensions": [
@@ -636,7 +644,7 @@
           844
         ],
         "opaqueRectangles": [],
-        "redactedSha256": "e6283eab3bcf6d22ec5b80656cefee89e46268a19cdbf6b4f395ef027598f496"
+        "redactedSha256": "a964d4645a4074db39a133578578ce634b95eb3344d04587f503085adc10ef95"
       },
       "review": "真实一场活动、两人报名；原型包含多种合成活动。",
       "pagesOverflow": false,
@@ -678,7 +686,7 @@
             1664
           ]
         ],
-        "redactedSha256": "478b90130e5fd473c59e73a1d61fb253a064ee1bb2b833f9c2012e4a0710e603"
+        "redactedSha256": "31b727a3d6be7452e59aaea89afb40be3d0fb9f4071363327781fe2ec6b13c97"
       },
       "prototype": {
         "dimensions": [
@@ -728,7 +736,7 @@
             1664
           ]
         ],
-        "redactedSha256": "28b5ddfa41c8788c3e8eb0d2e01c54b91ca2e3a37e4cfff6de8c01c57950ab1a"
+        "redactedSha256": "c793accefc7af881c031dfac9a40671634bdeab69db3b997859a9eb34b72ff65"
       },
       "prototype": {
         "dimensions": [
@@ -784,7 +792,7 @@
             1664
           ]
         ],
-        "redactedSha256": "988aba979acaaccfcbcf5ff48a9d21498f5364dd696d4587e33d64e66345aeaf"
+        "redactedSha256": "d257c9bf66ad07900d58267b9876b6221c7e231f5d8b49573a0b9c718fe67f9b"
       },
       "prototype": {
         "dimensions": [
@@ -847,7 +855,7 @@
             1664
           ]
         ],
-        "redactedSha256": "ae0cdca513a4684616ac76c5d05325b3243812dfa39d1a6b4970eb3206f441be"
+        "redactedSha256": "ef2e4310e994c8f60cd7155a401f9d832fc16f2c862d150610cd2f394b06b5fa"
       },
       "prototype": {
         "dimensions": [
@@ -855,7 +863,7 @@
           844
         ],
         "opaqueRectangles": [],
-        "redactedSha256": "46727002749b8ebcf0a16a6ae527c8d6aa3edde5e3c2aca4c55b528808c9b037"
+        "redactedSha256": "15673a1b959201f0eeb998f4c2634090458a77485638522fa4bd563431d066cc"
       },
       "review": "真实俱乐部背景、介绍与活动不同；原型为合成媒体和列表。",
       "pagesOverflow": false,
@@ -903,7 +911,7 @@
             1664
           ]
         ],
-        "redactedSha256": "bcb36aff5eab5ca44f802b700d98a241841761149dcb77fcea29921acaa0ad8e"
+        "redactedSha256": "95c15cd552cc5ce1a05e538880d1a507bcc994f490b7c287d2d7a7a65894b67c"
       },
       "prototype": {
         "dimensions": [
@@ -965,7 +973,7 @@
             1664
           ]
         ],
-        "redactedSha256": "8864cdcc85d44dd26663bd06f3847f2812a51b1537442aaa769bb8221c961674"
+        "redactedSha256": "a36a2fc43a5b8d1f9ba368e966b37952a0894bf084bf9634bfb1316efa56b547"
       },
       "prototype": {
         "dimensions": [
@@ -973,7 +981,7 @@
           844
         ],
         "opaqueRectangles": [],
-        "redactedSha256": "e0f7289b2663fc828c9d416f377ded4011196cc020f759d863a6107888ddde3d"
+        "redactedSha256": "f36669c660c6896220d65e38ca7c8160815cbf410c3b7705d3ad2c2863dc3999"
       },
       "review": "真实分段表单与原型编号章节不同；媒体与可见内容长度不同。",
       "pagesOverflow": false,
@@ -1025,6 +1033,6 @@
         1664
       ]
     ],
-    "redactedSha256": "94fc73825d6422e987c9e6aaf2d5133a042b9853bf49c127a6b430e1904d9ff3"
+    "redactedSha256": "038bd9596b9b384a09f254c8afe3d3d4d3ed98b7a9c5a54ca17f17924e0c7ef2"
   }
 }
