@@ -168,7 +168,7 @@ export function redactDevtoolsDiagnostic(value, { projectPath = '', homePath = '
     .replace(/cloud:\/\/[^\s"'`]+/gi, '[cloud-resource]')
     .replace(/\b(?:cloud|env)-[a-z0-9-]{6,}\b/gi, '[cloud-resource]')
     .replace(/\b(?:fileID|file_id)\s*[:=]\s*[^\s,"'}]+/gi, 'fileID=[cloud-resource]')
-    .replace(/\b(?:token|cookie)\s*[:=]\s*[^\s,"'}]+/gi, '$1=[redacted]')
+    .replace(/\b(token|cookie)\s*[:=]\s*[^\s,"'}]+/gi, '$1=[redacted]')
     .replace(/https?:\/\/[^\s"'`]+/gi, (url) => url.replace(/[?#].*$/, ''))
     .slice(0, 2048);
 }

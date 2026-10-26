@@ -317,7 +317,7 @@ test('框架等待使用 30 秒与绝对 deadline 的较小值', async () => {
 
 test('DevTools 诊断脱敏路径账号云资源和 URL 凭证', () => {
   const actual = redactDevtoolsDiagnostic(
-    '/Users/test/project/a.js /Users/test user@example.com 13800138000 ou_secret cloud://env/file https://x.test/a?token=secret#frag',
+    '/Users/test/project/a.js /Users/test user@example.com 13800138000 ou_secret cloud://env/file token=standalone_secret cookie:session_secret https://x.test/a?token=secret#frag',
     { projectPath: '/Users/test/project', homePath: '/Users/test' },
   );
   for (const secret of [
@@ -327,10 +327,15 @@ test('DevTools 诊断脱敏路径账号云资源和 URL 凭证', () => {
     'ou_secret',
     'cloud://env/file',
     'token=secret',
+    'standalone_secret',
+    'session_secret',
     '#frag',
   ]) {
     assert.equal(actual.includes(secret), false, secret);
   }
+  assert.match(actual, /token=\[redacted\]/);
+  assert.match(actual, /cookie=\[redacted\]/);
+  assert.doesNotMatch(actual, /\$1=\[redacted\]/);
 });
 
 test('相邻两个恢复态升级环境不稳定且干净通过重置 streak', () => {
@@ -854,4 +859,13 @@ test('现场手册使用 v2 当前旅程并把 v1 明确限定为历史兼容', 
   assert.match(guide, /sanitizeJourneyAudits/);
   assert.match(guide, /compensateJourney/);
   assert.match(guide, /不直接删除数据库/);
+});
+
+test('journey evidence 门禁包含 DevTools batch checker 自测', () => {
+  const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+
+  assert.match(
+    packageJson.scripts['test:journey-evidence'],
+    /scripts\/check-devtools-e2e-batch\.node-test\.mjs/,
+  );
 });
