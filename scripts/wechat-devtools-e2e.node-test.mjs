@@ -14,12 +14,73 @@ const driver = source.includes('if (require.main === module)')
   ? require('./wechat-devtools-e2e.cjs')
   : {};
 
-test('开发者工具冷启动使用 automator 支持的 timeout 参数', () => {
+test('开发者工具冷启动使用 automator 支持的剩余预算 timeout 参数', () => {
   assert.match(
     source,
-    /automator\.launch\(\{\s*cliPath,\s*projectPath,\s*timeout:\s*180000\s*\}\)/s,
+    /automator\.launch\(\{\s*cliPath,\s*projectPath,\s*timeout:\s*remainingBeforeLaunch,?\s*\}\)/s,
   );
+  assert.doesNotMatch(source, /timeout:\s*180000/);
   assert.doesNotMatch(source, /launchTimeout/);
+});
+
+test('标准 harness 接入 schema v4 与受限启动恢复', () => {
+  assert.match(source, /schemaVersion:\s*4/);
+  assert.match(source, /\blocalGitSha(?:\s*:|\s*,)/);
+  assert.match(source, /startupOutcome:\s*null/);
+  assert.match(source, /productVerdict:\s*'NOT_EXECUTED'/);
+  assert.match(source, /recoveredStartupFailure:\s*false/);
+  assert.match(source, /startup:\s*\{[\s\S]*?attempts:\s*\[\]/);
+  assert.match(source, /console:\s*\[\]/);
+  assert.match(source, /consoleDropped:\s*0/);
+  assert.match(source, /exceptionsDropped:\s*0/);
+  assert.match(source, /await launchWithStartupRecovery\(\{/);
+  assert.equal((source.match(/onReadError:\s*recordRouteReadError/g) || []).length, 2);
+  assert.match(source, /serializeError:\s*\(phase, error\)/);
+  assert.match(source, /'passed_with_startup_recovery'/);
+  assert.doesNotMatch(
+    source,
+    /miniProgram\s*=\s*await automator\.launch\(\{\s*cliPath,\s*projectPath,\s*timeout:\s*180000\s*\}\)/s,
+  );
+});
+
+test('首个业务路由先记录 relaunch，业务谓词满足后才记录 data_ready', async () => {
+  const report = {
+    startedAt: new Date(1_000).toISOString(),
+    activeStartupAttempt: 1,
+    startup: { attempts: [{ attempt: 1, events: [], errors: [] }] },
+  };
+  const page = { path: 'pages/activities/index' };
+  let predicateSatisfied = false;
+
+  const actual = await driver.relaunchWithPhaseEvents({
+    report,
+    miniProgram: {},
+    url: '/pages/activities/index',
+    isDataReady: (data) => {
+      predicateSatisfied = data.ready;
+      return predicateSatisfied;
+    },
+    relaunchWhenReady: async ({ isDataReady }) => {
+      assert.deepEqual(
+        report.startup.attempts[0].events.map((event) => event.type),
+        ['relaunch'],
+      );
+      assert.equal(isDataReady({ ready: true }), true);
+      assert.equal(
+        report.startup.attempts[0].events.some((event) => event.type === 'data_ready'),
+        false,
+      );
+      return page;
+    },
+    now: () => 2_000,
+  });
+
+  assert.equal(actual, page);
+  assert.equal(predicateSatisfied, true);
+  assert.deepEqual(
+    report.startup.attempts[0].events.map((event) => event.type),
+    ['relaunch', 'data_ready'],
+  );
 });
 
 test('启动恢复共享 90 秒预算且只创建两个 session', async () => {

@@ -60,7 +60,8 @@ async function launchWithStartupRecovery({
   startupBudgetMs = STARTUP_BUDGET_MS,
   frameworkTimeoutMs = FRAMEWORK_TIMEOUT_MS,
 }) {
-  const startedAtMs = now();
+  const reportStartedAtMs = Date.parse(report.startedAt);
+  const startedAtMs = Number.isFinite(reportStartedAtMs) ? reportStartedAtMs : now();
   const deadlineMs = startedAtMs + startupBudgetMs;
   let frameworkEverReady = false;
   report.startup ||= {
@@ -145,7 +146,7 @@ async function launchWithStartupRecovery({
         : 'PASS';
       report.activeStartupAttempt = attempt;
       return { miniProgram, framework };
-    } catch (error) {
+    } catch {
       const recoverableKinds = new Set(['STARTUP_PAGE_META_NULL', 'STARTUP_AUTOMATOR_TIMEOUT']);
       const recoverable =
         attempt === 1 &&
@@ -185,6 +186,62 @@ async function launchWithStartupRecovery({
   }
 
   return { miniProgram: null, framework: null };
+}
+
+function activeStartupAttempt(report) {
+  return report.startup?.attempts?.find(
+    (attempt) => attempt.attempt === report.activeStartupAttempt,
+  );
+}
+
+function recordStartupEvent({ report, type, detail = {}, now = Date.now }) {
+  const attempt = activeStartupAttempt(report);
+  if (!attempt) return false;
+  const startedAtMs = Date.parse(report.startedAt);
+  const eventAtMs = now();
+  attempt.events.push({
+    type,
+    at: new Date(eventAtMs).toISOString(),
+    elapsedMs: Number.isFinite(startedAtMs) ? Math.max(0, eventAtMs - startedAtMs) : 0,
+    ...detail,
+  });
+  return true;
+}
+
+async function relaunchWithPhaseEvents({
+  report,
+  miniProgram,
+  url,
+  isDataReady,
+  relaunchWhenReady,
+  navigationMethod = 'reLaunch',
+  timeoutMs = 30_000,
+  intervalMs = 250,
+  onReadError = () => {},
+  onObservation = () => {},
+  now = Date.now,
+}) {
+  const attempt = activeStartupAttempt(report);
+  const recordInitialBusinessPhases =
+    attempt && !attempt.events.some((event) => event.type === 'relaunch');
+  const expectedPath = url.split(/[?#]/, 1)[0].replace(/^\/+/, '');
+  if (recordInitialBusinessPhases) {
+    recordStartupEvent({ report, type: 'relaunch', detail: { path: expectedPath }, now });
+  }
+  const page = await relaunchWhenReady({
+    miniProgram,
+    url,
+    timeoutMs,
+    intervalMs,
+    navigationMethod,
+    isDataReady,
+    onReadError,
+    onObservation,
+  });
+  if (recordInitialBusinessPhases) {
+    recordStartupEvent({ report, type: 'data_ready', detail: { path: page.path }, now });
+  }
+  return page;
 }
 
 function naturalTime(value) {
@@ -344,7 +401,13 @@ async function measureDetailNavigation({
 
 async function main() {
   const { runWithReport } = await import('./e2e-report.mjs');
-  const { relaunchWhenReady, waitForPageReady } = await import('./p0-journey-driver.mjs');
+  const {
+    classifyStartupReadError,
+    redactDevtoolsDiagnostic,
+    relaunchWhenReady,
+    waitForFrameworkReady,
+    waitForPageReady,
+  } = await import('./p0-journey-driver.mjs');
   const { classifyUiPath, digestFiles } = await import('./ui-sync-policy.mjs');
   const { contrastRatio } = await import('./contrast-ratio.mjs');
   if (process.platform !== 'darwin') throw new Error('微信开发者工具 E2E 目前仅支持 macOS。');
@@ -356,6 +419,13 @@ async function main() {
 
   const automator = loadAutomator();
   const version = releaseVersion();
+  const localGitSha = execFileSync('git', ['-C', projectPath, 'rev-parse', 'HEAD'], {
+    encoding: 'utf8',
+  }).trim();
+  const redactDiagnostic = (value) => {
+    const diagnostic = value instanceof Error ? value.stack || value.message : value;
+    return redactDevtoolsDiagnostic(diagnostic, { projectPath, homePath: os.homedir() });
+  };
   const appConfig = JSON.parse(
     fs.readFileSync(path.join(projectPath, 'miniprogram/app.json'), 'utf8'),
   );
@@ -369,10 +439,11 @@ async function main() {
     .split('\n')
     .filter((file) => classifyUiPath(file).ui && fs.existsSync(path.join(projectPath, file)));
   const result = {
-    schemaVersion: 3,
+    schemaVersion: 4,
     releaseVersion: version,
     startedAt: new Date().toISOString(),
-    git: execFileSync('git', ['-C', projectPath, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+    localGitSha,
+    git: localGitSha,
     projectPath,
     mode: 'real-cloud-readonly',
     dirty: Boolean(
@@ -387,9 +458,20 @@ async function main() {
     navigationTimings: [],
     captureRetries: [],
     blockers: [],
+    startupOutcome: null,
+    productVerdict: 'NOT_EXECUTED',
+    recoveredStartupFailure: false,
+    startup: {
+      budgetMs: STARTUP_BUDGET_MS,
+      frameworkTimeoutMs: FRAMEWORK_TIMEOUT_MS,
+      attempts: [],
+    },
     notCovered: ['ordinary-member-write-journey', 'ios-physical-device', 'android-physical-device'],
     checks: [],
+    console: [],
+    consoleDropped: 0,
     exceptions: [],
+    exceptionsDropped: 0,
   };
   console.log(`RELEASE_VERSION ${version}`);
   const check = (name, ok, detail) => {
@@ -405,6 +487,13 @@ async function main() {
     });
     result.routes.push({ path: route, screenshot: file });
   };
+  const recordRouteReadError = ({ error }) =>
+    recordBoundedDiagnostic({
+      report: result,
+      field: 'exceptions',
+      payload: error,
+      redactDiagnostic,
+    });
   const waitLoaded = async (expectedPath, predicate = () => true) => {
     let currentPage;
     await waitForPageReady({
@@ -419,6 +508,7 @@ async function main() {
         };
       },
       isDataReady: (data) => !data.loading && !data.refreshing && predicate(data),
+      onReadError: recordRouteReadError,
     });
     return currentPage;
   };
@@ -426,13 +516,16 @@ async function main() {
     const expectedPath = url.split(/[?#]/, 1)[0].replace(/^\/+/, '');
     result.lastStep = `navigate:${expectedPath}`;
     const startedAt = Date.now();
-    const page = await relaunchWhenReady({
+    const page = await relaunchWithPhaseEvents({
+      report: result,
       miniProgram,
       url,
+      relaunchWhenReady,
       timeoutMs: 30000,
       intervalMs: 250,
       navigationMethod: tabPaths.has(expectedPath) ? 'switchTab' : 'reLaunch',
       isDataReady: (data) => !data.loading && !data.refreshing && predicate(data),
+      onReadError: recordRouteReadError,
     });
     result.navigationTimings.push({ path: expectedPath, readyMs: Date.now() - startedAt });
     return page;
@@ -445,9 +538,19 @@ async function main() {
     },
     save: (report) =>
       fs.writeFileSync(path.join(outputPath, 'results.json'), JSON.stringify(report, null, 2)),
+    serializeError: (phase, error) => ({ phase, message: redactDiagnostic(error) }),
     execute: async () => {
-      miniProgram = await automator.launch({ cliPath, projectPath, timeout: 180000 });
-      miniProgram.on('exception', (payload) => result.exceptions.push(payload));
+      const startup = await launchWithStartupRecovery({
+        automator,
+        cliPath,
+        projectPath,
+        report: result,
+        waitForFrameworkReady,
+        classifyReadError: classifyStartupReadError,
+        redactDiagnostic,
+      });
+      miniProgram = startup.miniProgram;
+      if (!miniProgram) return;
       const device = await miniProgram.callWxMethod('getSystemInfoSync');
       result.device = Object.fromEntries(
         [
@@ -805,11 +908,14 @@ async function main() {
   console.log(
     `SUMMARY version=${version} pass=${result.passed} fail=${result.failed} exceptions=${result.exceptions.length} output=${outputPath}`,
   );
-  if (result.outcome !== 'passed') process.exitCode = result.outcome === 'blocked' ? 2 : 1;
+  if (!['passed', 'passed_with_startup_recovery'].includes(result.outcome)) {
+    process.exitCode = result.outcome === 'blocked' ? 2 : 1;
+  }
 }
 
 module.exports = {
   launchWithStartupRecovery,
+  relaunchWithPhaseEvents,
   opaqueColorHex,
   translucentColorOnWhiteHex,
   attendeeMediaSummary,
