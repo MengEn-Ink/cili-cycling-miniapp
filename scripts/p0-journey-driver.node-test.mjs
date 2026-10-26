@@ -7,11 +7,15 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import {
+  aggregateStartupOutcomes,
+  classifyStartupReadError,
   compensateJourney,
   evaluateJourneyPreflight,
   relaunchWhenReady,
+  redactDevtoolsDiagnostic,
   runReconciledWrite,
   sanitizeJourneyAudits,
+  waitForFrameworkReady,
   waitForPageReady,
 } from './p0-journey-driver.mjs';
 
@@ -231,6 +235,121 @@ test('页面路径和业务数据在同一次读取中就绪才成功', async ()
   assert.equal(pages.length, 0);
 });
 
+test('只在框架首次就绪前识别两类冷启动瞬态错误', () => {
+  assert.equal(
+    classifyStartupReadError(
+      new Error(
+        "Cannot destructure property 'rawPath' of 'getPageMetaByWebviewId(...)' as it is null",
+      ),
+      { attempt: 1, frameworkEverReady: false },
+    ),
+    'STARTUP_PAGE_META_NULL',
+  );
+  assert.equal(
+    classifyStartupReadError(new Error('timeout waiting for automator response'), {
+      attempt: 1,
+      frameworkEverReady: false,
+    }),
+    'STARTUP_AUTOMATOR_TIMEOUT',
+  );
+  assert.equal(
+    classifyStartupReadError(new Error('timeout waiting for automator response'), {
+      attempt: 1,
+      frameworkEverReady: true,
+    }),
+    null,
+  );
+  assert.equal(
+    classifyStartupReadError(new Error('timeout waiting for automator response'), {
+      attempt: 2,
+      frameworkEverReady: false,
+    }),
+    null,
+  );
+});
+
+test('框架可读不等待业务 loading 且受绝对 deadline 限制', async () => {
+  let clock = 1_000;
+  const errors = [];
+  const pages = [
+    new Error('timeout waiting for automator response'),
+    { path: 'pages/activities/index', data: { loading: true } },
+  ];
+  const result = await waitForFrameworkReady({
+    readPage: async () => {
+      const next = pages.shift();
+      if (next instanceof Error) throw next;
+      return next;
+    },
+    timeoutMs: 30_000,
+    deadlineMs: 91_000,
+    intervalMs: 250,
+    now: () => clock,
+    wait: async (milliseconds) => {
+      clock += milliseconds;
+    },
+    onReadError: (entry) => errors.push(entry),
+  });
+  assert.equal(result.page.path, 'pages/activities/index');
+  assert.equal(result.data.loading, true);
+  assert.equal(result.attempts, 2);
+  assert.equal(errors.length, 1);
+});
+
+test('框架等待使用 30 秒与绝对 deadline 的较小值', async () => {
+  let clock = 10_000;
+  await assert.rejects(
+    waitForFrameworkReady({
+      readPage: async () => {
+        throw new Error('timeout waiting for automator response');
+      },
+      timeoutMs: 30_000,
+      deadlineMs: 10_500,
+      intervalMs: 250,
+      now: () => clock,
+      wait: async (milliseconds) => {
+        clock += milliseconds;
+      },
+    }),
+    (error) => error.code === 'PAGE_FRAMEWORK_NOT_READY' && error.diagnostics.elapsedMs === 500,
+  );
+});
+
+test('DevTools 诊断脱敏路径账号云资源和 URL 凭证', () => {
+  const actual = redactDevtoolsDiagnostic(
+    '/Users/test/project/a.js /Users/test user@example.com 13800138000 ou_secret cloud://env/file token=standalone_secret cookie:session_secret https://x.test/a?token=secret#frag',
+    { projectPath: '/Users/test/project', homePath: '/Users/test' },
+  );
+  for (const secret of [
+    'project/a.js',
+    'user@example.com',
+    '13800138000',
+    'ou_secret',
+    'cloud://env/file',
+    'token=secret',
+    'standalone_secret',
+    'session_secret',
+    '#frag',
+  ]) {
+    assert.equal(actual.includes(secret), false, secret);
+  }
+  assert.match(actual, /token=\[redacted\]/);
+  assert.match(actual, /cookie=\[redacted\]/);
+  assert.doesNotMatch(actual, /\$1=\[redacted\]/);
+});
+
+test('相邻两个恢复态升级环境不稳定且干净通过重置 streak', () => {
+  assert.equal(
+    aggregateStartupOutcomes(['PASS_WITH_STARTUP_RECOVERY', 'PASS_WITH_STARTUP_RECOVERY']).outcome,
+    'BLOCKED_ENVIRONMENT_UNSTABLE',
+  );
+  assert.equal(
+    aggregateStartupOutcomes(['PASS_WITH_STARTUP_RECOVERY', 'PASS', 'PASS_WITH_STARTUP_RECOVERY'])
+      .outcome,
+    'PASS_WITH_STARTUP_RECOVERY',
+  );
+});
+
 test('页面等待超时使用固定错误且不泄露页面数据', async () => {
   let time = 0;
   let reads = 0;
@@ -256,6 +375,41 @@ test('页面等待超时使用固定错误且不泄露页面数据', async () =>
       !error.message.includes('PAGE_DATA_SENTINEL'),
   );
   assert.equal(reads, 3);
+});
+
+test('页面等待通过安全观察回调保留底层读取错误但不传 page data', async () => {
+  let time = 0;
+  const reads = [
+    new Error('timeout waiting for automator response'),
+    { path: 'pages/old', data: { secret: 'PAGE_DATA_SENTINEL' } },
+    { path: 'pages/target', data: { secret: 'PAGE_DATA_SENTINEL', loading: false } },
+  ];
+  const readErrors = [];
+  const observations = [];
+  const result = await waitForPageReady({
+    readPage: async () => {
+      const next = reads.shift();
+      if (next instanceof Error) throw next;
+      return next;
+    },
+    expectedPath: 'pages/target',
+    isDataReady: (data) => data.loading === false,
+    timeoutMs: 30,
+    intervalMs: 10,
+    now: () => time,
+    wait: async (milliseconds) => {
+      time += milliseconds;
+    },
+    onReadError: (entry) => readErrors.push(entry),
+    onObservation: (entry) => observations.push(entry),
+  });
+  assert.deepEqual(result, { attempts: 3, elapsedMs: 20 });
+  assert.equal(readErrors.length, 1);
+  assert.deepEqual(observations, [
+    { attempts: 2, elapsedMs: 10, path: 'pages/old', dataReady: false },
+    { attempts: 3, elapsedMs: 20, path: 'pages/target', dataReady: true },
+  ]);
+  assert.equal(JSON.stringify(observations).includes('PAGE_DATA_SENTINEL'), false);
 });
 
 test('重启路由后重新读取 currentPage，拒绝 automator 返回的旧页面句柄', async () => {
@@ -300,39 +454,36 @@ test('重启路由后重新读取 currentPage，拒绝 automator 返回的旧页
   assert.equal(index, 3);
 });
 
-test('首次路由命令丢失时在总时限内重发一次', async () => {
+test('业务路由超时使用完整预算但不重发导航命令', async () => {
   const stalePage = {
     path: 'pages/registrations/index',
     data: async () => ({ loading: false }),
   };
-  const readyPage = {
-    path: 'pages/activities/index',
-    data: async () => ({ loading: false }),
-  };
   let launches = 0;
   let time = 0;
-  const page = await relaunchWhenReady({
-    miniProgram: {
-      reLaunch: async () => {
-        launches += 1;
-        return stalePage;
+  await assert.rejects(
+    relaunchWhenReady({
+      miniProgram: {
+        reLaunch: async () => {
+          launches += 1;
+          return stalePage;
+        },
+        currentPage: async () => stalePage,
       },
-      currentPage: async () => (launches === 1 ? stalePage : readyPage),
-    },
-    url: '/pages/activities/index',
-    isDataReady: (data) => !data.loading,
-    timeoutMs: 20,
-    intervalMs: 10,
-    maxAttempts: 2,
-    now: () => time,
-    wait: async (milliseconds) => {
-      time += milliseconds;
-    },
-  });
+      url: '/pages/activities/index',
+      isDataReady: (data) => !data.loading,
+      timeoutMs: 20,
+      intervalMs: 10,
+      now: () => time,
+      wait: async (milliseconds) => {
+        time += milliseconds;
+      },
+    }),
+    (error) => error.code === 'PAGE_NOT_READY',
+  );
 
-  assert.equal(launches, 2);
-  assert.equal(page, readyPage);
-  assert.equal(time, 10);
+  assert.equal(launches, 1);
+  assert.equal(time, 20);
 });
 
 test('tabBar 路由使用 switchTab，不调用 reLaunch', async () => {
@@ -708,4 +859,13 @@ test('现场手册使用 v2 当前旅程并把 v1 明确限定为历史兼容', 
   assert.match(guide, /sanitizeJourneyAudits/);
   assert.match(guide, /compensateJourney/);
   assert.match(guide, /不直接删除数据库/);
+});
+
+test('journey evidence 门禁包含 DevTools batch checker 自测', () => {
+  const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+
+  assert.match(
+    packageJson.scripts['test:journey-evidence'],
+    /scripts\/check-devtools-e2e-batch\.node-test\.mjs/,
+  );
 });
