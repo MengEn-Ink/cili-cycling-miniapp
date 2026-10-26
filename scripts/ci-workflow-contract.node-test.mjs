@@ -67,12 +67,13 @@ test('main 的 validate、coverage、audit 并行且每个 Node job 独立 npm c
   }
 });
 
-test('decision artifact 与 main workflow_run 上传部署契约保持不变', () => {
+test('CI decision 仅作 shadow，main 发布使用实际累计基线且仍由成功 CI 触发', () => {
   const decision = jobBlock('upload-decision', 'affected-pr');
   assert.match(decision, /name: miniprogram-upload-decision/);
   assert.match(decision, /actions\/upload-artifact@v7/);
   assert.match(deployMiniprogram, /workflow_run:[\s\S]*workflows: \[CI\][\s\S]*branches: \[main\]/);
-  assert.match(deployMiniprogram, /Download miniprogram upload decision/);
+  assert.match(decision, /fetch-depth: 0/);
+  assert.match(deployMiniprogram, /release-baseline-cli\.mjs scope miniprogram/);
   assert.match(deployCloudbase, /workflow_run:[\s\S]*workflows: \[CI\][\s\S]*branches: \[main\]/);
   assert.match(deployCloudbase, /github\.event\.workflow_run\.conclusion == 'success'/);
 });

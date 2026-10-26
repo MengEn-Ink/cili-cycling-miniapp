@@ -323,7 +323,8 @@ test('体验版工作流只生成证据，不自动上传或覆盖体验基线',
   assert.doesNotMatch(workflow, /deploy:miniprogram|WECHAT_MINIPROGRAM_PRIVATE_KEY/);
   assert.match(developmentWorkflow, /echo "uploaded=true"/);
   assert.match(developmentWorkflow, /上传版本格式无效/);
-  assert.match(developmentWorkflow, /上传完成后 main 已前进，不生成有效 receipt/);
+  assert.match(developmentWorkflow, /上传完成后 main 已前进，不生成体验版 receipt/);
+  assert.match(developmentWorkflow, /if: steps\.upload\.outputs\.experience_eligible == 'true'/);
   assert.match(developmentWorkflow, /restore_release_id:/);
   assert.match(developmentWorkflow, /node scripts\/miniprogram-experience-release\.mjs verify/);
   assert.match(

@@ -28,6 +28,9 @@ const INFRASTRUCTURE_PATHS = new Set([
   '.github/workflows/deploy-cloudbase.yml',
   'scripts/bootstrap-cloudbase.mjs',
   'scripts/cloudbase-deploy-decision.mjs',
+  'scripts/release-baseline.mjs',
+  'scripts/release-baseline-github.mjs',
+  'scripts/release-baseline-cli.mjs',
   'scripts/cloudbase-storage-rules.mjs',
   'scripts/cloudbase-storage-rules.node-test.mjs',
   'scripts/cloudbase-club-application-smoke.mjs',
@@ -117,10 +120,10 @@ function parseArgs(argv) {
 export function changedPathsBetween(base, head, cwd = process.cwd()) {
   const output = execFileSync(
     'git',
-    ['diff', '--name-only', '--diff-filter=ACMRD', base, head, '--'],
+    ['diff', '--no-renames', '--name-only', '--diff-filter=ACMRD', '-z', base, head, '--'],
     { cwd, encoding: 'utf8' },
   );
-  return output.split('\n').map(normalizePath).filter(Boolean);
+  return output.split('\0').map(normalizePath).filter(Boolean);
 }
 
 export function run(argv = process.argv.slice(2), cwd = process.cwd()) {
