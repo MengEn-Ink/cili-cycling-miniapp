@@ -4,7 +4,12 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const cloud = require('wx-server-sdk');
-const { clientUploadIntentId, mediaDocumentId, mediaOwnerPrefix } = require('./core');
+const {
+  canonicalMediaPath,
+  clientUploadIntentId,
+  mediaDocumentId,
+  mediaOwnerPrefix,
+} = require('./core');
 
 function statefulDatabase({ throwRuntimeMissing = false } = {}) {
   const state = {};
@@ -70,6 +75,76 @@ function loadMain(owner, db) {
   delete require.cache[require.resolve('./index')];
   return require('./index').main;
 }
+
+test('本人真实入口证实 source/canonical 唯一性并保留当前合法预览', async (t) => {
+  const owner = 'owner-preview';
+  const secret = 'profile-media-secret-for-tests-32-bytes';
+  const source = `cloud://env/${mediaOwnerPrefix(owner, secret)}123e4567-e89b-42d3-a456-426614174009.jpg`;
+  const sha256 = crypto.createHash('sha256').update('preview-bytes').digest('hex');
+  const canonical = `cloud://env/${canonicalMediaPath(owner, source, sha256, 'jpg', secret)}`;
+  const record = {
+    _id: mediaDocumentId(source),
+    file_id: source,
+    source_file_id: source,
+    canonical_file_id: canonical,
+    sha256,
+    size: 10,
+    mime: 'image/jpeg',
+    owner_openid: owner,
+    category: 'other',
+    origin: 'custom',
+    status: 'active',
+  };
+  for (const scenario of [
+    { name: 'source', reference: source, conflict: false },
+    { name: 'canonical', reference: canonical, conflict: false },
+    { name: 'source存在反查冲突', reference: source, conflict: true },
+    { name: '另一合法引用不能恢复歧义头像', reference: source, conflict: true, background: true },
+    { name: 'canonical存在反查冲突', reference: canonical, conflict: true },
+  ])
+    await t.test(scenario.name, async () => {
+      const fixture = statefulDatabase();
+      fixture.state.profiles = new Map([
+        [
+          owner,
+          {
+            _id: owner,
+            avatar_file_id: scenario.reference,
+            avatar_source: 'custom',
+            ...(scenario.background
+              ? { background_photo: { file_id: canonical, category: 'other' } }
+              : {}),
+          },
+        ],
+      ]);
+      fixture.state.profile_media = new Map([[record._id, record]]);
+      if (scenario.conflict)
+        fixture.state.profile_media.set('conflicting-record', {
+          ...record,
+          _id: 'conflicting-record',
+          file_id: 'cloud://env/conflicting-source.jpg',
+          canonical_file_id: scenario.reference,
+        });
+      let signed = false;
+      cloud.getTempFileURL = async ({ fileList }) => {
+        signed = true;
+        assert.deepEqual(fileList, [canonical]);
+        return {
+          fileList: [
+            { fileID: canonical, status: 0, tempFileURL: 'https://temporary.example/avatar.jpg' },
+          ],
+        };
+      };
+      const result = await loadMain(owner, fixture.db)({ action: 'capabilityCard' });
+      assert.equal(result.ok, true);
+      assert.equal(
+        result.data.profile.avatar_url,
+        scenario.conflict ? '' : 'https://temporary.example/avatar.jpg',
+      );
+      assert.equal(signed, !scenario.conflict || !!scenario.background);
+      assert.equal(result.data.backgrounds.length, scenario.background ? 1 : 0);
+    });
+});
 
 test('registerMedia 在任何特权存储读取前拒绝跨 owner fileID', async () => {
   const owner = 'owner-a';

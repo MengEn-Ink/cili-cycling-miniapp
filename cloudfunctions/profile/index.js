@@ -57,6 +57,18 @@ async function getMediaRecords(collection, ...profiles) {
   );
   return [...new Map(records.filter(Boolean).map((record) => [record._id, record])).values()];
 }
+async function getOwnerPreviewMediaRecords(collection, profile) {
+  const records = await Promise.all(
+    profileMediaIds(profile).map(async (fileId) => {
+      const direct = await maybeGet(collection, mediaDocumentId(fileId));
+      const canonical = await collection.where({ canonical_file_id: fileId }).limit(2).get();
+      if (!Array.isArray(canonical?.data)) throw new Error('无法验证媒体登记');
+      // 保留冲突候选给预览校验器；其它槽位引用同一登记不能恢复歧义引用。
+      return [direct, ...canonical.data].filter(Boolean);
+    }),
+  );
+  return [...new Map(records.flat().map((record) => [record._id, record])).values()];
+}
 async function updateProfile(openid, event) {
   const result = await db.runTransaction(async (transaction) => {
     const profiles = transaction.collection('profiles');
@@ -150,7 +162,10 @@ exports.main = async (event = {}) => {
       if (Object.prototype.hasOwnProperty.call(event, 'openid'))
         throw Object.assign(new Error('包含禁止字段'), { code: 'FORBIDDEN_FIELD' });
       const profile = await getDoc(OPENID);
-      const mediaRecords = await getMediaRecords(db.collection('profile_media'), profile);
+      const mediaRecords = await getOwnerPreviewMediaRecords(
+        db.collection('profile_media'),
+        profile,
+      );
       return ok(
         await buildCapabilityCard(
           { profile, mediaRecords },

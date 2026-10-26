@@ -865,9 +865,9 @@
           <p class="release-title">${title}</p>
           <p class="release-summary">${summary}</p>
           <ul class="release-features">
-            <li><span class="feature-arrow" aria-hidden="true">→</span><span>${admin ? '管理员可同步 Strava 线路信息，骑友端不出现该入口' : '创建活动的管理员可同步 Strava 线路信息，直接用于本次活动'}</span></li>
-            <li><span class="feature-arrow" aria-hidden="true">→</span><span>创建活动的报名截止默认按活动开始日 00:00 自动设置</span></li>
-            <li><span class="feature-arrow" aria-hidden="true">→</span><span>Strava 线路旁可通过「+」补充本地路线文件</span></li>
+            <li><span class="feature-arrow" aria-hidden="true">→</span><span>兼容头像与背景的既有文件和新规范副本</span></li>
+            <li><span class="feature-arrow" aria-hidden="true">→</span><span>移除背景后不再恢复历史照片</span></li>
+            <li><span class="feature-arrow" aria-hidden="true">→</span><span>本人仍可预览自己的头像，错误用途或不明确的图片来源不会展示</span></li>
           </ul>
         </div>
       </section>

@@ -72,6 +72,10 @@ function loadMain(activity, list = [], options = {}) {
             data = data.filter((item) => item.status === condition.status);
           if ((name === 'profiles' || name === 'profile_media') && condition._id?.$in)
             data = data.filter((item) => condition._id.$in.includes(item._id));
+          if (name === 'profile_media' && condition.canonical_file_id?.$in)
+            data = data.filter((item) =>
+              condition.canonical_file_id.$in.includes(item.canonical_file_id),
+            );
           let offset = 0;
           const query = {
             count: async () => {
@@ -949,6 +953,87 @@ test('详情成员骑行名片使用本人上传背景而不是头像', async ()
   assert.equal(result.data.attendees[0].background_url, 'https://temporary.example/background.jpg');
   assert.equal(result.data.attendees[0].avatar_file_id, undefined);
   assert.equal(result.data.attendees[0].background_file_id, undefined);
+});
+
+test('详情媒体按当前引用反查唯一登记并拒绝失败或截断批次', async (t) => {
+  const owner = 'current-reference-owner';
+  const source = 'cloud://env/profiles/current-reference.jpg';
+  const record = canonicalMedia(source, owner);
+  const cases = [
+    { name: 'source', reference: source, records: [record], expected: true },
+    {
+      name: 'canonical',
+      reference: record.canonical_file_id,
+      records: [record],
+      expected: true,
+    },
+    {
+      name: '重复 canonical',
+      reference: record.canonical_file_id,
+      records: [
+        record,
+        { ...record, _id: 'another-binding', file_id: 'cloud://env/another-source.jpg' },
+      ],
+      expected: false,
+    },
+    {
+      name: 'canonical 查询失败不签 source',
+      reference: source,
+      records: [record],
+      rejectCanonical: true,
+      expected: false,
+    },
+    {
+      name: 'canonical 查询100条不使用部分结果',
+      reference: record.canonical_file_id,
+      records: Array.from({ length: 100 }, (_, index) => ({
+        ...record,
+        _id: index === 0 ? record._id : `extra-${index}`,
+      })),
+      expected: false,
+    },
+  ];
+  for (const scenario of cases)
+    await t.test(scenario.name, async () => {
+      const { main, calls } = loadMain({ _id: 'a1', title: '活动', status: 'published' }, [], {
+        profiles: [
+          {
+            _id: owner,
+            avatar_file_id: scenario.reference,
+            avatar_source: 'custom',
+            avatar_revision: 1,
+            background_photo: null,
+            photos: [{ file_id: source, category: 'ride' }],
+          },
+        ],
+        registrations: [{ _id: 'r1', activity_id: 'a1', openid: owner, status: 'approved' }],
+        mediaRecords: scenario.records,
+        mediaSecret: MEDIA_SECRET,
+        beforeQueryGet: ({ name, condition }) => {
+          if (scenario.rejectCanonical && name === 'profile_media' && condition.canonical_file_id)
+            throw new Error('media registry unavailable');
+        },
+        getTempFileURL: async ({ fileList }) => ({
+          fileList: fileList.map((fileID) => ({
+            fileID,
+            status: 0,
+            tempFileURL: 'https://temporary.example/current-reference.jpg',
+          })),
+        }),
+      });
+      const result = await main({ action: 'detail', activityId: 'a1' });
+      assert.equal(result.ok, true);
+      assert.equal(
+        result.data.attendees[0].avatar_url,
+        scenario.expected ? 'https://temporary.example/current-reference.jpg' : '',
+      );
+      assert.equal(result.data.attendees[0].background_url, '');
+      assert.equal(result.data.attendees[0].avatar_file_id, undefined);
+      assert.equal(
+        calls.filter((call) => call.type === 'getTempFileURL').length,
+        scenario.expected ? 1 : 0,
+      );
+    });
 });
 
 test('详情只为 registry 合法的 canonical 头像签发地址', async () => {
