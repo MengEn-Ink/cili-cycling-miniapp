@@ -106,7 +106,9 @@ if (isEntryPoint) {
   const ci = uploadRequire('miniprogram-ci');
   uploadMiniProgram({ ci }).catch((error) => {
     console.error(`微信开发版上传失败：${error instanceof Error ? error.message : String(error)}`);
-    process.exitCode = 1;
+    // miniprogram-ci 的内部连接池会保持事件循环存活，仅设置 exitCode 会让失败任务
+    // 挂到运行器超时；显式退出，避免占用 30 分钟配额。
+    setTimeout(() => process.exit(1), 500);
   });
 }
 
