@@ -23,7 +23,10 @@
 }
 .profile-background {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   width: 100%;
   height: 100%;
 }
@@ -41,7 +44,10 @@
 }
 .profile-background-shade {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   background: linear-gradient(
     180deg,
     rgba(12, 10, 7, 0.08) 0%,
@@ -344,7 +350,10 @@
 }
 .rowicon-text {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -473,8 +482,12 @@
   }
 }
 
-/* 权限状态卡：与资料编辑页保持同一视觉层级 */
+/* 权限状态卡：与资料编辑页保持同一视觉层级。
+   app.wxss 对 button 的全局样式是弹性行布局并水平居中，会把权限卡的
+   head、scope、action 三个块级子元素压成一行，导致文案竖排截断，
+   这里显式回退为块级纵向堆叠。 */
 .profile-permission {
+  display: block;
   width: 100%;
   min-height: 88rpx;
   margin: 0 0 20rpx;

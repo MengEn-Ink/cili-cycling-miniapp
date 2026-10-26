@@ -106,7 +106,11 @@ describe('静态图片资源完整性', () => {
           (line: string) =>
             /assets\//.test(line) && (/\$\{/.test(line) || /['"`]\s*\+|\+\s*['"`]/.test(line)),
         )
-        .map((line: string) => `${path.relative(ROOT, source)}: ${line.trim()}`),
+        .map(
+          (line: string) =>
+            // Windows 下 path.relative 返回反斜杠路径，统一为正斜杠保证断言跨平台一致。
+            `${path.relative(ROOT, source).split(path.sep).join('/')}: ${line.trim()}`,
+        ),
     );
     expect(dynamicLines).toEqual([
       'miniprogram/services/theme-service.ts: iconPath: `assets/tabbar/${name}-light.png`,',

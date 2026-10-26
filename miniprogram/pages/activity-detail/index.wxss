@@ -28,7 +28,10 @@
 }
 .shade {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   background: linear-gradient(
     to bottom,
     rgba(12, 10, 7, 0) 0%,
@@ -699,7 +702,10 @@
 /* --- dialog（骑手公开名片）---------------------------------------------- */
 .dialog-mask {
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   z-index: 30;
   display: flex;
   align-items: center;
@@ -746,7 +752,10 @@
 }
 .rider-dialog-photo__scrim {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   background: linear-gradient(to top, rgba(12, 10, 7, 0.76), rgba(12, 10, 7, 0) 60%);
 }
 .rider-dialog-photo__identity {
@@ -871,7 +880,10 @@
 }
 .rider-dialog-photo--fallback::before {
   position: absolute;
-  inset: 18%;
+  top: 18%;
+  right: 18%;
+  bottom: 18%;
+  left: 18%;
   border: 1rpx solid var(--color-on-media);
   border-radius: 50%;
   opacity: 0.18;
