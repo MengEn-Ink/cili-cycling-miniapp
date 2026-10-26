@@ -1,14 +1,19 @@
 # 高优问题清单
 
 > 最后更新：2026-10-26（CST）。PR #362（我的页权限卡排版与旧 WebView 兼容）、PR #358（activity-read 头像类别兼容）与 PR #363（WXML 方法调用导致开发版上传编译失败修复）均已合入 `main@85cbc8f`。开发版 `0.0.366.1`（robot 1）已成功上传并产出同 SHA receipt，上传链路自 #358 起的中断已恢复；WXML 绑定语法契约测试已阻断此类错误再次进入主线（详见 docs/verification/2026-10-26-wxml-binding-upload-fix.md）。剩余：用户真机获取 `0.0.366.1`，验证权限卡排版与授权后头像/背景回读。
+> CI 第一批已获合并与部署授权；#364 已合入 `main@ef48e307`，ready CI `40272705672` 全部通过。#365 正在同步该主线，保留上传阶段五分钟截止和 UNKNOWN 不重传；#367、#368 与文档 #369 待合并。状态 `MERGING / RELEASE_PENDING`，独立 P0 保留。
 >
 > 本文件只保留尚未完成的实际交付或验收。历史运行和详细口径见 [微信 E2E 与上线准备状态](verification/2026-10-21-wechat-e2e-and-launch-readiness.md)，GitHub Actions 实时状态以 GitHub 为唯一事实源。
+
+2026-10-26 用户已批准 [CI 与发布优化 A 方案第一批](superpowers/specs/2026-10-26-ci-release-optimization-design.md)。#364 的最终 PR 预检、实际工作树摘要和同步祖先修复已合入；保留截图与采集时间，算法修正见 [验收记录](verification/2026-10-26-ci-final-pr-preflight.md)。第二项采用真实隔离 worker 从 upload 进度开始计时，五分钟绝对截止；超时或远端错误记录 UNKNOWN，不生成成功 receipt，不自动重传，详见 [上传超时验收记录](verification/2026-10-26-ci-upload-timeout.md)。累计发布基线和元数据复用已完成独立 PR 检查，待合并与实际发布核验；不改变真机、普通成员写链路和目标云环境验收。
 
 第三轮骑行影像志布局优化已通过 PR #348 合入 `main@3d492c77b0feb9d1c79894754a8777fd19c3ce82`：17 条路由收口统一 gutter 与 64rpx 主标题，个人/俱乐部/活动 Hero 统一 16:9；活动编辑改为扁平章节和单列长表单，仅上传入口保留虚线；个人与俱乐部资料减少嵌套卡片，管理卡将下架/驳回降为危险文字操作，红色只保留主操作、选中和明确危险动作。微信开发者工具在 366px 华为模拟设备完成 17/17 真实云只读路由截图、活动编辑长页底部和四个重点 WXSS 编译复核，Console/Network 错误筛选为空；16 页 × 340/375/430 三宽度全部通过，1276 项测试通过。当前 UI 摘要为 `sha256:5fc9f6ac10cfd8fff76e2098067e3bf7e0344ba95132f4d3c0238a22b26efc9b`；主包 458760 字节，距硬限额 555 字节。GitHub Actions 已上传开发版 `0.0.350.1` 并生成同 SHA receipt；首次 candidate 仅因 squash 后同步基线 SHA 不可解析而失败，源 UI 与 Pages 摘要未漂移。截图原图含真实资料，仅私有留存，未冒充脱敏公开证据；以上仍属于模拟器和开发版证据，不替代公开媒体、普通成员写链路或 iOS/Android 物理真机验收。
 
 2026-10-23 视觉细节收口工作树（`main@601a483a` + 未提交改动）继续优化短文本单行、自然换行、圆形头像、个人背景遮罩和活动二维码双层承托。最终微信开发者工具真实云只读运行覆盖 17/17 注册路由，26 项通过、1 项因缺公开骑友头像/背景样本失败、0 异常；活动编辑与成员详情二维码均已滚动到实际区域核对。Pages 375px 的 17 路由无横向溢出或脚本错误，16 页 × 340/375/430 三宽度复核通过；全量 `validate` 通过，1279 项 Vitest 通过，严格 UI 同步、治理、云函数包与构建均通过。当前 UI 摘要为 `sha256:87e3f0f1a5ef24192aa38b2bc3bed8c4ce11b910dfe1c004e1b335c1c14e6519`，Pages 摘要为 `sha256:c542706c63eaf0fef5ea09b4e5c76b54ba9e59909ae55e31f60bc8d05474dd09`；主包 459259 字节，距硬限额仅 56 字节。本轮未部署、未上传，截图原图仍只在私有临时路径；公开媒体、普通成员写链路与双物理真机继续阻塞。
 
-2026-10-26 CI 第一批 PR 元数据复用已实现，27 项源码证据/CI 契约、1294 Vitest、全量校验、覆盖率、high 审计、严格同步与治理通过；[验收记录](verification/2026-10-26-ci-pr-source-reuse.md) 约束 head/base、实际合并内容、校验器与锁文件摘要、实际 Harness 成功及 run/attempt。source 与 metadata 并发隔离，每次描述门禁与 required validate 保留；草稿 PR 远端检查和真实元数据复用待完成，未合并发布，独立 P0 不改变。
+2026-10-26 CI 第一批实际发布基线实现已通过本地全量验证、覆盖率、high 审计、严格 UI 同步与 35 项专门发布/决策用例；[验收记录](verification/2026-10-26-ci-release-baseline.md) 绑定实际 SHA / 内容 / 同目标 CI 与累计范围。当前仍未合并发布，缺生产实际 receipt 验收；安全跳过、部分失败和 UNKNOWN 不作为成功基线。后续核对草稿 PR 门禁并在合入后回读发布结果，独立 P0 不改变。
+
+2026-10-26 CI 第一批 PR 元数据复用已实现，源码证据/CI 契约、全量校验、覆盖率、high 审计、严格同步与治理通过；[验收记录](verification/2026-10-26-ci-pr-source-reuse.md) 约束 head/base、实际合并内容、校验器与锁文件摘要、实际 Harness 成功及 run/attempt。source 与 metadata 并发隔离，每次描述门禁与 required validate 保留；真实 source `40271458646` 与 edited `40271690906` 复用均通过，四项组合 1297 Vitest 和全量门禁通过。当前整合三项依赖，尚未合并发布，独立 P0 不改变。
 
 ## 口径
 
@@ -30,6 +35,7 @@
 | P1 | 体验版晋级与 UAT | `DEVELOPMENT_UPLOADED / CANDIDATE_BLOCKED`；`main@85cbc8f` 的 CI 与开发版 `0.0.366.1` 自动上传均成功；历史 candidate `39942078355` 因 squash 后 `syncedThrough=37b74086` 不是 main 祖先而失败，未进入平台选版 | 以 `main@85cbc8f` 的同 SHA receipt 重跑 candidate、平台人工选为体验版及 verified 回读，再执行体验版 UAT |
 | P1 | 单俱乐部模式真机核销 | `BLOCKED` | 双端验证普通成员只读、OWNER/ADMIN 无编辑入口、平台管理员编辑、空库创建、多存量失败和弱网迟到响应 |
 | P1 | 个人背景图移除与资料保存口径冲突 | `DEPLOYED / UAT_BLOCKED`；背景选填已部署，保留性别、头像与媒体门槛；资料核心 42 项通过；真实 UI 写入和真机验收未执行 | 回读无背景首次保存、移除后保存、头像独立即时保存；真机验收 |
+| P1 | CI 与发布链路第一批 | `MERGING / RELEASE_PENDING`；#364 已合入 `ef48e307`，#365 正在同步并复核，#367 / #368 / #369 待合并 | 合入四项并保留全部测试入口，核对 main CI、实际发布 receipt 或有证据的安全跳过；不替代独立 P0 |
 
 ## 已完成且不再列为阻塞
 

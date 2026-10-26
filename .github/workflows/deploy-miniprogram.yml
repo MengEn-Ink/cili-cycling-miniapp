@@ -92,30 +92,19 @@ jobs:
           echo "target_sha=${target_sha}" >> "${GITHUB_OUTPUT}"
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
 
-      - name: Download miniprogram upload decision
-        if: github.event_name == 'workflow_run'
-        uses: actions/download-artifact@v8
-        with:
-          name: miniprogram-upload-decision
-          path: ${{ runner.temp }}/miniprogram-upload-decision
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: ${{ github.event.workflow_run.id }}
-
-      - name: Resolve miniprogram upload decision
+      - name: Resolve cumulative miniprogram upload decision
         id: decision
         env:
           EVENT_NAME: ${{ github.event_name }}
           CHECKOUT_SHA: ${{ steps.release.outputs.target_sha }}
+          RESTORE_MODE: ${{ steps.release.outputs.restore_mode }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "${EVENT_NAME}" == "workflow_dispatch" ]]; then
-            echo "should_upload=true" >> "${GITHUB_OUTPUT}"
-          else
-            node scripts/miniprogram-upload-decision.mjs verify \
-              --input "${RUNNER_TEMP}/miniprogram-upload-decision/miniprogram-upload-decision.json" \
-              --sha "${CHECKOUT_SHA}" >> "${GITHUB_OUTPUT}"
-          fi
+          node scripts/release-baseline-cli.mjs scope miniprogram "${CHECKOUT_SHA}" \
+            "${RUNNER_TEMP}/miniprogram-release-scope.json"
+          echo "should_upload=$(jq -r '.shouldUpload' "${RUNNER_TEMP}/miniprogram-release-scope.json")" >> "${GITHUB_OUTPUT}"
 
       - name: Report skipped automatic upload
         if: steps.decision.outputs.should_upload != 'true'
@@ -189,6 +178,8 @@ jobs:
           MINIPROGRAM_VERSION: ${{ steps.release.outputs.version }}
           MINIPROGRAM_DESCRIPTION: ${{ inputs.description || (steps.release.outputs.restore_mode == 'true' && format('恢复 {0} · 历史稳定体验版重传', steps.release.outputs.restore_release_id)) || format('main {0} · GitHub Actions 自动上传', steps.release.outputs.target_sha) }}
           MINIPROGRAM_CI_ROBOT: ${{ inputs.robot || '1' }}
+          MINIPROGRAM_UPLOAD_TIMEOUT_MS: '300000'
+          MINIPROGRAM_UPLOAD_DIAGNOSTICS_PATH: ${{ runner.temp }}/miniprogram-upload-diagnostics.json
         shell: bash
         run: |
           set -euo pipefail
@@ -202,17 +193,20 @@ jobs:
             echo "跳过过期提交：${CHECKOUT_SHA} 已不是当前 main ${CURRENT_MAIN}"
             exit 0
           fi
+          touch "${RUNNER_TEMP}/miniprogram-release-started"
           npm run deploy:miniprogram
-          # 上传是不可撤销副作用；若窗口内 main 前进，阻断 receipt，避免旧工具链进入回退证据链。
+          # 实际上传目标保持固化；main 推进只阻断体验版证据，不能抹去已发生的上传。
+          echo "uploaded=true" >> "${GITHUB_OUTPUT}"
           CURRENT_MAIN_AFTER="$(git ls-remote origin refs/heads/main | cut -f1)"
           if [[ "${TOOLING_SHA}" != "${CURRENT_MAIN_AFTER}" ]]; then
-            echo "上传完成后 main 已前进，不生成有效 receipt：${TOOLING_SHA} -> ${CURRENT_MAIN_AFTER}" >&2
-            exit 1
+            echo "上传完成后 main 已前进，不生成体验版 receipt：${TOOLING_SHA} -> ${CURRENT_MAIN_AFTER}"
+            echo "experience_eligible=false" >> "${GITHUB_OUTPUT}"
+          else
+            echo "experience_eligible=true" >> "${GITHUB_OUTPUT}"
           fi
-          echo "uploaded=true" >> "${GITHUB_OUTPUT}"
 
       - name: Generate immutable development upload receipt
-        if: steps.upload.outputs.uploaded == 'true'
+        if: steps.upload.outputs.experience_eligible == 'true'
         env:
           CHECKOUT_SHA: ${{ steps.release.outputs.target_sha }}
           RESTORE_MODE: ${{ steps.release.outputs.restore_mode }}
@@ -246,7 +240,7 @@ jobs:
           fi
 
       - name: Store development upload receipt
-        if: steps.upload.outputs.uploaded == 'true'
+        if: steps.upload.outputs.experience_eligible == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: miniprogram-upload-receipt-${{ steps.release.outputs.target_sha }}
@@ -254,7 +248,44 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
+      - name: Store upload diagnostics
+        if: always() && steps.upload.outcome != 'skipped'
+        uses: actions/upload-artifact@v7
+        with:
+          name: miniprogram-upload-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/miniprogram-upload-diagnostics.json
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Remove temporary private key
         if: always()
         shell: bash
         run: rm -f "${RUNNER_TEMP}/miniprogram-ci.key"
+
+      - name: Finalize actual miniprogram release evidence
+        if: always()
+        env:
+          CHECKOUT_SHA: ${{ steps.release.outputs.target_sha || env.TOOLING_SHA }}
+          MINIPROGRAM_VERSION: ${{ steps.release.outputs.version }}
+          RELEASE_SUCCESS: ${{ job.status == 'success' }}
+        run: >-
+          node scripts/release-baseline-cli.mjs finalize miniprogram "${CHECKOUT_SHA}"
+          "${RUNNER_TEMP}/release-outcome.json"
+
+      - name: Store actual miniprogram release receipt
+        if: success() && steps.upload.outputs.uploaded == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: miniprogram-release-receipt-${{ steps.release.outputs.target_sha }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/release-receipt.json
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Store bounded miniprogram release outcome
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: miniprogram-release-outcome-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/release-outcome.json
+          if-no-files-found: error
+          retention-days: 90
