@@ -52,7 +52,10 @@ test('上传配置从 project.config.json 读取 appid 并收紧密钥权限', a
   assert.equal(config.privateKeyPath, keyPath);
   assert.equal(config.robot, 2);
   assert.equal(config.setting.minify, true);
-  assert.equal((await stat(keyPath)).mode & 0o777, 0o600);
+  if (process.platform !== 'win32') {
+    // Windows 不支持 POSIX 文件权限位，密钥权限收紧仅在类 Unix 环境可断言。
+    assert.equal((await stat(keyPath)).mode & 0o777, 0o600);
+  }
 });
 
 test('显式历史项目路径只切换上传源码目录', async () => {

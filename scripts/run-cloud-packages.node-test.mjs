@@ -26,12 +26,14 @@ test('并发上限使用安全默认值并拒绝无界配置', () => {
 });
 
 test('npm 命令始终绑定到具体云函数目录', () => {
+  // Windows 下解析为 npm.cmd 以便 spawn 可用，其余平台为 npm。
+  const expectedNpm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
   assert.deepEqual(packageCommand('install', 'profile'), [
-    'npm',
+    expectedNpm,
     ['ci', '--prefix', 'cloudfunctions/profile'],
   ]);
   assert.deepEqual(packageCommand('test', 'profile'), [
-    'npm',
+    expectedNpm,
     ['--prefix', 'cloudfunctions/profile', 'test'],
   ]);
 });
