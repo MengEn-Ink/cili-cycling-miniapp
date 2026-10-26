@@ -39,7 +39,8 @@ async function resolveBackgrounds(media, getTempFileURL) {
     }));
 }
 
-async function buildCapabilityCard(
+// 认证用户的本人私人预览；公开名片的同意规则由公开出口独立承担。
+async function buildOwnerMediaPreview(
   { profile, mediaRecords = [] },
   { openid, mediaSecret, now = new Date(), getTempFileURL },
 ) {
@@ -65,5 +66,6 @@ async function buildCapabilityCard(
 }
 
 module.exports = {
-  buildCapabilityCard,
+  buildOwnerMediaPreview,
+  buildCapabilityCard: buildOwnerMediaPreview,
 };

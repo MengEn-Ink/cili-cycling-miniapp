@@ -1,16 +1,16 @@
 {
   "schemaVersion": 2,
-  "syncedThrough": "85cbc8f1fb0e16a884760deedaaf49ff7ee8c287",
-  "syncedAt": "2026-10-26T03:57:56.900Z",
+  "syncedThrough": "b00647db9f0f339a3902cc25ffc7409aeb80588d",
+  "syncedAt": "2026-10-26T07:25:57.747Z",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:86725f7119c94a763d162dbc321f9dba6a47ec10b3d88b93d3dbc2a5202b2595"
+    "digest": "sha256:d393a563f7d7e42b36d5e5e4c70b2b17d88664dc0a204b90bd89b90482b7e947"
   },
   "prototype": {
-    "digest": "sha256:89461e3d7e10123a6b78cce68bb929d4a43000574aa29c30e83fe220e50d4688"
+    "digest": "sha256:8895a93b15e21e75d7256e9daf1500d493b6f157cd98f96eee60c48c97ff3125"
   },
   "routes": [
     {
@@ -83,10 +83,10 @@
     }
   ],
   "evidence": {
-    "directory": "docs/evidence/ui-sync/2026-10-22-cycling-image-journal",
+    "directory": "docs/evidence/ui-sync/2026-10-26-pr341-media-compat",
     "viewport": {
-      "width": 375,
-      "height": 812
+      "width": 390,
+      "height": 844
     },
     "routes": [
       {
@@ -96,34 +96,34 @@
         "state": "真实云 1 场近期活动 · 摄影纵向列表",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
+        "note": "绑定本片实际内容摘要；真实管理员只读与合成Pages资料。真实与合成活动的标题、数量、媒体与里程不同。照片和个人信息按redaction-record.json遮挡。本轮总outcome FAILED（名片弹层未打开）；新云代码未部署、普通成员写链路及双真机未验。"
       },
       {
         "id": "activity-detail",
         "devtools": "activity-detail-devtools.png",
         "pages": "activity-detail-pages.png",
-        "state": "管理员 · 公开活动详情 · 真实封面",
+        "state": "管理员公开详情 · 公开媒体样本读取通过 · 名片弹层未打开",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
+        "note": "绑定本片实际内容摘要；真实管理员只读与合成Pages资料。活动媒体、指标、状态及管理入口不同；本轮公开名片弹层检查失败，不作为弹层验收。照片和个人信息按redaction-record.json遮挡。本轮总outcome FAILED（名片弹层未打开）；新云代码未部署、普通成员写链路及双真机未验。"
       },
       {
         "id": "route-analysis",
         "devtools": "route-analysis-devtools.png",
         "pages": "route-analysis-pages.png",
-        "state": "真实路线只读 · 完整分析就绪",
+        "state": "真实路线只读 · 分析就绪",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
+        "note": "绑定本片实际内容摘要；真实管理员只读与合成Pages资料。真实路线摘要、海拔和图形与合成路线不同。照片和个人信息按redaction-record.json遮挡。本轮总outcome FAILED（名片弹层未打开）；新云代码未部署、普通成员写链路及双真机未验。"
       },
       {
         "id": "registration-form",
         "devtools": "registration-form-devtools.png",
         "pages": "registration-form-pages.png",
-        "state": "本人报名资料 · 经验未选 · 提交禁用",
+        "state": "本人已有资料 · 骑行经验未选 · 提交禁用",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
+        "note": "绑定本片实际内容摘要；真实管理员只读与合成Pages资料。真实经验未选且禁止提交；原型为合成资料。照片和个人信息按redaction-record.json遮挡。本轮总outcome FAILED（名片弹层未打开）；新云代码未部署、普通成员写链路及双真机未验。"
       },
       {
         "id": "registrations",
@@ -132,70 +132,70 @@
         "state": "真实 1 场已通过行程",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
+        "note": "绑定本片实际内容摘要；真实管理员只读与合成Pages资料。真实一场已通过行程；原型包含多种合成状态。照片和个人信息按redaction-record.json遮挡。本轮总outcome FAILED（名片弹层未打开）；新云代码未部署、普通成员写链路及双真机未验。"
       },
       {
         "id": "credential",
         "devtools": "credential-devtools.png",
         "pages": "credential-pages.png",
-        "state": "已通过凭证 · 时间与星期一致",
+        "state": "已通过凭证 · 个人信息与编号脱敏",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
+        "note": "绑定本片实际内容摘要；真实管理员只读与合成Pages资料。真实与合成凭证的活动、编号和个人资料不同。照片和个人信息按redaction-record.json遮挡。本轮总outcome FAILED（名片弹层未打开）；新云代码未部署、普通成员写链路及双真机未验。"
       },
       {
         "id": "profile",
         "devtools": "profile-devtools.png",
         "pages": "profile-pages.png",
-        "state": "本人管理员 · 头像和背景融合名片",
+        "state": "本人管理员 · 已授权媒体回显",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
+        "note": "绑定本片实际内容摘要；真实管理员只读与合成Pages资料。真实已有授权媒体；资料权限状态与合成示例不同。照片和个人信息按redaction-record.json遮挡。本轮总outcome FAILED（名片弹层未打开）；新云代码未部署、普通成员写链路及双真机未验。"
       },
       {
         "id": "settings",
         "devtools": "settings-devtools.png",
         "pages": "settings-pages.png",
-        "state": "管理员 · 客户端 2026.10.23.1",
+        "state": "管理员 · 本地客户端 2026.10.26.2",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
+        "note": "绑定本片实际内容摘要；真实管理员只读与合成Pages资料。本地版本2及本次媒体修复说明已同步；管理员入口状态与合成示例不同。照片和个人信息按redaction-record.json遮挡。本轮总outcome FAILED（名片弹层未打开）；新云代码未部署、普通成员写链路及双真机未验。"
       },
       {
         "id": "capability-card",
         "devtools": "capability-card-devtools.png",
         "pages": "capability-card-pages.png",
-        "state": "历史地址进入我的 · 兼容转跳",
+        "state": "历史路由进入我的 · 兼容转跳 · 私人媒体可见",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；照片、身份与编号已不透明遮挡，数据、媒体和系统导航存在差异。27 项检查通过；公开骑友媒体样本、普通成员写链路和双物理设备仍 BLOCKED。旧名片路由实际进入“我的”。"
+        "note": "绑定本片实际内容摘要；真实管理员只读与合成Pages资料。实际进入我的；公开授权标记未授权时仍可见本人私人媒体，本片不启用新同意围栏。照片和个人信息按redaction-record.json遮挡。本轮总outcome FAILED（名片弹层未打开）；新云代码未部署、普通成员写链路及双真机未验。"
       },
       {
         "id": "profile-edit",
         "devtools": "profile-edit-devtools.png",
         "pages": "profile-edit-pages.png",
-        "state": "本人已有资料 · 头像即时保存入口",
+        "state": "本人已有资料 · 使用说明弹层 · 未确认未保存",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
+        "note": "绑定本片实际内容摘要；真实管理员只读与合成Pages资料。真实存在使用说明弹层，本次未确认或修改资料；原型为合成编辑表单。照片和个人信息按redaction-record.json遮挡。本轮总outcome FAILED（名片弹层未打开）；新云代码未部署、普通成员写链路及双真机未验。"
       },
       {
         "id": "admin-activity-list",
         "devtools": "admin-activity-list-devtools.png",
         "pages": "admin-activity-list-pages.png",
-        "state": "真实 1 场已上线活动",
+        "state": "真实 1 场已上线活动 · 两人报名",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
+        "note": "绑定本片实际内容摘要；真实管理员只读与合成Pages资料。真实一场已上线活动、两人报名；原型包含多种活动状态。照片和个人信息按redaction-record.json遮挡。本轮总outcome FAILED（名片弹层未打开）；新云代码未部署、普通成员写链路及双真机未验。"
       },
       {
         "id": "admin-activity-edit",
         "devtools": "admin-activity-edit-devtools.png",
         "pages": "admin-activity-edit-pages.png",
-        "state": "创建草稿 · 自动截止 · 实际字段",
+        "state": "空白创建表单 · 未保存未发布",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
+        "note": "绑定本片实际内容摘要；真实管理员只读与合成Pages资料。真实为空白创建表单，原型为合成编辑状态。照片和个人信息按redaction-record.json遮挡。本轮总outcome FAILED（名片弹层未打开）；新云代码未部署、普通成员写链路及双真机未验。"
       },
       {
         "id": "admin-reviews",
@@ -204,25 +204,25 @@
         "state": "真实审核列表 · 待审核筛选为空",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
+        "note": "绑定本片实际内容摘要；真实管理员只读与合成Pages资料。真实待审核为空；原型含合成人员。照片和个人信息按redaction-record.json遮挡。本轮总outcome FAILED（名片弹层未打开）；新云代码未部署、普通成员写链路及双真机未验。"
       },
       {
         "id": "admin-review-detail",
         "devtools": "admin-review-detail-devtools.png",
         "pages": "admin-review-detail-pages.png",
-        "state": "已通过 · 可确认签到 · 敏感区域遮挡",
+        "state": "已通过报名 · 个人信息脱敏",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
+        "note": "绑定本片实际内容摘要；真实管理员只读与合成Pages资料。真实已通过，原型为待审核；个人资料均按证据规则处理。照片和个人信息按redaction-record.json遮挡。本轮总outcome FAILED（名片弹层未打开）；新云代码未部署、普通成员写链路及双真机未验。"
       },
       {
         "id": "club/center",
         "devtools": "club-center-devtools.png",
         "pages": "club-center-pages.png",
-        "state": "唯一俱乐部 · 真实背景 · 近期活动",
+        "state": "唯一俱乐部 · 真实媒体脱敏",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
+        "note": "绑定本片实际内容摘要；真实管理员只读与合成Pages资料。真实与合成俱乐部的媒体、介绍及活动不同。照片和个人信息按redaction-record.json遮挡。本轮总outcome FAILED（名片弹层未打开）；新云代码未部署、普通成员写链路及双真机未验。"
       },
       {
         "id": "admin-club-applications",
@@ -231,16 +231,16 @@
         "state": "唯一俱乐部资料概览 · 平台管理员",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
+        "note": "绑定本片实际内容摘要；真实管理员只读与合成Pages资料。真实为唯一俱乐部的大幅背景概览，原型为合成列表。照片和个人信息按redaction-record.json遮挡。本轮总outcome FAILED（名片弹层未打开）；新云代码未部署、普通成员写链路及双真机未验。"
       },
       {
         "id": "admin-club-application-detail",
         "devtools": "admin-club-application-detail-devtools.png",
         "pages": "admin-club-application-detail-pages.png",
-        "state": "编辑唯一俱乐部 · 头像与背景",
+        "state": "编辑唯一俱乐部 · 媒体脱敏 · 未保存",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
+        "note": "绑定本片实际内容摘要；真实管理员只读与合成Pages资料。真实分段表单与合成编号章节及内容长度不同。照片和个人信息按redaction-record.json遮挡。本轮总outcome FAILED（名片弹层未打开）；新云代码未部署、普通成员写链路及双真机未验。"
       }
     ]
   },

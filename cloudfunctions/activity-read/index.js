@@ -13,10 +13,10 @@ const {
 const {
   canonicalPublicAvatar,
   canonicalPublicBackground,
-  mediaDocumentId,
   publicAvatarSource,
   publicBackgroundSource,
 } = require('./public-avatar');
+const { loadProfileMediaRecords } = require('./profile-media');
 const { parseListPageRequest, listActivityPage } = require('./list-page');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
@@ -264,31 +264,19 @@ async function loadProfiles(openids) {
 // 依据资料批量解析公开头像与骑行名片背景的服务端签名临时访问地址。
 // canonical fileId 仅在云函数内部用于签名，不下发客户端，避免受保护存储权限失败或标识泄露。
 async function resolveProfileMediaTempUrls(entries, { includeBackground = false } = {}) {
-  const sourceMediaIds = [
+  const references = [
     ...new Set(
       entries.flatMap((entry) => {
         const avatar = publicAvatarSource(entry.profile);
         const background = includeBackground ? publicBackgroundSource(entry.profile) : undefined;
-        return [avatar, background && background.fileId].filter(Boolean).map(mediaDocumentId);
+        return [avatar, background && background.fileId].filter(Boolean);
       }),
     ),
   ];
-  const mediaRecords = new Map();
-  for (let offset = 0; offset < sourceMediaIds.length; offset += 20) {
-    const batch = sourceMediaIds.slice(offset, offset + 20);
-    try {
-      const response = await db
-        .collection('profile_media')
-        .where({ _id: _.in(batch) })
-        .limit(20)
-        .get();
-      for (const record of Array.isArray(response.data) ? response.data : []) {
-        if (record && batch.includes(record._id)) mediaRecords.set(record._id, record);
-      }
-    } catch {
-      // 媒体登记读取失败时 fail closed，仅隐藏受影响图片。
-    }
-  }
+  const mediaRecords = await loadProfileMediaRecords(references, {
+    collection: db.collection('profile_media'),
+    inValues: (values) => _.in(values),
+  });
   const canonicalByOpenid = new Map();
   const canonicalFileIds = [];
   for (const { openid, profile } of entries) {
@@ -296,14 +284,14 @@ async function resolveProfileMediaTempUrls(entries, { includeBackground = false 
     const backgroundSource = includeBackground ? publicBackgroundSource(profile) : undefined;
     const avatarFileId = canonicalPublicAvatar(
       profile,
-      avatarSource ? mediaRecords.get(mediaDocumentId(avatarSource)) : undefined,
+      mediaRecords.get(avatarSource),
       openid,
       process.env.PROFILE_MEDIA_PATH_SECRET,
     );
     const backgroundFileId = backgroundSource
       ? canonicalPublicBackground(
           profile,
-          mediaRecords.get(mediaDocumentId(backgroundSource.fileId)),
+          mediaRecords.get(backgroundSource.fileId),
           openid,
           process.env.PROFILE_MEDIA_PATH_SECRET,
         )

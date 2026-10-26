@@ -1,6 +1,7 @@
 // @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { CLIENT_RELEASE_VERSION } from '../miniprogram/config/release';
 
 const read = (path: string) => readFileSync(path, 'utf8');
 const schema = read('docs/schema.js');
@@ -80,14 +81,17 @@ describe('FORMAL GitHub Pages 骑行影像志', () => {
     expect(deliveryCenter).toContain('设计演进记录');
   });
 
-  it('设置页以 2026.10.22.3 展示逐页对齐后的当前版本', () => {
+  it('设置页展示与客户端一致的当前版本并保留历史排版说明', () => {
     expect(schema).toContain(
       "['2026.10.22.3', '影像志排版与设计稿逐页对齐', '16 个核心页面统一使用设计稿的字体、颜色、间距与圆角规范。']",
     );
     runtime.prototypeState = 'default';
     const settings = runtime.pageTemplates?.settings?.() ?? '';
-    expect(settings).toContain('V2026.10.22.3');
-    expect(settings).toContain('2026.10.22');
+    expect(settings).toContain(`V${CLIENT_RELEASE_VERSION}`);
+    expect(settings).toContain('头像与背景读取更准确');
+    expect(settings).toContain('兼容头像与背景的既有文件和新规范副本');
+    expect(settings).toContain('移除背景后不再恢复历史照片');
+    expect(settings).toContain('本人仍可预览自己的头像');
   });
 
   it('报名提交按审核中、公开通过和满员候补展示真实行程结果', () => {
