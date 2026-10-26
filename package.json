@@ -43,7 +43,7 @@
     "test:affected": "node scripts/affected-ci.mjs run",
     "test:affected:plan": "node scripts/affected-ci.mjs plan",
     "test:affected:self": "node --test scripts/affected-ci.node-test.mjs",
-    "test:ci-contract": "node --test scripts/affected-ci.node-test.mjs scripts/run-cloud-packages.node-test.mjs scripts/ci-workflow-contract.node-test.mjs",
+    "test:ci-contract": "node --test scripts/pr-source-evidence.node-test.mjs scripts/affected-ci.node-test.mjs scripts/run-cloud-packages.node-test.mjs scripts/ci-workflow-contract.node-test.mjs",
     "check:governance": "node scripts/check-project-governance.mjs",
     "devtools:port": "node scripts/ensure-devtools-port.mjs",
     "ui:digest": "node scripts/pages-visual-acceptance/sync-ui-digests.mjs",
