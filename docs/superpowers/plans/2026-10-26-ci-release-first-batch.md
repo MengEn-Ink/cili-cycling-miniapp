@@ -10,7 +10,7 @@
 
 用户已批准 A 第一批；本会话直接按任务执行，无需再次确认。可用技能未包含上述伴随技能，按已读取的 writing-plans 与 TDD 工作流逐项实施。
 
-2026-10-26：四项已分别交付至草稿 PR #364、#365、#367、#368。已同步产品基线 `85cbc8f1` 和后继文档主线 `456081f1`，全量门禁、最终 PR 预检、最终 source CI / CodeQL 与真实 edited 复用均通过，四个最终 head 的组合验证通过。状态 `PR_VERIFIED / REVIEW_READY / NOT_DEPLOYED`。实际发布与真机验收保持独立，详见 [第一批交付报告](../../verification/2026-10-26-ci-first-batch-delivery.md)。
+2026-10-26：用户已追加授权“处理PR合并，推送部署”。四项 #364、#365、#367、#368 已合入 `main@6fe556e7`，合并后保留全部测试入口；最终 PR CI / CodeQL、1297 项组合全量门禁与该主线完整 CI / CodeQL 通过。微信 `0.0.372.1` 的实际回执通过 artifact 摘要、run attempt、同 SHA CI 和 Git 内容验证。云 `40274362993` 完整部署 12 个函数、基础设施与密钥回读、数据库 smoke 和清理通过，实际 receipt 核对通过；`6fe556e7` 云 `40274682171` 使用真实基线安全跳过，outcome 核对通过。状态 `MERGED / DEVELOPMENT_UPLOADED / CLOUDBASE_VERIFIED`。文档 #369 合入后继续核对最终主线 CI 与发布 outcome；真机验收保持独立，详见 [第一批交付报告](../../verification/2026-10-26-ci-first-batch-delivery.md)。
 
 ---
 
@@ -110,7 +110,9 @@ assert.equal(canReuse({ expected, evidence: { ...expected, baseSha: differentBas
 - [x] 推送独立逻辑提交与 draft PR 供 review，四项最终远端 required validate / CodeQL 通过。无明确生产合并授权不合并/生产发布。
 - [x] 第一批全部可审阅，交付报告记录四项状态、PR 链接与仍待合并验收的事项；第二/三批未实施，云部署 2–4 分钟目标未实测。
 
-以下为合入后待执行验收，本批尚未执行：
+合入后的实际验收：
 
-- [ ] 合入四项并保留全部测试入口，核对同 SHA main 完整 CI。
-- [ ] 核对实际发布 receipt 或有证据的无副作用 SKIPPED outcome；UNKNOWN、取消、部分失败或缺失 outcome 不推进成功基线。
+- [x] 合入四项并保留全部测试入口；`6fe556e7` 同 SHA main CI `40274522431` 全部成功。
+- [x] 核对微信实际发布 receipt，`0.0.372.1` / `40274682162` 通过 artifact、run attempt、同 SHA CI、Git 内容与环境验证。
+- [x] 核对 CloudBase 完整部署与回读 receipt，以及后继主线的安全跳过；UNKNOWN、取消、部分失败或缺失 outcome 不推进成功基线。
+- [ ] 合入文档 #369 并核对最终主线 CI / CodeQL 与两条发布工作流的有界 outcome；最终记录附在 PR 交付信息，避免无限文档回填。

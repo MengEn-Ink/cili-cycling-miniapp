@@ -1,11 +1,9 @@
 # 高优问题清单
 
-> 最后更新：2026-10-26（CST）。PR #362（我的页权限卡排版与旧 WebView 兼容）、PR #358（activity-read 头像类别兼容）与 PR #363（WXML 方法调用导致开发版上传编译失败修复）均已合入 `main@85cbc8f`。开发版 `0.0.366.1`（robot 1）已成功上传并产出同 SHA receipt，上传链路自 #358 起的中断已恢复；WXML 绑定语法契约测试已阻断此类错误再次进入主线（详见 docs/verification/2026-10-26-wxml-binding-upload-fix.md）。剩余：用户真机获取 `0.0.366.1`，验证权限卡排版与授权后头像/背景回读。
-> 用户已授权 CI 第一批合并、推送与部署。#364、#365、#367、#368 均已 squash 合入 `main@6fe556e7`，全部最终 PR CI 与 CodeQL 通过；完整源码与 1297 项测试通过的组合一致。CloudBase `40274362993` 正在执行 `d0ea0b5a` 的首次完整对账；微信 `40274362963` 仍在计算该目标的上传范围，实际回执待核对；文档 #369 待回填。状态 `MERGED / DEPLOYING`，独立 P0 保留。
+> 最后更新：2026-10-26（CST）。PR #362（我的页权限卡排版与旧 WebView 兼容）、PR #358（activity-read 头像类别兼容）与 PR #363（WXML 编译修复）均已保留在当前主线及开发版 `0.0.372.1`。WXML 绑定语法契约已阻断此类编译错误（详见 docs/verification/2026-10-26-wxml-binding-upload-fix.md）；剩余真机获取该开发版并核对权限卡、授权后头像与背景回读。
+> CI 第一批 #364、#365、#367、#368 已 squash 合入 `main@6fe556e7`，最终 PR 与该主线 CI / CodeQL、1297 项组合门禁均通过。微信开发版 `0.0.372.1` 已上传并核对实际与体验候选回执；CloudBase `40274362993` 完整部署、基础设施与配置回读、数据库 smoke 和清理全部通过，真实 receipt 核对通过。后继 `40274682171` 按累计范围安全跳过，无发布副作用。详见 [第一批交付报告](verification/2026-10-26-ci-first-batch-delivery.md)；文档 #369 合入后继续核对最终主线 CI 与发布 outcome，独立 P0 保留。
 >
 > 本文件只保留尚未完成的实际交付或验收。历史运行和详细口径见 [微信 E2E 与上线准备状态](verification/2026-10-21-wechat-e2e-and-launch-readiness.md)，GitHub Actions 实时状态以 GitHub 为唯一事实源。
-
-2026-10-26 用户批准的 [CI 与发布优化 A 方案第一批](superpowers/specs/2026-10-26-ci-release-optimization-design.md) 已通过 [PR #364](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/364)、[#365](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/365)、[#367](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/367)、[#368](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/368) 合入主线。预检、五分钟 upload 截止、实际 receipt / 累计范围、元数据可信复用和全部测试入口均保留；1297 Vitest、全量、覆盖率、high 审计、严格同步与治理通过。产品与截图字节未变；摘要只迁移二进制算法。最终组合与远端证据见 [交付报告](verification/2026-10-26-ci-first-batch-delivery.md)。当前实际发布验收中，第二、三批未实施，不改变真机、普通成员写链路和目标环境回读。
 
 第三轮骑行影像志布局优化已通过 PR #348 合入 `main@3d492c77b0feb9d1c79894754a8777fd19c3ce82`：17 条路由收口统一 gutter 与 64rpx 主标题，个人/俱乐部/活动 Hero 统一 16:9；活动编辑改为扁平章节和单列长表单，仅上传入口保留虚线；个人与俱乐部资料减少嵌套卡片，管理卡将下架/驳回降为危险文字操作，红色只保留主操作、选中和明确危险动作。微信开发者工具在 366px 华为模拟设备完成 17/17 真实云只读路由截图、活动编辑长页底部和四个重点 WXSS 编译复核，Console/Network 错误筛选为空；16 页 × 340/375/430 三宽度全部通过，1276 项测试通过。当前 UI 摘要为 `sha256:5fc9f6ac10cfd8fff76e2098067e3bf7e0344ba95132f4d3c0238a22b26efc9b`；主包 458760 字节，距硬限额 555 字节。GitHub Actions 已上传开发版 `0.0.350.1` 并生成同 SHA receipt；首次 candidate 仅因 squash 后同步基线 SHA 不可解析而失败，源 UI 与 Pages 摘要未漂移。截图原图含真实资料，仅私有留存，未冒充脱敏公开证据；以上仍属于模拟器和开发版证据，不替代公开媒体、普通成员写链路或 iOS/Android 物理真机验收。
 
@@ -25,13 +23,12 @@
 | P0 | 当前 SHA 的 DevTools 真实云只读运行 | `PARTIAL / BLOCKED`；2026-10-23 视觉细节工作树已完成最终状态 17/17 路由、26 项通过、1 项公开媒体样本失败、0 异常，并补齐活动二维码实际区域截图；公开骑友头像/背景样本仍缺失，且改动尚未提交部署 | 在最终验收 SHA 上复跑 17 路由并取得公开媒体真实样本；总 outcome 通过 |
 | P0 | 普通成员完整写链路 | `BLOCKED`；缺普通成员与隔离环境现场证据 | 创建→发布→报名→人工审批/自动通过→凭证→取消→重报，回读人数、状态、审计、幂等和补偿 |
 | P0 | iOS / Android 双真机 | `BLOCKED`；IDE 设备模拟值不是真机 | 两端完成权限、相册、定位、二维码、Canvas、保存分享、Strava/GPX、弱网和安全区验收 |
-| P0 | 当前云环境一致性与媒体 | `PARTIAL / DEPLOYED`；`f3071cbf` 函数与关键媒体密钥回读通过；2026-10-23 第三轮 17 路由截图确认本人、活动和俱乐部媒体只读可用；2026-10-26 修复 `activity-read` 云函数 category 不兼容（PR #358 已部署至 `cloudbase-d0gizacy77a1ab017`）、我的页权限卡排版错乱（PR #362）、WXML 方法调用导致开发版上传编译失败（PR #363）；开发版 `0.0.366.1` 已成功上传（`main@85cbc8f` 同 SHA receipt，见 docs/verification/2026-10-26-wxml-binding-upload-fix.md），真机公开头像/背景回读待物理设备验收 | 真机获取开发版 `0.0.366.1`，确认权限卡排版恢复且授权后活动详情头像/背景回读正常；在固化验收 SHA 上回读函数、集合/索引、规则、密钥；执行真实头像、背景、活动图、二维码和路线图 smoke |
+| P0 | 当前云环境一致性与媒体 | `PARTIAL / DEPLOYED`；云 `40274362993` 已在 `cloudbase-d0gizacy77a1ab017` / `ap-shanghai` 完整部署 12 个函数，数据库与存储规则、关键密钥、配置回读和数据库 smoke 通过；同目标实际 receipt 核对通过。`6fe556e7` 云范围安全跳过、开发版 `0.0.372.1` 实际上传回执通过；包括 #358 头像 category、#362 权限卡与 #363 WXML 修复。真实公开媒体和物理设备仍待验收 | 真机获取开发版 `0.0.372.1`，确认权限卡排版与授权后头像/背景回读；在固化验收版本执行真实头像、背景、活动图、二维码和路线图 smoke |
 | P0 | Strava OAuth / GPX 导入 | `BLOCKED`；代码与契约测试不能替代现场运行 | 配置 callback 后完成授权同意/拒绝、刷新/撤销、导入预览、活动保存消费及手动 GPX 降级 |
 | 上架前 | 主体、备案、类目、隐私与提审材料 | `BLOCKED`；无平台侧完整证据 | 后台核验主体/备案/类目，完成隐私声明、用户权益、内容治理、联系渠道和审核材料 |
-| P1 | 体验版晋级与 UAT | `DEVELOPMENT_UPLOADED / CANDIDATE_BLOCKED`；`main@85cbc8f` 的 CI 与开发版 `0.0.366.1` 自动上传均成功；历史 candidate `39942078355` 因 squash 后 `syncedThrough=37b74086` 不是 main 祖先而失败，未进入平台选版 | 以 `main@85cbc8f` 的同 SHA receipt 重跑 candidate、平台人工选为体验版及 verified 回读，再执行体验版 UAT |
+| P1 | 体验版晋级与 UAT | `DEVELOPMENT_UPLOADED / UAT_PENDING`；`main@6fe556e7` 的 CI 与开发版 `0.0.372.1` 上传均成功，实际与体验候选回执核对通过；#364 已修复同步祖先，历史 candidate 的旧基线失败不代表本版本已晋级；平台选版与 verified 尚未执行 | 以 `main@6fe556e7` 的同 SHA receipt 执行 candidate、平台人工选为体验版及 verified 回读，再执行体验版 UAT |
 | P1 | 单俱乐部模式真机核销 | `BLOCKED` | 双端验证普通成员只读、OWNER/ADMIN 无编辑入口、平台管理员编辑、空库创建、多存量失败和弱网迟到响应 |
 | P1 | 个人背景图移除与资料保存口径冲突 | `DEPLOYED / UAT_BLOCKED`；背景选填已部署，保留性别、头像与媒体门槛；资料核心 42 项通过；真实 UI 写入和真机验收未执行 | 回读无背景首次保存、移除后保存、头像独立即时保存；真机验收 |
-| P1 | CI 与发布链路第一批 | `MERGED / DEPLOYING`；四项已合入 `6fe556e7`，首次完整云对账执行中；核对最终 main CI、实际回执与有证据的安全跳过后回填 #369 | 核对 main CI、实际发布 receipt 或有证据的安全跳过；不替代独立 P0 |
 
 ## 已完成且不再列为阻塞
 

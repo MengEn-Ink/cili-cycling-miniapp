@@ -1,6 +1,6 @@
 # 开发、CI 与发布部署链路优化方案
 
-状态：**FIRST_BATCH_IMPLEMENTED / PR_VERIFIED / REVIEW_READY / NOT_DEPLOYED**。A 方案第一批四项已分别实现于草稿 PR #364、#365、#367、#368，最终 source CI / CodeQL、真实元数据复用与四项最终 head 的组合全量门禁均通过；第二、三批尚未实施。日期：2026-10-26（CST）。实施步骤见 [第一批计划](../plans/2026-10-26-ci-release-first-batch.md)，实际交付状态见 [交付报告](../../verification/2026-10-26-ci-first-batch-delivery.md)。
+状态：**FIRST_BATCH_MERGED / DEVELOPMENT_UPLOADED / CLOUDBASE_VERIFIED**。A 方案第一批 #364、#365、#367、#368 已全部合入 `main@6fe556e7`；最终 PR CI / CodeQL、组合 1297 项测试与该主线完整 CI / CodeQL 通过。微信开发版 `0.0.372.1` 的实际回执已核对，绑定同 SHA CI 与上一实际成功基线。云 `40274362993` 完整部署 12 个函数、基础设施与关键配置回读、数据库 smoke 和清理通过，真实 receipt 核对通过；后继 `40274682171` 使用真实基线安全跳过，目标、同 SHA CI、artifact 摘要与无副作用 outcome 核对通过。文档 #369 合入后继续核对最终主线，第二、三批尚未实施。日期：2026-10-26（CST）。实施步骤见 [第一批计划](../plans/2026-10-26-ci-release-first-batch.md)，实际交付状态见 [交付报告](../../verification/2026-10-26-ci-first-batch-delivery.md)。
 
 建议采用“前置失败检查、复用可信证据、按实际影响部署”的分层方案。优先处理微信上传远端卡住、PR 描述返工和无关云端 smoke，再优化安装、并行与本地证据复用。真机、普通成员写链路和目标云环境回读继续独立验收。
 
@@ -158,7 +158,7 @@ Pages、CodeQL：独立并行工作流
 
 实施时补充：产品与编译基线已同步至 `85cbc8f1`，后继 `456081f1` 只回填原上传验收。发布最终目标保持锁定，过期目标安全跳过，不直接改签新 main；只有后继同 SHA CI 成功才能部署它。上传五分钟从 SDK 的 upload 阶段起算，绝对截止不因进度刷新延长。所有 smoke、真机与普通成员写链路的独立门禁保留。
 
-第一批实测：#368 在同 head/base 上完成真实 source `40271458646` 和仅编辑描述的 `40271690906`，后者复用前者 attempt 1，依赖安装与 Harness skipped，描述与 required validate 通过。`affected-pr` 单次耗时从 133 秒降至 14 秒，节省 119 秒；仅代表这一次源码 job 对照，未达到长期中位数统计要求。四个最终 head 组合的 1297 Vitest、全量、覆盖率、审计、严格同步、治理和 actionlint 通过。本批尚未合并发布。
+第一批实测：#368 在同 head/base 上完成真实 source `40271458646` 和仅编辑描述的 `40271690906`，后者复用前者 attempt 1，依赖安装与 Harness skipped，描述与 required validate 通过。`affected-pr` 单次耗时从 133 秒降至 14 秒，节省 119 秒；仅代表这一次源码 job 对照，未达到长期中位数统计要求。四个最终 head 组合的 1297 Vitest、全量、覆盖率、审计、严格同步、治理和 actionlint 通过，四项已合入并完成实际发布验收。首次完整云部署 18 分 54 秒，包含函数部署 427 秒、数据库基线 263 秒和数据库 smoke 275 秒；本批保留这些检查，不宣称已达到第二批 2–4 分钟目标。
 
 ### 第二批：压缩 CloudBase 实际部署时间
 
