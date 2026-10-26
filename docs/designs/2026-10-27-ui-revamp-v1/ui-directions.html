@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>骑有此里 · UI 改版方向</title>
+    <style>
+      :root {
+        --paper: #fbf5ea;
+        --ink: #211f1c;
+        --muted: #6f675d;
+        --red: #c0321f;
+        --line: #ded8ce;
+        --white: #fff;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; padding: 32px; background: #f2eee7; color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif; }
+      .direction-intro { max-width: 1180px; margin: 0 auto 22px; }
+      .direction-intro h1 { margin: 0 0 8px; font: 700 32px/1.2 "Songti SC", STSong, serif; }
+      .subtitle { color: var(--muted); line-height: 1.7; }
+      .direction-note { padding: 12px 16px; border-left: 4px solid var(--red); background: #fff8ef; color: #4f4942; font-size: 14px; line-height: 1.6; }
+      .direction-grid { display: grid; grid-template-columns: repeat(3, minmax(260px, 1fr)); gap: 18px; align-items: start; max-width: 1180px; margin: auto; }
+      .direction-card { border: 1px solid #d8d4ce; border-radius: 18px; overflow: hidden; background: #fff; box-shadow: 0 8px 28px rgba(33, 31, 28, 0.07); cursor: pointer; transition: 0.18s ease; }
+      .direction-card:hover { transform: translateY(-2px); box-shadow: 0 12px 34px rgba(33, 31, 28, 0.12); }
+      .direction-card.selected { outline: 3px solid var(--red); }
+      .phone { width: 100%; aspect-ratio: 390 / 762; overflow: hidden; background: var(--paper); color: var(--ink); position: relative; }
+      .status { height: 32px; padding: 0 15px; display: flex; align-items: center; justify-content: space-between; font-size: 10px; font-weight: 700; }
+      .nav { height: 38px; padding: 0 15px; display: flex; align-items: center; justify-content: space-between; font-size: 14px; font-weight: 800; }
+      .capsule { width: 52px; height: 22px; border: 1px solid #d2ccc3; border-radius: 16px; background: #fff; }
+      .screen { padding: 0 15px 52px; }
+      .serif { font-family: "Songti SC", STSong, serif; }
+      .eyebrow { font-family: ui-monospace, monospace; font-size: 9px; color: var(--muted); letter-spacing: 0.08em; }
+      .tabs { display: flex; align-items: center; font-size: 11px; font-weight: 750; }
+      .tab { padding: 7px 12px; border-radius: 20px; }
+      .tab.on { background: var(--ink); color: #fff; }
+      .menu { margin-left: auto; width: 28px; height: 28px; border: 1px solid var(--line); border-radius: 50%; display: grid; place-items: center; }
+      .menu::before { content: "≡"; font-size: 15px; font-weight: 400; }
+      .activity { overflow: hidden; background: #fff; border: 1px solid #e4dfd7; border-radius: 14px; }
+      .cover { position: relative; aspect-ratio: 16 / 9; background: url("../2026-10-22-cycling-image-journal/assets/mountain.jpg") center / cover; }
+      .scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(12, 10, 7, 0) 28%, rgba(12, 10, 7, 0.88) 100%); }
+      .caption { position: absolute; left: 14px; right: 14px; bottom: 13px; color: #fff; }
+      .date { font-size: 9px; letter-spacing: 0.06em; }
+      .title { font-size: 25px; line-height: 1.05; font-weight: 850; margin: 6px 0 4px; }
+      .club { font-size: 9px; opacity: 0.86; }
+      .badge { position: absolute; right: 10px; top: 10px; background: rgba(12, 10, 7, 0.72); color: #fff; border-radius: 18px; padding: 5px 8px; font-size: 9px; font-weight: 750; }
+      .metrics { display: grid; grid-template-columns: repeat(3, 1fr); padding: 12px; }
+      .metric { padding: 0 8px; }
+      .metric + .metric { border-left: 1px solid var(--line); }
+      .metric:first-child { padding-left: 0; }
+      .metric b { font-size: 14px; white-space: nowrap; }
+      .metric span { display: block; color: var(--muted); font-size: 8px; margin-top: 3px; }
+      .meta { border-top: 1px solid #ece7df; padding: 9px 12px; display: flex; gap: 7px; align-items: center; font-size: 9px; }
+      .meta .go { margin-left: auto; color: var(--red); font-weight: 800; }
+      .bottom { position: absolute; bottom: 0; left: 0; right: 0; height: 46px; background: #fff; border-top: 1px solid #eee7dd; display: grid; grid-template-columns: repeat(3, 1fr); place-items: center; color: var(--muted); font-size: 9px; }
+      .bottom b { color: var(--red); }
+      .copy { padding: 15px 16px 17px; }
+      .copy h2 { margin: 0 0 6px; font-size: 17px; }
+      .copy p { margin: 0; color: #666; font-size: 13px; line-height: 1.5; }
+      .tagline { margin-top: 10px; display: inline-block; border-radius: 99px; background: #f5eee4; padding: 5px 9px; font-size: 11px; font-weight: 700; }
+      .recommended { background: var(--red); color: #fff; }
+      .a-head { padding: 10px 0 12px; }
+      .a-head h2 { font-size: 31px; line-height: 1.08; margin: 8px 0 7px; font-weight: 900; }
+      .a-head p { font-size: 11px; color: var(--muted); margin: 0; }
+      .a-tabs { padding: 4px; background: #fff; border: 1px solid #e9e3da; border-radius: 26px; margin: 0 0 13px; }
+      .a-list-label { font-size: 16px; font-weight: 900; margin: 0 0 9px; }
+      .b-top { display: flex; align-items: flex-end; justify-content: space-between; padding: 9px 0 10px; }
+      .b-top h2 { font-size: 25px; line-height: 1; margin: 4px 0 0; }
+      .b-tabs { gap: 4px; border-bottom: 1px solid var(--line); padding-bottom: 9px; margin-bottom: 11px; }
+      .b-tabs .tab { padding: 5px 8px; }
+      .b-tabs .tab.on { border-radius: 0; background: transparent; color: var(--ink); border-bottom: 2px solid var(--red); }
+      .b-kicker { font-size: 10px; color: var(--muted); }
+      .b-activity .cover { aspect-ratio: 4 / 3; }
+      .b-activity .title { font-size: 28px; }
+      .circle-go { position: absolute; right: 12px; bottom: 13px; width: 28px; height: 28px; border-radius: 50%; background: #fff; color: var(--ink); display: grid; place-items: center; font-size: 15px; }
+      .b-caption { right: 48px; }
+      .c-screen { padding: 0 0 52px; }
+      .c-hero { height: 435px; border-radius: 0 0 22px 22px; background: url("../2026-10-22-cycling-image-journal/assets/mountain.jpg") center / cover; position: relative; overflow: hidden; }
+      .c-hero .scrim { background: linear-gradient(180deg, rgba(12, 10, 7, 0.08), rgba(12, 10, 7, 0.84)); }
+      .c-copy { position: absolute; left: 18px; right: 18px; bottom: 88px; color: #fff; }
+      .c-copy h2 { font-size: 35px; line-height: 1.02; margin: 8px 0 7px; }
+      .c-sheet { position: absolute; left: 12px; right: 12px; bottom: 12px; border-radius: 15px; background: #fff; padding: 11px; }
+      .c-sheet .metrics { padding: 0; }
+      .c-filter { position: absolute; left: 14px; top: 12px; display: flex; gap: 6px; }
+      .c-filter span { padding: 6px 9px; background: rgba(255, 255, 255, 0.86); border-radius: 15px; font-size: 9px; font-weight: 700; }
+      .c-filter span.on { background: var(--ink); color: #fff; }
+      .c-next { padding: 15px; }
+      .c-next h2 { font-size: 18px; margin: 0 0 5px; }
+      .c-next p { font-size: 10px; color: var(--muted); margin: 0; }
+      .decision { max-width: 1180px; margin: 24px auto 0; padding: 18px 20px; border-radius: 16px; background: #fff; line-height: 1.7; }
+      @media (max-width: 1000px) { body { padding: 20px; } .direction-grid { grid-template-columns: 1fr; max-width: 420px; } }
+    </style>
+  </head>
+  <body>
+    <header class="direction-intro">
+      <h1>骑有此里 · UI 改版方向对比</h1>
+      <p class="subtitle">同一品牌、同一现有字段，只比较首屏密度、摄影层级与活动卡结构。三案是方向证据，不是生产实现。</p>
+      <div class="direction-note"><strong>共同底线：</strong>保留奶油纸感、品牌红、宋体大标题与真实摄影；不新增业务字段，不用假头像/假统计；44px 触控与浅色可读性不退步。</div>
+    </header>
+    <main class="direction-grid">
+      <article class="direction-card" data-choice="a">
+        <div class="phone">
+          <div class="status"><span>9:41</span><span>● ●●</span></div><div class="nav"><span>活动</span><span class="capsule"></span></div>
+          <div class="screen">
+            <div class="a-head"><div class="eyebrow">— 此里 · 一起出发</div><h2 class="serif">把周末，<br />交给山路。</h2><p>每一次转弯，都有值得记住的风景。</p></div>
+            <div class="tabs a-tabs"><span class="tab on">近期活动</span><span class="tab">往期影像</span><span class="menu"></span></div>
+            <div class="a-list-label serif">近期活动</div>
+            <div class="activity"><div class="cover"><div class="scrim"></div><span class="badge">报名中</span><div class="caption"><div class="date">10月31日 · 上午 9 点整</div><div class="title serif">黑分解 ride</div><div class="club">此里公开活动</div></div></div><div class="metrics"><div class="metric"><b>87.7 km</b><span>距离</span></div><div class="metric"><b>961 m</b><span>爬升</span></div><div class="metric"><b>5.6 h</b><span>骑行</span></div></div><div class="meta">◉ 辛庄桥 <span class="go">查看活动 →</span></div></div>
+          </div><div class="bottom"><b>活动</b><span>行程</span><span>我的</span></div>
+        </div>
+        <div class="copy"><h2>A · 稳健精修</h2><p>保留当前大标题骨架，只压缩空间、减轻分段控件并加强卡片 scrim。适合管理和表单的结构策略，但不单独作为全局视觉语言。</p><span class="tagline">结构风险最低</span></div>
+      </article>
+      <article class="direction-card selected" data-choice="b">
+        <div class="phone">
+          <div class="status"><span>9:41</span><span>● ●●</span></div><div class="nav"><span>活动</span><span class="capsule"></span></div>
+          <div class="screen">
+            <div class="b-top"><div><div class="eyebrow">此里 · 一起出发</div><h2 class="serif">周末上路。</h2></div><span class="b-kicker">共 1 场</span></div>
+            <div class="tabs b-tabs"><span class="tab on">近期活动</span><span class="tab">往期影像</span><span class="menu"></span></div>
+            <div class="activity b-activity"><div class="cover"><div class="scrim"></div><span class="badge">报名中</span><div class="caption b-caption"><div class="date">10月31日 · 周六 · 09:00</div><div class="title serif">黑分解 ride</div><div class="club">此里公开活动</div></div><span class="circle-go">→</span></div><div class="metrics"><div class="metric"><b>87.7</b><span>km 距离</span></div><div class="metric"><b>961</b><span>m 爬升</span></div><div class="metric"><b>5.6</b><span>h 骑行</span></div></div><div class="meta">◉ 辛庄桥 <span class="go">查看活动</span></div></div>
+          </div><div class="bottom"><b>活动</b><span>行程</span><span>我的</span></div>
+        </div>
+        <div class="copy"><h2>B · 内容先行（全局方向）</h2><p>紧凑杂志刊头、轻分段、标题安全区、圆形箭头与数值/单位分层成为 17 路由共同语言；无摄影页面使用相同层级，不强行配图。</p><span class="tagline recommended">已批准的全局方向</span></div>
+      </article>
+      <article class="direction-card" data-choice="c">
+        <div class="phone">
+          <div class="status"><span>9:41</span><span>● ●●</span></div><div class="nav"><span>活动</span><span class="capsule"></span></div>
+          <div class="screen c-screen">
+            <div class="c-hero"><div class="scrim"></div><div class="c-filter"><span class="on">近期</span><span>影像</span></div><div class="c-copy"><div class="eyebrow" style="color:#eee">10月31日 · 周六</div><h2 class="serif">黑分解<br />ride</h2><div style="font-size:10px;opacity:.86">此里公开活动 · 辛庄桥</div></div><div class="c-sheet"><div class="metrics"><div class="metric"><b>87.7</b><span>km 距离</span></div><div class="metric"><b>961</b><span>m 爬升</span></div><div class="metric"><b>5.6</b><span>h 骑行</span></div></div></div></div>
+            <div class="c-next"><h2 class="serif">下一段山路</h2><p>影像封面直接占据首屏，向上滑动进入活动详情。</p></div>
+          </div><div class="bottom"><b>活动</b><span>行程</span><span>我的</span></div>
+        </div>
+        <div class="copy"><h2>C · 沉浸封面</h2><p>情绪最强、首图最大，适合详情页；用于活动列表会弱化多活动扫描、状态和无图降级，因此只吸收全宽摄影与上浮 sheet。</p><span class="tagline">详情增强，不作全局模板</span></div>
+      </article>
+    </main>
+    <section class="decision">
+      <strong>最终裁决：</strong>B 是全部 17 路由的统一设计语言；活动详情额外吸收 C 的全宽摄影与上浮白色 sheet；管理和表单页在 B 的 token、字阶、间距与组件体系内使用 A 的稳健结构，不保留旧式裸样式。
+    </section>
+    <script>
+      document.querySelectorAll(".direction-card").forEach((card) => {
+        card.addEventListener("click", () => card.classList.toggle("selected"));
+      });
+    </script>
+  </body>
+</html>
