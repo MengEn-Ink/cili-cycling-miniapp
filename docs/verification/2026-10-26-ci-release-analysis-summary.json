@@ -1,0 +1,164 @@
+{
+  "schemaVersion": 1,
+  "status": "ANALYSIS_ONLY_NOT_IMPLEMENTED",
+  "repository": "MengEn-Ink/cili-cycling-miniapp",
+  "workflowBaselineSha": "879ea813b10e808f9a6a68184f8a8b5f312c978b",
+  "window": {
+    "runCreatedFrom": "2026-10-19T00:03:56Z",
+    "runCreatedThrough": "2026-10-26T03:19:53Z",
+    "runCount": 812,
+    "recentPrCount": 90,
+    "prsMergedInWindow": 61,
+    "runsWithJobsRead": 251,
+    "jobLogsRead": 17,
+    "receiptsDownloadedAndChecked": 3
+  },
+  "methods": {
+    "jobBasedElapsed": "run created_at to final job completed_at for first attempts",
+    "metadataElapsed": "run created_at to updated_at; may include retries or status update delay",
+    "queueProxy": "run created_at to first executing job started_at; mixed waiting causes",
+    "p90": "nearest rank",
+    "successClassification": "scope skips, cancelled, failed and unfinished runs excluded from actual deployment/upload timing",
+    "prFailureSample": "20 failed runs, selected from recent 15 and stratified historical runs; nonrandom",
+    "cloudLinkageLimit": "workflow metadata head_sha may differ from actual deployment target; linkage is not a target readback receipt",
+    "uploadReceiptLimit": "31 automatic upload runs stored receipt successfully; only 3 receipt payloads downloaded and checked"
+  },
+  "stageElapsedSeconds": {
+    "prOpenToMerge": {
+      "n": 61,
+      "median": 796,
+      "p90": 9712,
+      "max": 147257
+    },
+    "prCiSuccessMetadata": {
+      "n": 77,
+      "median": 68,
+      "p90": 143,
+      "max": 547
+    },
+    "mainCiSuccessJobs": {
+      "n": 59,
+      "median": 92,
+      "p90": 124,
+      "max": 134
+    },
+    "currentHarnessMainCiSuccessJobs": {
+      "n": 21,
+      "median": 100,
+      "p90": 129
+    },
+    "actualAutomaticCloudDeploymentSuccessJobs": {
+      "n": 13,
+      "median": 606,
+      "p90": 1022,
+      "max": 1494
+    },
+    "automaticUploadWithReceiptStoredJobs": {
+      "n": 31,
+      "median": 36,
+      "p90": 41,
+      "max": 267
+    },
+    "pagesSuccessMetadata": {
+      "n": 61,
+      "median": 49,
+      "p90": 82,
+      "max": 553
+    },
+    "codeqlMainSuccessMetadata": {
+      "n": 61,
+      "median": 141,
+      "p90": 338,
+      "max": 620
+    }
+  },
+  "runCounts": {
+    "prCi": {
+      "total": 223,
+      "success": 77,
+      "failure": 104,
+      "cancelled": 42,
+      "distinctHeadShas": 124,
+      "repeatedHeadRuns": 99,
+      "allRepeatedRunsAreSkippable": false
+    },
+    "automaticCloudSuccess": {
+      "total": 59,
+      "deploymentStepExecutedSuccessfully": 13,
+      "scopeSkipped": 46
+    },
+    "automaticUploadSuccess": {
+      "total": 54,
+      "receiptStored": 31,
+      "scopeSkipped": 23
+    },
+    "automaticUploadCancelled": {
+      "total": 5,
+      "approximatelyThirtyMinutesInUploadStep": 4
+    },
+    "failedPrSample": {
+      "n": 20,
+      "submissionFailed": 14,
+      "affectedFailed": 10,
+      "bothFailed": 4
+    }
+  },
+  "cloudStepElapsedSeconds": {
+    "clubDatabaseWriteSmoke": { "n": 13, "median": 313, "p90": 367 },
+    "deployAndVerifyFunctions": { "n": 13, "median": 75, "p90": 327 },
+    "prepareRuntimeFunctionConfig": { "n": 13, "median": 39, "p90": 45 },
+    "criticalSecretReconcile": { "n": 12, "median": 20.5, "p90": 23 },
+    "finalEnvironmentAndSecretReadback": { "n": 13, "median": 20, "p90": 23 },
+    "installAndVerifyCloudPackages": { "n": 13, "median": 22, "p90": 32 },
+    "databaseBaselineApply": { "n": 4, "median": 243.5, "p90": 368 }
+  },
+  "counterfactualNotImplemented": {
+    "description": "Subtract club smoke elapsed per run, without changing other steps; some runs still require this smoke",
+    "noInfrastructureRuns": 9,
+    "observedMedianSeconds": 509,
+    "medianAfterSubtractionSeconds": 178,
+    "validAsClaimedProductionSpeedup": false
+  },
+  "checkedUploadReceipts": [
+    {
+      "runId": "39941871719",
+      "mainSha": "3d492c77b0feb9d1c79894754a8777fd19c3ce82",
+      "version": "0.0.350.1",
+      "schemaVersion": 1,
+      "runAttempt": "1"
+    },
+    {
+      "runId": "39975443509",
+      "mainSha": "ac168f060e55499e8e2c890a5d677cefa0cb0f30",
+      "version": "0.0.354.1",
+      "schemaVersion": 1,
+      "runAttempt": "1"
+    },
+    {
+      "runId": "40211781417",
+      "mainSha": "bbae9f9b9079a5838ce080d442fd7e6963a89053",
+      "version": "0.0.360.1",
+      "schemaVersion": 1,
+      "runAttempt": "1"
+    }
+  ],
+  "latestUploadObservation": {
+    "runId": "40263538407",
+    "status": "in_progress",
+    "receiptPresentWhenRead": false,
+    "observationIsNotCurrentReleaseAcceptance": true
+  },
+  "mainRulesetObservation": {
+    "name": "protect-main",
+    "enforcement": "active",
+    "requiredStatusChecks": ["validate"],
+    "strictBaseRequired": false,
+    "classicProtection404DoesNotMeanUnprotected": true
+  },
+  "acceptanceLimits": [
+    "DevTools and simulator evidence cannot replace physical devices",
+    "CI and database CLI smoke cannot replace the ordinary-member write journey",
+    "Workflow success cannot replace an actual upload receipt or target CloudBase readback",
+    "No workflow, deployment, platform selection or release was changed by this analysis"
+  ]
+}

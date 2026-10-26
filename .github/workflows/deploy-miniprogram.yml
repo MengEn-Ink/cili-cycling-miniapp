@@ -178,6 +178,8 @@ jobs:
           MINIPROGRAM_VERSION: ${{ steps.release.outputs.version }}
           MINIPROGRAM_DESCRIPTION: ${{ inputs.description || (steps.release.outputs.restore_mode == 'true' && format('恢复 {0} · 历史稳定体验版重传', steps.release.outputs.restore_release_id)) || format('main {0} · GitHub Actions 自动上传', steps.release.outputs.target_sha) }}
           MINIPROGRAM_CI_ROBOT: ${{ inputs.robot || '1' }}
+          MINIPROGRAM_UPLOAD_TIMEOUT_MS: '300000'
+          MINIPROGRAM_UPLOAD_DIAGNOSTICS_PATH: ${{ runner.temp }}/miniprogram-upload-diagnostics.json
         shell: bash
         run: |
           set -euo pipefail
@@ -245,6 +247,15 @@ jobs:
           path: ${{ runner.temp }}/miniprogram-upload-receipt.json
           if-no-files-found: error
           retention-days: 90
+
+      - name: Store upload diagnostics
+        if: always() && steps.upload.outcome != 'skipped'
+        uses: actions/upload-artifact@v7
+        with:
+          name: miniprogram-upload-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/miniprogram-upload-diagnostics.json
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Remove temporary private key
         if: always()

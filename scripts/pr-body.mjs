@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 // PR 描述生成器：按 check-pr-description.mjs 的 8 个必填章节生成骨架，
-// 自动填入与 CI 一致的 diff 统计（git diff --numstat <merge-base>，含工作区改动），
-// 自动检测 docs/verification/ 下最新的验收报告。
+// 自动填入干净最终提交的 diff 统计，并选择本次 diff 中的唯一验收报告。
 //
 // 用法：
 //   npm run pr:body -- --title "fix(ui): 中文结果" [--report docs/verification/xxx.md]
@@ -12,85 +11,29 @@
 //
 // 流程约定：所有代码 commit 完成后再生成/填写，避免统计反复变动。
 
-import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+
+import { readFinalPrState, resolveVerificationReport } from './pr-final-state.mjs';
 
 const BODY_PATH = '.pr-body.md';
 const TITLE_PATH = '.pr-title.txt';
-const VERIFICATION_DIR = 'docs/verification';
 const TITLE_PATTERN = /^(feat|fix|refactor|docs|test|chore|ci|perf)(\([^)]+\))?: .*[\u3400-\u9fff]/;
-
-const gitText = (args) => execFileSync('git', args, { encoding: 'utf8' });
-const lines = (value) =>
-  value
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean);
 
 function parseArgs(argv) {
   const args = {};
-  for (let i = 0; i < argv.length; i += 1) {
-    if (argv[i] === '--title') args.title = argv[i + 1];
-    if (argv[i] === '--report') args.report = argv[i + 1];
+  for (let i = 0; i < argv.length; i += 2) {
+    const name = argv[i];
+    if (!['--title', '--report'].includes(name) || !argv[i + 1] || argv[i + 1].startsWith('--')) {
+      throw new Error(`无效参数：${name}`);
+    }
+    args[name.slice(2)] = argv[i + 1];
   }
   return args;
 }
 
-function resolveBase() {
-  try {
-    return gitText(['merge-base', 'HEAD', 'origin/main']).trim();
-  } catch {
-    return gitText(['rev-parse', 'HEAD']).trim();
-  }
-}
-
-function numstat(base) {
-  return gitText(['diff', '--numstat', base]).split('\n').filter(Boolean);
-}
-
-function parseDiffStats(numstatOutput) {
-  let files = 0;
-  let additions = 0;
-  let deletions = 0;
-  for (const line of numstatOutput) {
-    const [added, deleted] = line.split('\t');
-    files += 1;
-    if (/^\d+$/.test(added)) additions += Number(added);
-    if (/^\d+$/.test(deleted)) deletions += Number(deleted);
-  }
-  return { files, additions, deletions };
-}
-
-function changedFiles(base) {
-  return lines(gitText(['diff', '--name-status', base])).map((line) => {
-    const tab = line.indexOf('\t');
-    return { status: line.slice(0, tab), file: line.slice(tab + 1) };
-  });
-}
-
-function untrackedFiles() {
-  return lines(gitText(['ls-files', '--others', '--exclude-standard']));
-}
-
-function latestVerificationReport() {
-  if (!existsSync(VERIFICATION_DIR)) return undefined;
-  const reports = readdirSync(VERIFICATION_DIR)
-    .filter((name) => name.endsWith('.md'))
-    .map((name) => {
-      const full = join(VERIFICATION_DIR, name);
-      return { path: `${VERIFICATION_DIR}/${name}`, mtime: statSync(full).mtimeMs };
-    })
-    .sort((a, b) => b.mtime - a.mtime);
-  return reports[0]?.path;
-}
-
-function buildBody({ stats, files, untracked, reportPath }) {
+function buildBody({ stats, files, reportPath }) {
   const fileRows = files.map(({ status, file }) => `| ${status} | ${file} |`).join('\n');
-  const untrackedSection = untracked.length
-    ? `\n\n未跟踪文件（尚未 git add，不计入上方统计）：${untracked.join('、')}`
-    : '';
 
   return `## 需求上下文
 
@@ -148,7 +91,7 @@ function buildBody({ stats, files, untracked, reportPath }) {
 
 | 状态 | 文件 |
 | --- | --- |
-${fileRows}${untrackedSection}
+${fileRows}
 `;
 }
 
@@ -168,37 +111,28 @@ function run() {
     return;
   }
 
-  const base = resolveBase();
-  const numstatOutput = numstat(base);
-  const stats = parseDiffStats(numstatOutput);
-  const files = changedFiles(base);
-  const untracked = untrackedFiles();
-  const reportPath = args.report || latestVerificationReport();
-
-  if (!reportPath || !existsSync(reportPath)) {
-    console.error(
-      '未找到验收报告：请通过 --report docs/verification/xxx.md 指定，或先在 docs/verification/ 下创建报告',
-    );
-    process.exitCode = 1;
-    return;
-  }
+  const { base, stats, files } = readFinalPrState();
+  const reportPath = resolveVerificationReport({ report: args.report, files });
 
   writeFileSync(TITLE_PATH, `${args.title}\n`, 'utf8');
-  writeFileSync(BODY_PATH, buildBody({ stats, files, untracked, reportPath }), 'utf8');
+  writeFileSync(BODY_PATH, buildBody({ stats, files, reportPath }), 'utf8');
 
   const placeholders = (readFileSync(BODY_PATH, 'utf8').match(/【/g) || []).length;
   console.log(`基准：${base.slice(0, 10)}（merge-base 与 origin/main）`);
   console.log(`统计：${stats.files} files changed, +${stats.additions}/-${stats.deletions}`);
   console.log(`验收报告：${reportPath}`);
-  if (untracked.length)
-    console.log(`未跟踪文件 ${untracked.length} 个（未计入统计，提交后重新生成）`);
   console.log(`已生成 ${TITLE_PATH} 与 ${BODY_PATH}（${placeholders} 处【占位】待填写）`);
   console.log('\n下一步：');
   console.log('  1. 填写 .pr-body.md 中所有【】占位内容');
   console.log('  2. npm run pr:preflight 复核');
-  console.log(`  3. gh pr create --title "$(Get-Content .pr-title.txt)" --body-file ${BODY_PATH}`);
+  console.log(`  3. gh pr create --title "<已生成的标题>" --body-file ${BODY_PATH}`);
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  run();
+  try {
+    run();
+  } catch (error) {
+    console.error(error.message);
+    process.exitCode = 1;
+  }
 }

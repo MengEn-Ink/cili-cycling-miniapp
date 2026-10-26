@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
@@ -109,25 +109,32 @@ function baselineUiDigest(ref) {
   return digestFiles(new Map(files.map((file) => [file, gitBuffer(['show', `${ref}:${file}`])])));
 }
 
-function currentPrototypeDigest() {
+export function currentPrototypeDigest() {
   return digestFiles(new Map(PROTOTYPE_FILES.map((file) => [file, readNormalized(file)])));
 }
 
-function currentUiDigest() {
-  const files = lines(
-    gitText(['ls-files', '--cached', '--others', '--exclude-standard', '--', ...UI_PATHS]),
-  ).filter((file) => classifyUiPath(file).ui);
+export function currentUiDigest() {
+  const files = gitBuffer([
+    'ls-files',
+    '-z',
+    '--cached',
+    '--others',
+    '--exclude-standard',
+    '--',
+    ...UI_PATHS,
+  ])
+    .toString('utf8')
+    .split('\0')
+    .filter((file) => file && classifyUiPath(file).ui && existsSync(file));
   return digestFiles(new Map([...new Set(files)].map((file) => [file, readNormalized(file)])));
 }
 
-// 统一 LF：CI checkout 的文件均为 LF，Windows 工作区可能是 CRLF。
-// 用 git show HEAD:file 读取仓库 blob（LF），未跟踪文件则规范化 CRLF→LF。
+// 读取实际工作树：未提交修改也必须进入摘要；二进制资源保持原始字节。
 function readNormalized(file) {
-  try {
-    return gitBuffer(['show', `HEAD:${file}`]).toString('utf8');
-  } catch {
-    return readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
-  }
+  const bytes = readFileSync(file);
+  return /\.(?:json|wxss|wxml|[cm]?[jt]s|css|html|svg)$/i.test(file)
+    ? Buffer.from(bytes.toString('utf8').replace(/\r\n/g, '\n'))
+    : bytes;
 }
 
 function readManifest() {
