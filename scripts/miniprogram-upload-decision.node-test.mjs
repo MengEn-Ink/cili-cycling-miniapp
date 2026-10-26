@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
-import { mkdtemp, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -146,4 +146,47 @@ test('CLI 按完整提交区间创建并校验上传判定', async () => {
     ),
     /SHA/,
   );
+});
+
+test('删除文件或跨目录移出小程序仍触发 CI shadow 上传判定', async (t) => {
+  const repository = await mkdtemp(path.join(os.tmpdir(), 'cili-upload-delete-'));
+  t.after(() => rm(repository, { recursive: true, force: true }));
+  const git = (args) => execFileAsync('git', args, { cwd: repository });
+  await git(['init', '-q']);
+  await git(['config', 'user.email', 'fixture@example.invalid']);
+  await git(['config', 'user.name', 'Fixture']);
+  await mkdir(path.join(repository, 'miniprogram'));
+  await mkdir(path.join(repository, 'docs'));
+  await writeFile(path.join(repository, 'miniprogram/old.ts'), 'same\n');
+  await git(['add', '.']);
+  await git(['commit', '-qm', 'first']);
+  const before = (await git(['rev-parse', 'HEAD'])).stdout.trim();
+  await rename(path.join(repository, 'miniprogram/old.ts'), path.join(repository, 'docs/moved.ts'));
+  await git(['add', '.']);
+  await git(['commit', '-qm', 'move out']);
+  const sha = (await git(['rev-parse', 'HEAD'])).stdout.trim();
+  const output = path.join(repository, 'decision.json');
+  await execFileAsync(
+    process.execPath,
+    [scriptPath, 'create', '--before', before, '--sha', sha, '--output', output],
+    { cwd: repository },
+  );
+  assert.deepEqual(JSON.parse(await readFile(output, 'utf8')).matchedPaths, ['miniprogram/old.ts']);
+  await rm(path.join(repository, 'docs/moved.ts'));
+  await writeFile(path.join(repository, 'miniprogram/delete.ts'), 'delete\n');
+  await git(['add', '.']);
+  await git(['commit', '-qm', 'add']);
+  const deletionBase = (await git(['rev-parse', 'HEAD'])).stdout.trim();
+  await rm(path.join(repository, 'miniprogram/delete.ts'));
+  await git(['add', '.']);
+  await git(['commit', '-qm', 'delete']);
+  const deletionHead = (await git(['rev-parse', 'HEAD'])).stdout.trim();
+  await execFileAsync(
+    process.execPath,
+    [scriptPath, 'create', '--before', deletionBase, '--sha', deletionHead, '--output', output],
+    { cwd: repository },
+  );
+  assert.deepEqual(JSON.parse(await readFile(output, 'utf8')).matchedPaths, [
+    'miniprogram/delete.ts',
+  ]);
 });

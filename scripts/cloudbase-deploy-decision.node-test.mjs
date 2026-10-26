@@ -135,8 +135,8 @@ test('GitHub 工作流仅在 main CI 成功后部署并使用环境级密钥', (
   assert.match(workflow, /secrets\.CLOUDBASE_API_KEY/);
   assert.match(workflow, /vars\.CLOUDBASE_ENV_ID/);
   assert.match(workflow, /vars\.CLOUDBASE_REGION/);
-  assert.match(workflow, /actions\/workflows\/deploy-cloudbase\.yml\/runs/);
-  assert.match(workflow, /merge-base --is-ancestor/);
+  assert.match(workflow, /release-baseline-cli\.mjs scope cloudbase/);
+  assert.match(workflow, /fetch-depth: 0/);
   assert.match(workflow, /login --cloudbase-api-key/);
   assert.match(workflow, /cloudbase:storage:reconcile/);
   assert.match(workflow, /cloudbase:smoke:club-application/);

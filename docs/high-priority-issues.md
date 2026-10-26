@@ -1,7 +1,7 @@
 # 高优问题清单
 
 > 最后更新：2026-10-26（CST）。PR #362（我的页权限卡排版与旧 WebView 兼容）、PR #358（activity-read 头像类别兼容）与 PR #363（WXML 方法调用导致开发版上传编译失败修复）均已合入 `main@85cbc8f`。开发版 `0.0.366.1`（robot 1）已成功上传并产出同 SHA receipt，上传链路自 #358 起的中断已恢复；WXML 绑定语法契约测试已阻断此类错误再次进入主线（详见 docs/verification/2026-10-26-wxml-binding-upload-fix.md）。剩余：用户真机获取 `0.0.366.1`，验证权限卡排版与授权后头像/背景回读。
-> 用户已授权 CI 第一批合并、推送与部署。#364 已合入 `main@ef48e307`，ready CI `40272705672` 和同 SHA main CI `40272968020` 通过；#365 正在同步复核，#367 / #368 / #369 待合并。状态 `MERGING / RELEASE_PENDING`，独立 P0 保留。
+> 用户已授权 CI 第一批合并、推送与部署。#364、#365 已合入 `main@c665c329`，#365 最终 CI `40273355173` 与 CodeQL 通过；#367 已同步并推送最终 head，#368 已整合依赖和全部测试入口。两项源码与已验证组合一致，文档 #369 将回填实际发布结果。状态 `MERGING / RELEASE_PENDING`，独立 P0 保留。
 >
 > 本文件只保留尚未完成的实际交付或验收。历史运行和详细口径见 [微信 E2E 与上线准备状态](verification/2026-10-21-wechat-e2e-and-launch-readiness.md)，GitHub Actions 实时状态以 GitHub 为唯一事实源。
 
@@ -31,7 +31,7 @@
 | P1 | 体验版晋级与 UAT | `DEVELOPMENT_UPLOADED / CANDIDATE_BLOCKED`；`main@85cbc8f` 的 CI 与开发版 `0.0.366.1` 自动上传均成功；历史 candidate `39942078355` 因 squash 后 `syncedThrough=37b74086` 不是 main 祖先而失败，未进入平台选版 | 以 `main@85cbc8f` 的同 SHA receipt 重跑 candidate、平台人工选为体验版及 verified 回读，再执行体验版 UAT |
 | P1 | 单俱乐部模式真机核销 | `BLOCKED` | 双端验证普通成员只读、OWNER/ADMIN 无编辑入口、平台管理员编辑、空库创建、多存量失败和弱网迟到响应 |
 | P1 | 个人背景图移除与资料保存口径冲突 | `DEPLOYED / UAT_BLOCKED`；背景选填已部署，保留性别、头像与媒体门槛；资料核心 42 项通过；真实 UI 写入和真机验收未执行 | 回读无背景首次保存、移除后保存、头像独立即时保存；真机验收 |
-| P1 | CI 与发布链路第一批 | `MERGING / RELEASE_PENDING`；#364 已合入 `ef48e307` 且 main CI 通过，#365 同步复核中，#367 / #368 / #369 待合并 | 合入四项并保留全部测试入口，核对 main CI、实际发布 receipt 或有证据的安全跳过；不替代独立 P0 |
+| P1 | CI 与发布链路第一批 | `MERGING / RELEASE_PENDING`；#364、#365 已合入 `c665c329`，#367 最新提交远端检查中，#368 已整合依赖，#369 待回填发布结果 | 合入四项并保留全部测试入口，核对 main CI、实际发布 receipt 或有证据的安全跳过；不替代独立 P0 |
 
 ## 已完成且不再列为阻塞
 
