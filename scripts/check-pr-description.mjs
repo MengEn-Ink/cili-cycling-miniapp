@@ -52,6 +52,7 @@ export function validatePullRequest({ title, body, stats, fileExists = existsSyn
   if (!body.trim()) return [...errors, 'PR 描述不能为空'];
   if (body.includes('<!--')) errors.push('PR 描述仍包含模板注释，请填写完成后删除占位内容');
   if (body.includes('[请填写]')) errors.push('PR 描述仍包含“[请填写]”占位内容');
+  if (/【请(?:补充|填写)[^】]*】/.test(body)) errors.push('PR 描述仍包含“【请补充】”占位内容');
   if (/\[ \]/.test(body)) errors.push('PR 描述存在未勾选项目，未完成项应写明“未执行/阻塞 + 原因”');
   if (/<(?:填写|标题|链接|命令|结果|path|sha|n|m|k)>/i.test(body))
     errors.push('PR 描述仍包含模板占位符');
