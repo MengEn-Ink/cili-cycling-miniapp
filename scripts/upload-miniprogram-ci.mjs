@@ -1,7 +1,10 @@
-import { chmod, readFile, stat } from 'node:fs/promises';
+import { chmod, lstat, mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+
+import { runUploadProcess, safeUploadProgress } from './miniprogram-upload-supervisor.mjs';
+export { runUploadProcess } from './miniprogram-upload-supervisor.mjs';
 
 const uploadRequire = createRequire(
   new URL('../tools/miniprogram-ci/package.json', import.meta.url),
@@ -59,7 +62,7 @@ export async function loadUploadConfig(env = process.env, cwd = process.cwd()) {
   const privateKeyPath = resolve(
     requiredText(env.MINIPROGRAM_CI_PRIVATE_KEY_PATH, 'MINIPROGRAM_CI_PRIVATE_KEY_PATH'),
   );
-  const keyStat = await stat(privateKeyPath).catch(() => undefined);
+  const keyStat = await lstat(privateKeyPath).catch(() => undefined);
   if (!keyStat?.isFile()) throw new Error('代码上传密钥文件不存在或不是普通文件');
   await chmod(privateKeyPath, 0o600);
   return {
@@ -78,6 +81,7 @@ export async function uploadMiniProgram({
   env = process.env,
   cwd = process.cwd(),
   logger = console,
+  onProgress = () => {},
 }) {
   const config = await loadUploadConfig(env, cwd);
   const project = new ci.Project({
@@ -94,7 +98,11 @@ export async function uploadMiniProgram({
     desc: config.description,
     robot: config.robot,
     setting: config.setting,
-    onProgressUpdate: (progress) => logger.log(progress),
+    onProgressUpdate: (progress) => {
+      const safe = safeUploadProgress(progress);
+      logger.log(`${safe.phase} / ${safe.status}`);
+      onProgress(safe);
+    },
   });
   logger.log(`微信开发版 ${config.version} 上传成功`);
   return result;
@@ -103,13 +111,52 @@ export async function uploadMiniProgram({
 const isEntryPoint =
   process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url;
 if (isEntryPoint) {
-  const ci = uploadRequire('miniprogram-ci');
-  uploadMiniProgram({ ci }).catch((error) => {
-    console.error(`微信开发版上传失败：${error instanceof Error ? error.message : String(error)}`);
-    // miniprogram-ci 的内部连接池会保持事件循环存活，仅设置 exitCode 会让失败任务
-    // 挂到运行器超时；显式退出，避免占用 30 分钟配额。
-    setTimeout(() => process.exit(1), 500);
-  });
+  if (process.argv.includes('--worker') && process.send) {
+    const send = (message, exitCode) =>
+      process.send(message, () => {
+        if (exitCode !== undefined) process.exit(exitCode);
+      });
+    try {
+      await uploadMiniProgram({
+        ci: uploadRequire('miniprogram-ci'),
+        logger: { log() {} },
+        onProgress: (progress) => send({ type: 'progress', ...progress }),
+      });
+      send({ type: 'completed', outcome: 'UPLOADED' }, 0);
+    } catch (error) {
+      send({ type: 'failed', errorCode: Number.isSafeInteger(error?.code) ? error.code : null }, 1);
+    }
+  } else {
+    let diagnostic;
+    try {
+      const config = await loadUploadConfig();
+      console.log(`开始上传微信开发版 ${config.version}（robot ${config.robot}）`);
+      diagnostic = await runUploadProcess({
+        uploadTimeoutMs: Number(process.env.MINIPROGRAM_UPLOAD_TIMEOUT_MS || 300000),
+      });
+      console.log(JSON.stringify(diagnostic));
+      if (diagnostic.outcome === 'UPLOADED') {
+        console.log(`微信开发版 ${config.version} 上传成功`);
+      } else {
+        console.error(
+          `微信开发版上传 ${diagnostic.outcome}：${diagnostic.reason}。核对平台版本与 receipt 后决定恢复。`,
+        );
+        process.exitCode = 1;
+      }
+    } catch (error) {
+      diagnostic = { schemaVersion: 1, outcome: 'FAILED', reason: 'configuration-error' };
+      console.error(`微信开发版上传前检查失败：${error.message}`);
+      process.exitCode = 1;
+    } finally {
+      if (process.env.MINIPROGRAM_UPLOAD_DIAGNOSTICS_PATH) {
+        const diagnosticPath = resolve(process.env.MINIPROGRAM_UPLOAD_DIAGNOSTICS_PATH);
+        await mkdir(dirname(diagnosticPath), { recursive: true });
+        await writeFile(diagnosticPath, `${JSON.stringify(diagnostic, null, 2)}\n`, {
+          mode: 0o600,
+        });
+      }
+    }
+  }
 }
 
 export const scriptPath = fileURLToPath(import.meta.url);

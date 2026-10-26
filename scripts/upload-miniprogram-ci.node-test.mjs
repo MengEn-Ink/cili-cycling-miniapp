@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, rm, stat, symlink, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
@@ -12,6 +12,7 @@ import {
   validateDescription,
   validateVersion,
 } from './upload-miniprogram-ci.mjs';
+import * as uploadModule from './upload-miniprogram-ci.mjs';
 
 async function fixture() {
   const root = await mkdtemp(path.join(os.tmpdir(), 'cili-miniprogram-ci-'));
@@ -237,4 +238,201 @@ test('上传脚本不会读取或打印密钥正文', async () => {
   const source = await readFile(new URL('./upload-miniprogram-ci.mjs', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /readFile\(privateKeyPath/);
   assert.doesNotMatch(source, /console\.(?:log|error)\([^\n]*PRIVATE_KEY/);
+});
+
+async function workerFixture(t, code) {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'cili-upload-worker-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const workerPath = path.join(root, 'worker.mjs');
+  await writeFile(workerPath, code);
+  return workerPath;
+}
+
+test('上传进度日志只保留阶段与状态，随机 ID 和 SDK 文本不外泄', async () => {
+  const { root, keyPath } = await fixture();
+  const messages = [];
+  await uploadMiniProgram({
+    cwd: root,
+    env: { MINIPROGRAM_CI_PRIVATE_KEY_PATH: keyPath, MINIPROGRAM_VERSION: '1.0.1' },
+    ci: {
+      Project: class {},
+      upload: async ({ onProgressUpdate }) => {
+        onProgressUpdate({ id: 'random-private-id', message: 'upload', status: 'doing' });
+        onProgressUpdate({
+          id: 'another-private-id',
+          message: 'token=secret-value',
+          status: 'info',
+        });
+        return {};
+      },
+    },
+    logger: { log: (value) => messages.push(value) },
+  });
+  const text = JSON.stringify(messages);
+  assert.match(text, /upload.*doing/);
+  assert.doesNotMatch(text, /private-id|secret-value/);
+});
+
+test('密钥符号链接在上传前拒绝，不改变目标文件', async (t) => {
+  if (process.platform === 'win32') return t.skip('POSIX symlink fixture');
+  const { root, keyPath } = await fixture();
+  const link = path.join(root, 'link.key');
+  await symlink(keyPath, link);
+  await assert.rejects(
+    loadUploadConfig({ MINIPROGRAM_CI_PRIVATE_KEY_PATH: link, MINIPROGRAM_VERSION: '1.0.1' }, root),
+    /普通文件/,
+  );
+  assert.equal((await stat(keyPath)).mode & 0o777, 0o644);
+});
+
+test('编译准备耗时不消费五分钟上传阶段预算', async (t) => {
+  assert.equal(
+    typeof uploadModule.runUploadProcess,
+    'function',
+    'needs isolated upload supervisor',
+  );
+  const workerPath = await workerFixture(
+    t,
+    `
+process.send({ type: 'progress', phase: 'prepare', status: 'doing' });
+setTimeout(() => {
+  process.send({ type: 'progress', phase: 'upload', status: 'doing' });
+  process.send({ type: 'completed', outcome: 'UPLOADED' });
+}, 250);
+`,
+  );
+  const result = await uploadModule.runUploadProcess({
+    workerPath,
+    uploadTimeoutMs: 80,
+    killGraceMs: 30,
+    heartbeatMs: 20,
+    logger: { log() {} },
+  });
+  assert.equal(result.outcome, 'UPLOADED');
+});
+
+test('真实远端挂起超时终止忽略 SIGTERM 的 worker，结果未知且不重试', async (t) => {
+  assert.equal(
+    typeof uploadModule.runUploadProcess,
+    'function',
+    'needs isolated upload supervisor',
+  );
+  const workerPath = await workerFixture(
+    t,
+    `
+process.on('SIGTERM', () => {});
+process.send({ type: 'progress', phase: 'upload', status: 'doing' });
+setInterval(() => {}, 1000);
+`,
+  );
+  const messages = [];
+  const result = await uploadModule.runUploadProcess({
+    workerPath,
+    uploadTimeoutMs: 80,
+    killGraceMs: 30,
+    heartbeatMs: 20,
+    logger: { log: (message) => messages.push(message) },
+  });
+  assert.equal(result.outcome, 'UNKNOWN');
+  assert.equal(result.reason, 'upload-timeout');
+  assert.equal(result.receipt, undefined);
+  assert.equal(result.workerStarts, 1);
+  assert.equal(result.exitSignal, 'SIGKILL');
+  assert.match(messages.join('\n'), /lastProgressAt/);
+  assert.ok(result.uploadElapsedMs >= 80);
+});
+
+test('进度更新不重置绝对上传预算，异常退出仍不得冒充成功', async (t) => {
+  assert.equal(
+    typeof uploadModule.runUploadProcess,
+    'function',
+    'needs isolated upload supervisor',
+  );
+  const workerPath = await workerFixture(
+    t,
+    `
+process.send({ type: 'progress', phase: 'upload', status: 'doing' });
+setInterval(() => process.send({ type: 'progress', phase: 'upload', status: 'doing' }), 10);
+`,
+  );
+  const result = await uploadModule.runUploadProcess({
+    workerPath,
+    uploadTimeoutMs: 80,
+    killGraceMs: 30,
+    heartbeatMs: 20,
+    logger: { log() {} },
+  });
+  assert.equal(result.outcome, 'UNKNOWN');
+  assert.equal(result.reason, 'upload-timeout');
+  const failedPath = await workerFixture(t, 'process.exit(7);');
+  const failed = await uploadModule.runUploadProcess({
+    workerPath: failedPath,
+    logger: { log() {} },
+  });
+  assert.equal(failed.outcome, 'FAILED');
+  assert.equal(failed.exitCode, 7);
+});
+
+test('SDK 远端错误返回 UNKNOWN，原始 stdout 与错误正文不进入诊断', async (t) => {
+  const workerPath = await workerFixture(
+    t,
+    `
+console.log('token=private-value');
+console.error('https://private.example/key');
+process.send({ type: 'progress', phase: 'upload', status: 'doing' });
+process.send({ type: 'failed', errorCode: 42, message: 'secret-error' });
+setInterval(() => {}, 1000);
+`,
+  );
+  const messages = [];
+  const result = await uploadModule.runUploadProcess({
+    workerPath,
+    logger: { log: (message) => messages.push(message) },
+  });
+  assert.equal(result.outcome, 'UNKNOWN');
+  assert.equal(result.errorCode, 42);
+  assert.equal(result.reason, 'sdk-error');
+  assert.doesNotMatch(JSON.stringify({ messages, result }), /private|secret/);
+  assert.equal(result.receipt, undefined);
+});
+
+test('取消信号终止正在上传的子进程并保留 UNKNOWN', async (t) => {
+  const workerPath = await workerFixture(
+    t,
+    `
+process.send({ type: 'progress', phase: 'upload', status: 'doing' });
+setInterval(() => {}, 1000);
+`,
+  );
+  let cancelled = false;
+  const result = await uploadModule.runUploadProcess({
+    workerPath,
+    logger: {
+      log: (message) => {
+        if (!cancelled && JSON.parse(message).phase === 'upload') {
+          cancelled = true;
+          process.emit('SIGTERM');
+        }
+      },
+    },
+  });
+  assert.equal(result.outcome, 'UNKNOWN');
+  assert.equal(result.reason, 'cancelled');
+  assert.equal(result.receipt, undefined);
+});
+
+test('workflow 上传五分钟阶段诊断独立保存，失败只清理且不签发 receipt', async () => {
+  const workflow = await readFile(
+    new URL('../.github/workflows/deploy-miniprogram.yml', import.meta.url),
+    'utf8',
+  );
+  assert.match(workflow, /MINIPROGRAM_UPLOAD_TIMEOUT_MS:\s*'300000'/);
+  assert.match(workflow, /MINIPROGRAM_UPLOAD_DIAGNOSTICS_PATH:/);
+  assert.match(workflow, /name: Store upload diagnostics[\s\S]*?if: always\(\)/);
+  assert.match(
+    workflow,
+    /Generate immutable development upload receipt[\s\S]*?if: steps\.upload\.outputs\.(?:uploaded|experience_eligible) == 'true'/,
+  );
+  assert.match(workflow, /Remove temporary private key[\s\S]*?if: always\(\)/);
+  assert.doesNotMatch(workflow, /retry.*deploy:miniprogram/);
 });
