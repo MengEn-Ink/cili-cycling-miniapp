@@ -62,24 +62,37 @@ PR B 先完成表达层迁移，不改变任何视觉值。每个现存颜色字
 | semantic | 描述用途，承接跨页面一致性 | `--color-bg`、`--color-text`、`--color-text-muted`、`--color-border`、`--color-surface-raised` |
 | component | 描述组件状态和叠层，不允许散落局部值 | `--scrim-cover-strong`、`--surface-sheet`、`--border-card`、`--shadow-sheet` |
 
-### 色彩与叠层
+### 当前色彩：PR B 保值迁移
 
-| 角色 | 冻结值 | 用途与限制 |
-| --- | --- | --- |
-| paper / background | `#fbf5ea` | 页面底色，保持奶油纸感 |
-| ink | `#211f1c` | 标题、主正文、选中胶囊 |
-| muted | `#6f675d` | 辅助信息；在 paper/white 上需满足正文对比度 |
-| brand | `#e13b2b` | 品牌强调、选中和主操作，禁止扩大成大面积背景 |
-| action | `#c0321f` | 高对比行动文字与危险动作；不得与 brand 无理由互换 |
-| raised | `#f3e6d0` | 骨架、无图与弱提示承托 |
-| line | `#ededed` | 白色面上的弱分隔 |
-| strong line | `#9a9186` | 需要更清晰边界的控件与可访问状态 |
-| cover scrim top | `rgba(17, 15, 12, 0.04)` | 摄影顶部保留，不在页面中直接书写 |
-| cover scrim strong | `rgba(17, 15, 12, 0.88)` | 摄影底部标题承托；以最亮真实照片验收 |
-| hero scrim | `rgba(17, 15, 12, 0.72)` | 详情 hero 文案区域，不覆盖整张图的全部层次 |
-| glass surface | `rgba(255, 255, 255, 0.88)` | 半透明圆钮；不支持模糊时回退纯白 |
+下表都是当前 `app.wxss` 已存在的值。PR B 只能把它们和页面中的现存字面量 1:1 收口为 token，不得在该片调整数值。
 
-PR B 必须把当前 53 处值全部按真实视觉语义命名并保值迁移；上表新增的 V1 组件值在相应 UI 分片引入，不得为了让 PR B 截图变化而提前套用。scrim 至少用仓库现有的 `lakeside.jpg` 等亮部面积最大的真实摄影样本验证白字；`mountain.jpg` 单一样本不足以通过。
+| 角色 | 冻结值 | 阶段 | 用途与限制 |
+| --- | --- | --- | --- |
+| paper / background | `#fbf5ea` | 保值（当前值） | 页面底色，保持奶油纸感 |
+| ink | `#211f1c` | 保值（当前值） | 标题、主正文、选中胶囊 |
+| muted | `#6f675d` | 保值（当前值） | 辅助信息；在 paper/white 上需满足正文对比度 |
+| brand | `#e13b2b` | 保值（当前值） | 品牌强调、选中和主操作，禁止扩大成大面积背景 |
+| action | `#c0321f` | 保值（当前值） | 高对比行动文字与危险动作；不得与 brand 无理由互换 |
+| raised | `#f3e6d0` | 保值（当前值） | 骨架、无图与弱提示承托 |
+| line | `#ededed` | 保值（当前值） | 白色面上的弱分隔 |
+| strong line | `#9a9186` | 保值（当前值） | 需要更清晰边界的控件与可访问状态 |
+
+当前页面 scrim 基色与透明度同样必须原值迁移。现存 `rgba(12, 10, 7, …)` 的 `0 / 0.05 / 0.1 / 0.42 / 0.56 / 0.68 / 0.72 / 0.78` 以及现存白色叠层（最深 `0.86`）分别获得真实语义 token；PR B 不把它们归一成近似值。
+
+PR B 必须新增版本化的 `docs/designs/2026-10-27-ui-revamp-v1/pr-b-literal-token-map.md`，完整列出 53 处颜色字面量的 `文件:行号 → 当前字面量 → 新 token → token 当前值`。每一行都要求「当前字面量 = token 当前值」且能由 `check:design` 机械复算；还需单列 `components/activity-card/index.wxss` 的字体族字面量到 `--font-family-editorial` 的映射。缺行、近似归并或像素漂移均使 PR B fail-closed。
+
+### V1 目标叠层：仅 UI 分片启用
+
+下表是本改版的新目标值，当前代码不存在；它们不能在 PR B 保值迁移中替换任何现存值。只有对应路由族 UI 分片在具备改前/改后截图、亮图对比度和 Task 0 证据后，才能修改或新增组件 token。
+
+| 角色 | 目标值 | 阶段 | 用途与限制 |
+| --- | --- | --- | --- |
+| cover scrim top | `rgba(17, 15, 12, 0.04)` | V1 新增（UI 分片启用） | 摄影顶部保留，不在页面中直接书写 |
+| cover scrim strong | `rgba(17, 15, 12, 0.88)` | V1 新增（UI 分片启用） | 摄影底部标题承托；以最亮真实照片验收 |
+| hero scrim | `rgba(17, 15, 12, 0.72)` | V1 新增（UI 分片启用） | 详情 hero 文案区域，不覆盖整张图的全部层次 |
+| glass surface | `rgba(255, 255, 255, 0.88)` | V1 新增（UI 分片启用） | 半透明圆钮；不支持模糊时回退纯白 |
+
+scrim 至少用仓库现有的 `lakeside.jpg` 等亮部面积最大的真实摄影样本验证白字；`mountain.jpg` 单一样本不足以通过。
 
 ### 字体、字阶与换行
 
@@ -133,7 +146,7 @@ Android 不保证存在 `Songti SC`/STSong；依次回退到可用的 Noto CJK s
 | `pages/registrations/index` | B | 紧凑刊头、轻状态分段与内容先行票据卡，下一步使用圆形方向入口 | 待审核/已通过/候补/取消等真实状态；长活动名和时间不挤压状态；空态文案可读 |
 | `pages/credential/index` | B | 凭证状态先行，二维码、活动统计和个人信息按 B 的标题/数字/单位层级组织 | 有效/待审核/候补状态；二维码完整且可识别；本人实名电话规则不变；截图脱敏 |
 | `pages/profile/index` | B | 紧凑身份刊头、摄影 hero 与上浮权限卡衔接，菜单采用圆形方向入口和轻分组 | 有/无背景、头像加载失败、100% 完整度、不同行长；权限卡可读；菜单命中区 ≥44px |
-| `pages/capability-card/index` | B | 名片摄影先行，头像/背景/统计和分享操作消费同一 B 媒体、字阶与圆钮语言 | 本人/管理员/其他骑友隐私差异不变；背景四态；长昵称不遮操作；不出现假头像 |
+| `pages/capability-card/index` | B（遗留跳转/兜底） | 该路由无独立名片 UI：成功时 `switchTab` 到「我的」；失败兜底使用 B 的紧凑状态层级、正文和重试入口，不强行加入摄影/统计 | 17 路由运行截图记录 `capability-card → profile` 导航并截取最终「我的」本人视图，标注 `REDIRECT_SURFACE`；另以可控 `switchTab fail` 状态稿截取错误文案与重试按钮，命中区 ≥44px。其他骑友名片的四态/隐私验收归属 `activity-detail` 的报名者名片弹层（`03-detail-attendee-card`），本人名片归属 `profile`，不得把两者伪装成此遗留路由 |
 | `pages/settings/index` | B + A | 无摄影强塞；紧凑刊头后直接展示轻量设置组，下划线分组与圆形方向入口替代重卡 | 普通成员/管理员差异；长说明自然换行；订阅与隐私入口命中区 ≥44px |
 | `pages/profile-edit/index` | B + A | 紧凑刊头直达头像/背景媒体位，单列表单使用 B 字阶、轻分组与固定保存层级 | 上传中、校验错误、无背景、保存锁定；键盘与安全区；不改变头像即时保存契约 |
 | `pages/club/center/index` | B | 俱乐部摄影先行，紧凑刊头、统计分层、轻内容组与圆形方向入口统一 | 有/无封面四态；长俱乐部名；只读普通成员视图不出现管理入口 |
@@ -150,7 +163,7 @@ Android 不保证存在 `Songti SC`/STSong；依次回退到可用的 Noto CJK s
 
 分片顺序固定：
 
-1. PR B：主题契约、当前 53 处颜色字面量归零、字体族字面量归零，新增 `test:design` / `check:design` 并接入 `validate`；README 和验收手册命令同步。
+1. PR B：主题契约、当前 53 处颜色字面量归零、字体族字面量归零，提交逐项 1:1 映射清单，新增 `test:design` / `check:design` 并接入 `validate`；README 和验收手册命令同步。该片只能保值迁移，不能启用 V1 新叠层值。
 2. PR C：在目标 macOS 主机执行 Task 0。逻辑目标为 iPhone X 375×812，PNG 物理尺寸必须读取 PNG header 实测；记录工具精确版本、哈希主机指纹、开始/结束 HEAD 与 porcelain。补充 Android 宋体和亮图 scrim 样本。
 3. 路由族 UI 分片：首页 → 详情/路线 → 我的/名片/设置 → 报名/凭证 → 管理/表单。每片独立 PR、独立回滚，不跨片补业务。
 
