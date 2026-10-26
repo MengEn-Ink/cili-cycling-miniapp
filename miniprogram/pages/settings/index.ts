@@ -14,7 +14,8 @@ const RELEASE_NOTES = [
     version: CLIENT_RELEASE_VERSION,
     date: '2026-10-26',
     title: '骑友照片恢复，活动详情更快显示',
-    summary: '已授权的骑友照片正常显示，先展示已有活动内容再刷新完整详情，头像或资料保存后刷新活动缓存。',
+    summary:
+      '已授权的骑友照片正常显示，先展示已有活动内容再刷新完整详情，头像或资料保存后刷新活动缓存。',
     latest: true,
     features: [
       '已授权保存的头像和背景可在活动详情与骑友名片中正常显示',
