@@ -114,6 +114,27 @@ describe('活动详情路线、授权媒体与性能契约', () => {
     expect(source).toMatch(/isLoggedIn\s*&&\s*!isAdmin\s*&&\s*!isOrganizer[\s\S]*getAdminActivity/);
   });
 
+  it('普通成员使用服务器明确的 false 身份，不追加无权管理读取', async () => {
+    const { definition, context } = await loadPage();
+    const { appStore } = await import('../miniprogram/store/app-store');
+    const { rideService } = await import('../miniprogram/services/ride-service');
+    appStore.authStatus = 'authenticated';
+    appStore.role = 'member';
+    vi.spyOn(rideService, 'getActivity').mockResolvedValue({
+      id: 'fast-detail',
+      title: '快速详情',
+      isOrganizer: false,
+      images: [],
+      route: { distanceKm: 10, elevationM: 20, level: '' },
+    } as any);
+    vi.spyOn(rideService, 'listRegistrations').mockResolvedValue([]);
+    const admin = vi.spyOn(rideService, 'getAdminActivity').mockResolvedValue(undefined as any);
+    await definition.performLoad.call(context, 'fast-detail');
+    expect(admin).not.toHaveBeenCalled();
+    expect(context.data.loading).toBe(false);
+    expect(context.data.viewerStatus.key).toBe('unregistered');
+  });
+
   it('详情不初始化路线 Canvas，完整分析分包由详情页预加载', () => {
     const source = read('miniprogram/pages/activity-detail/index.ts');
     const template = read('miniprogram/pages/activity-detail/index.wxml');

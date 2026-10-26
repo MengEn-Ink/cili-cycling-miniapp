@@ -88,10 +88,10 @@ describe('FORMAL GitHub Pages 骑行影像志', () => {
     runtime.prototypeState = 'default';
     const settings = runtime.pageTemplates?.settings?.() ?? '';
     expect(settings).toContain(`V${CLIENT_RELEASE_VERSION}`);
-    expect(settings).toContain('头像与背景读取更准确');
-    expect(settings).toContain('兼容头像与背景的既有文件和新规范副本');
-    expect(settings).toContain('移除背景后不再恢复历史照片');
-    expect(settings).toContain('本人仍可预览自己的头像');
+    expect(settings).toContain('骑友照片恢复，活动详情更快显示');
+    expect(settings).toContain('已授权保存的头像和背景可在活动详情与骑友名片中正常显示');
+    expect(settings).toContain('列表进入活动详情先展示已有内容，完整详情继续刷新');
+    expect(settings).toContain('头像与资料保存后刷新活动缓存');
   });
 
   it('报名提交按审核中、公开通过和满员候补展示真实行程结果', () => {

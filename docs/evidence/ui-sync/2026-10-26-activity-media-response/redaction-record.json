@@ -1,0 +1,1030 @@
+{
+  "schemaVersion": 1,
+  "captureGit": "bf55d7bd254a36d31ecf8536ed0f5d64b70ba16a",
+  "captureDirty": false,
+  "captureDirtyReason": "干净提交运行",
+  "sourceUiDigest": "sha256:cb2cabd54cb400d48ca78a4bc12c3b45460896b022f19cc2c2981a843a252d00",
+  "prototypeDigest": "sha256:1479e9ba27654b6a72223a6364935ecb22c92e7866d62588d76c66bbcd46a45d",
+  "devtoolsCapturedAt": "2026-10-26T08:11:24.584Z",
+  "pagesCapturedAt": "2026-10-26T07:58:33.235Z",
+  "mode": "real-cloud-readonly",
+  "devtoolsData": "sanitized-runtime",
+  "pagesData": "synthetic-fixture",
+  "policy": "真实照片、头像、背景、昵称、实名、电话与编号不透明遮挡；不替换真实数据。Pages 是合成资料，电话号码也已遮挡。原图与原始结果只在私有临时目录。",
+  "notCovered": [
+    "ordinary-member-write-journey",
+    "ios-physical-device",
+    "android-physical-device"
+  ],
+  "routes": [
+    {
+      "id": "activities",
+      "state": "真实云 1 场近期活动 · 摄影纵向列表",
+      "devtools": "activities-devtools.png",
+      "pages": "activities-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            28,
+            775,
+            752,
+            1185
+          ],
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "3d64d329741ef50933cee59489b1e35d2f735b4c69f40910930b3dbb788badd0"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [],
+        "redactedSha256": "f2eb6ab1afaaf1e05ab8de32fa9ec70f1558604a7f3eeae5be3de166839c0b89"
+      },
+      "review": "真实活动与原型合成活动的标题、数量、照片与里程不同。",
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "activity-detail",
+      "state": "管理员公开详情 · 真实封面与两名骑友媒体读取通过",
+      "devtools": "activity-detail-devtools.png",
+      "pages": "activity-detail-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            0,
+            184,
+            780,
+            645
+          ],
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "e6927fa73f88e618ec6a887fcb572f76ede58c314cd95a5eb9a9d637566d6ddf"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [],
+        "redactedSha256": "dbde19fca88e0bf7bed5dab4ff5433ad5f03a4d1c6af06bdeb3e0aa79476ca16"
+      },
+      "review": "真实活动与合成活动的标题、媒体、指标、状态及管理入口不同；骑友弹层另有脱敏补充图。",
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "route-analysis",
+      "state": "真实路线只读 · 完整分析就绪",
+      "devtools": "route-analysis-devtools.png",
+      "pages": "route-analysis-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "a0122270e4613dbadb17a7ec0ca1ba0f0c01c443e889aa1bb9cf0845c3b6645d"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [],
+        "redactedSha256": "ed5894392ef44c186d252cd84ec8b42d81622125a7f059856bb584f3273b7da8"
+      },
+      "review": "真实路线的摘要、海拔和图形与合成路线不同。",
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "registration-form",
+      "state": "本人已保存资料 · 骑行经验未选 · 提交禁用",
+      "devtools": "registration-form-devtools.png",
+      "pages": "registration-form-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            250,
+            845,
+            726,
+            1225
+          ],
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "94c1c479b64b17340872cce3c25d421502799be2b146ad8a54399c9e18dfa60e"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [
+          [
+            223,
+            533,
+            334,
+            557
+          ],
+          [
+            222,
+            576,
+            334,
+            600
+          ]
+        ],
+        "redactedSha256": "d0eacbe908ca765807efcb68080601434fa1deef14f23c54fc207f3a9c6392d2"
+      },
+      "review": "真实表单当前经验未选、禁止提交；原型为合成资料示例。",
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "registrations",
+      "state": "真实 1 场已通过行程",
+      "devtools": "registrations-devtools.png",
+      "pages": "registrations-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "2282fffc710bd879049d04e1b91cd9a9d3d1875b9cea68b3578adb85370a5fca"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [],
+        "redactedSha256": "092ebab012ac723f00701c8dd5455ec1d213860e5d964ab60fc046c7c240ff19"
+      },
+      "review": "真实一场已通过行程；原型有多种合成行程状态。",
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "credential",
+      "state": "已通过凭证 · 实名电话与报名编号脱敏",
+      "devtools": "credential-devtools.png",
+      "pages": "credential-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            55,
+            804,
+            725,
+            882
+          ],
+          [
+            58,
+            915,
+            721,
+            1062
+          ],
+          [
+            260,
+            1436,
+            720,
+            1688
+          ],
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "30f12f9cff9f6c9549b831975754fc2d17c8651ad00f100b12331b23bd8f4c70"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [
+          [
+            251,
+            611,
+            366,
+            635
+          ]
+        ],
+        "redactedSha256": "b48a4382d542e91af3da9218fa18ec96868c04d91fced62d154c72ac3c68b5f5"
+      },
+      "review": "真实凭证的活动、编号与个人资料不同；原型为合成示例。",
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "profile",
+      "state": "本人管理员 · 已授权并保存的头像背景回显",
+      "devtools": "profile-devtools.png",
+      "pages": "profile-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            0,
+            182,
+            780,
+            680
+          ],
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "8da27b6e61b16da94ef6431ad4a452456ca930092e812e5d2cacc86f8f01a14d"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [],
+        "redactedSha256": "3a9fecfbc89b6ebbf2671eea593c7fcbc87727c82686698f7f636de7156410e7"
+      },
+      "review": "真实已有授权媒体；权限说明与入口状态和合成名片不同。",
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "settings",
+      "state": "管理员 · 本地客户端 2026.10.26.3",
+      "devtools": "settings-devtools.png",
+      "pages": "settings-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "55109f04db3ad6d6a78a9a48ef913f72458fc9e1023739e926ab74cfcb8bd2de"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [],
+        "redactedSha256": "37827d2f501f151cb05abb82929936cba7c77b51f7674abec2466bbd88b6687d"
+      },
+      "review": "本地客户端版本及管理员入口与原型示例不同。",
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "capability-card",
+      "state": "历史路由进入我的 · 兼容转跳已验证",
+      "devtools": "capability-card-devtools.png",
+      "pages": "capability-card-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            0,
+            182,
+            780,
+            680
+          ],
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "8da27b6e61b16da94ef6431ad4a452456ca930092e812e5d2cacc86f8f01a14d"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [],
+        "redactedSha256": "3a9fecfbc89b6ebbf2671eea593c7fcbc87727c82686698f7f636de7156410e7"
+      },
+      "review": "实际进入我的页；与原型复用我的内容，真实与合成的媒体和权限入口状态不同。",
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "profile-edit",
+      "state": "本人已有授权媒体 · 编辑页展示使用说明弹层",
+      "devtools": "profile-edit-devtools.png",
+      "pages": "profile-edit-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "0db32e6a954ea77b3952bd46f5ff6d475045bcb30d7ce0b53567473a7f15f6a6"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [
+          [
+            34,
+            722,
+            147,
+            746
+          ]
+        ],
+        "redactedSha256": "d1743c0aa110c57500f94d2f2c9f87f58a410cd2a93dbebf892f6760bcf6a409"
+      },
+      "review": "真实截图有本地使用说明弹层；本次未确认该说明或修改资料，原型为合成编辑表单。该弹层不代表已保存的媒体未授权。",
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "admin-activity-list",
+      "state": "真实 1 场已上线活动 · 两人报名",
+      "devtools": "admin-activity-list-devtools.png",
+      "pages": "admin-activity-list-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "023014b051a4578103013d3a800d38cdc45754b15dddc6adcd0aed74a4328a74"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [],
+        "redactedSha256": "e6283eab3bcf6d22ec5b80656cefee89e46268a19cdbf6b4f395ef027598f496"
+      },
+      "review": "真实一场活动、两人报名；原型包含多种合成活动。",
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "admin-activity-edit",
+      "state": "空白创建表单 · 未保存未发布",
+      "devtools": "admin-activity-edit-devtools.png",
+      "pages": "admin-activity-edit-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "478b90130e5fd473c59e73a1d61fb253a064ee1bb2b833f9c2012e4a0710e603"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [],
+        "redactedSha256": "7e7be1694426f22f01822e106264c6ad7928efd0bb687bbbb54931f626333aca"
+      },
+      "review": "真实为空白创建表单，原型为填好的编辑状态；未注入数据改变运行证据。",
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "admin-reviews",
+      "state": "真实审核列表 · 待审核筛选为空",
+      "devtools": "admin-reviews-devtools.png",
+      "pages": "admin-reviews-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "28b5ddfa41c8788c3e8eb0d2e01c54b91ca2e3a37e4cfff6de8c01c57950ab1a"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [],
+        "redactedSha256": "d52b19ddacd4574e71ed8c75a95e2641c323a3544c2bf8d3af3b61c859c54195"
+      },
+      "review": "真实待审核为空，原型待审核含合成人员。",
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "admin-review-detail",
+      "state": "已通过报名 · 可确认签到 · 个人信息脱敏",
+      "devtools": "admin-review-detail-devtools.png",
+      "pages": "admin-review-detail-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            24,
+            219,
+            756,
+            1250
+          ],
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "988aba979acaaccfcbcf5ff48a9d21498f5364dd696d4587e33d64e66345aeaf"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [
+          [
+            255,
+            469,
+            370,
+            493
+          ]
+        ],
+        "redactedSha256": "14c45db6cdae4b44e51a733e54bfc2710a5a6c330ddb4d5e89438946d3fe4769"
+      },
+      "review": "真实已通过状态与合成待审核状态不同；真实个人信息已遮挡。",
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "club/center",
+      "state": "唯一俱乐部 · 真实媒体脱敏 · 近期活动",
+      "devtools": "club-center-devtools.png",
+      "pages": "club-center-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            0,
+            182,
+            780,
+            642
+          ],
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "ae0cdca513a4684616ac76c5d05325b3243812dfa39d1a6b4970eb3206f441be"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [],
+        "redactedSha256": "46727002749b8ebcf0a16a6ae527c8d6aa3edde5e3c2aca4c55b528808c9b037"
+      },
+      "review": "真实俱乐部背景、介绍与活动不同；原型为合成媒体和列表。",
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "admin-club-applications",
+      "state": "唯一俱乐部资料概览 · 平台管理员",
+      "devtools": "admin-club-applications-devtools.png",
+      "pages": "admin-club-applications-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            24,
+            560,
+            756,
+            1045
+          ],
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "bcb36aff5eab5ca44f802b700d98a241841761149dcb77fcea29921acaa0ad8e"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [],
+        "redactedSha256": "fc5835be76837da332a977b6d5764b6b00c970d75e1439167a045e0ad57eff6a"
+      },
+      "review": "真实俱乐部大幅背景与合成紧凑列表结构存在差异。",
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "admin-club-application-detail",
+      "state": "编辑唯一俱乐部 · 现有媒体脱敏 · 未保存",
+      "devtools": "admin-club-application-detail-devtools.png",
+      "pages": "admin-club-application-detail-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            45,
+            850,
+            320,
+            1010
+          ],
+          [
+            45,
+            1254,
+            204,
+            1410
+          ],
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "8864cdcc85d44dd26663bd06f3847f2812a51b1537442aaa769bb8221c961674"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [],
+        "redactedSha256": "e0f7289b2663fc828c9d416f377ded4011196cc020f759d863a6107888ddde3d"
+      },
+      "review": "真实分段表单与原型编号章节不同；媒体与可见内容长度不同。",
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    }
+  ],
+  "supplement": {
+    "file": "activity-detail-attendee-card-devtools.png",
+    "state": "真实公开骑友名片弹层；头像背景与昵称已遮挡",
+    "dimensions": [
+      780,
+      1688
+    ],
+    "opaqueRectangles": [
+      [
+        0,
+        184,
+        780,
+        645
+      ],
+      [
+        45,
+        485,
+        735,
+        1430
+      ],
+      [
+        0,
+        0,
+        780,
+        8
+      ],
+      [
+        0,
+        1664,
+        780,
+        1688
+      ],
+      [
+        0,
+        8,
+        8,
+        1664
+      ],
+      [
+        772,
+        8,
+        780,
+        1664
+      ]
+    ],
+    "redactedSha256": "94fc73825d6422e987c9e6aaf2d5133a042b9853bf49c127a6b430e1904d9ff3"
+  }
+}

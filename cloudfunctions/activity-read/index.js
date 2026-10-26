@@ -490,15 +490,14 @@ exports.main = async (event = {}) => {
     }
     if (event.action === 'detail') {
       const activity = await visibleActivity(event.activityId);
-      const [publisherByOpenid, attendance] = await Promise.all([
+      const [publisherByOpenid, attendance, [resolvedActivity]] = await Promise.all([
         loadPublishers([activity]),
         loadAttendance(event.activityId, viewerOpenid),
-      ]);
-      const [resolvedActivity] = await resolveActivityMedia([
-        attachPublisher(publicActivity(activity, now), publisherByOpenid.get(activity.created_by)),
+        resolveActivityMedia([publicActivity(activity, now)]),
       ]);
       return ok({
-        ...resolvedActivity,
+        ...attachPublisher(resolvedActivity, publisherByOpenid.get(activity.created_by)),
+        is_organizer: activity.created_by === viewerOpenid,
         attendees: attendance.attendees,
         approved_registration_count: attendance.approvedRegistrationCount,
       });

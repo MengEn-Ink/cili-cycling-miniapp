@@ -148,6 +148,47 @@ test('公开媒体缺样本是阻塞，非 HTTPS 地址是失败，安全空态�
   );
 });
 
+test('骑友名片点击使用当前 rider 结构并验证两种图片实际解码', () => {
+  assert.match(source, /page\.\$\$\('\.riderlist \.rider'\)/);
+  assert.doesNotMatch(source, /\.attendee-mini-card/);
+  assert.match(source, /名片头像可下载并解码/);
+  assert.match(source, /名片背景可下载并解码/);
+  assert.match(source, /navigationTimings/);
+});
+
+test('详情性能探针分别记录首屏内容与完整刷新，保留真实等待状态', async () => {
+  assert.equal(typeof driver.measureDetailNavigation, 'function');
+  let clock = 100;
+  const page = {
+    path: 'pages/activity-detail/index',
+    data: async () => ({ item: {}, loading: false, refreshing: true }),
+  };
+  let waits = 0;
+  const measured = await driver.measureDetailNavigation({
+    miniProgram: {
+      callWxMethod: async (method, options) => {
+        assert.equal(method, 'navigateTo');
+        assert.equal(options.url, '/pages/activity-detail/index?id=synthetic');
+        clock += 20;
+      },
+      currentPage: async () => page,
+    },
+    activityId: 'synthetic',
+    now: () => clock,
+    waitForPageReady: async (options) => {
+      assert.equal(options.isDataReady({ item: null, loading: true }), false);
+      if (++waits === 1) {
+        assert.equal(options.isDataReady({ item: {}, loading: false, refreshing: true }), true);
+        clock += 30;
+      } else {
+        assert.equal(options.isDataReady({ item: {}, loading: false, refreshing: true }), false);
+        clock += 500;
+      }
+    },
+  });
+  assert.deepEqual(measured, { contentMs: 50, readyMs: 550 });
+});
+
 test('截图接口瞬时失败只重试一次，并核对仍是同一路由', async () => {
   assert.equal(typeof driver.captureRouteScreenshot, 'function');
   let attempts = 0;

@@ -252,6 +252,45 @@ describe('CachingRepository 写后失效', () => {
     >);
   });
 
+  it('头像或背景保存成功后活动详情与列表重新回源，保存失败保留缓存', async () => {
+    vi.mocked(inner.getActivity).mockResolvedValue({ id: 'media-activity' } as any);
+    vi.mocked(inner.listActivityPage).mockResolvedValue({ items: [], nextCursor: null } as any);
+    await repo.getActivity('media-activity');
+    await repo.listActivityPage('future');
+    vi.mocked(inner.setAvatar)
+      .mockRejectedValueOnce(new Error('save failed'))
+      .mockResolvedValue({} as any);
+    await expect(repo.setAvatar('wechat', 'cloud://avatar')).rejects.toThrow('save failed');
+    await repo.getActivity('media-activity');
+    expect(inner.getActivity).toHaveBeenCalledTimes(1);
+    for (const save of [
+      () => repo.setAvatar('wechat', 'cloud://avatar'),
+      () => repo.updateProfile({ backgroundPhoto: { id: 'cloud://background', category: 'ride' } }),
+    ]) {
+      await save();
+      await repo.getActivity('media-activity');
+      await repo.listActivityPage('future');
+    }
+    expect(inner.getActivity).toHaveBeenCalledTimes(3);
+    expect(inner.listActivityPage).toHaveBeenCalledTimes(3);
+  });
+
+  it('首次进入详情可同步读取新鲜列表摘要，但详情请求仍获取完整数据', async () => {
+    const summary = { id: 'first-open', title: '列表中的活动' } as any;
+    const detail = { ...summary, attendees: [{ id: 'rider' }] } as any;
+    vi.mocked(inner.listActivityPage).mockResolvedValue({
+      items: [summary],
+      nextCursor: null,
+    } as any);
+    vi.mocked(inner.getActivity).mockResolvedValue(detail);
+    await repo.listActivityPage('future');
+    expect(repo.cacheControl.peekActivity('first-open')).toBe(summary);
+    expect(await repo.getActivity('first-open')).toBe(detail);
+    expect(inner.getActivity).toHaveBeenCalledOnce();
+    repo.cacheControl.invalidateActivities();
+    expect(repo.cacheControl.peekActivity('first-open')).toBeUndefined();
+  });
+
   it('活动或报名写入后失效活动缓存，下次读取重新回源', async () => {
     vi.mocked(inner.getActivity).mockResolvedValue({ id: 'a' } as Awaited<
       ReturnType<RideRepository['getActivity']>
@@ -286,7 +325,7 @@ describe('CachingRepository 写后失效', () => {
     expect(inner.getActivity).toHaveBeenCalledTimes(1 + activityWrites.length);
   });
 
-  it('资料写入只失效资料缓存，报名写入精确失效报名与活动缓存', async () => {
+  it('资料写入失效资料与活动缓存，报名写入精确失效报名与活动缓存', async () => {
     vi.mocked(inner.getProfile).mockResolvedValue({ nickname: '骑手' } as Awaited<
       ReturnType<RideRepository['getProfile']>
     >);
@@ -317,7 +356,7 @@ describe('CachingRepository 写后失效', () => {
     expect(inner.getProfile).toHaveBeenCalledTimes(2);
     expect(inner.getPersonalCapabilityCard).toHaveBeenCalledTimes(2);
     expect(inner.listRegistrations).toHaveBeenCalledOnce();
-    expect(inner.getActivity).toHaveBeenCalledOnce();
+    expect(inner.getActivity).toHaveBeenCalledTimes(2);
 
     await repo.saveRegistration({ activityId: 'a' } as Parameters<
       RideRepository['saveRegistration']
@@ -325,7 +364,7 @@ describe('CachingRepository 写后失效', () => {
     await Promise.all([repo.getProfile(), repo.listRegistrations(), repo.getActivity('a')]);
     expect(inner.getProfile).toHaveBeenCalledTimes(2);
     expect(inner.listRegistrations).toHaveBeenCalledTimes(2);
-    expect(inner.getActivity).toHaveBeenCalledTimes(2);
+    expect(inner.getActivity).toHaveBeenCalledTimes(3);
   });
 
   it('公开加入成功后失效 profile 缓存并立即回源新 membership', async () => {

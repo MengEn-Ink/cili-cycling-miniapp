@@ -157,6 +157,34 @@ function releaseVersion() {
   return match[1];
 }
 
+async function measureDetailNavigation({
+  miniProgram,
+  activityId,
+  waitForPageReady,
+  now = Date.now,
+}) {
+  const expectedPath = 'pages/activity-detail/index';
+  const startedAt = now();
+  await miniProgram.callWxMethod('navigateTo', {
+    url: `/pages/activity-detail/index?id=${encodeURIComponent(activityId)}`,
+  });
+  const readPage = async () => {
+    const page = await miniProgram.currentPage();
+    return { path: page.path, data: await page.data() };
+  };
+  const options = { expectedPath, timeoutMs: 30000, intervalMs: 50, readPage };
+  await waitForPageReady({
+    ...options,
+    isDataReady: (data) => Boolean(data.item) && !data.loading,
+  });
+  const contentMs = now() - startedAt;
+  await waitForPageReady({
+    ...options,
+    isDataReady: (data) => Boolean(data.item) && !data.loading && !data.refreshing,
+  });
+  return { contentMs, readyMs: now() - startedAt };
+}
+
 async function main() {
   const { runWithReport } = await import('./e2e-report.mjs');
   const { relaunchWhenReady, waitForPageReady } = await import('./p0-journey-driver.mjs');
@@ -199,6 +227,7 @@ async function main() {
       new Map(uiFiles.map((file) => [file, fs.readFileSync(path.join(projectPath, file))])),
     ),
     routes: [],
+    navigationTimings: [],
     captureRetries: [],
     blockers: [],
     notCovered: ['ordinary-member-write-journey', 'ios-physical-device', 'android-physical-device'],
@@ -236,10 +265,11 @@ async function main() {
     });
     return currentPage;
   };
-  const relaunchLoaded = (url, predicate = () => true) => {
+  const relaunchLoaded = async (url, predicate = () => true) => {
     const expectedPath = url.split(/[?#]/, 1)[0].replace(/^\/+/, '');
     result.lastStep = `navigate:${expectedPath}`;
-    return relaunchWhenReady({
+    const startedAt = Date.now();
+    const page = await relaunchWhenReady({
       miniProgram,
       url,
       timeoutMs: 30000,
@@ -247,6 +277,8 @@ async function main() {
       navigationMethod: tabPaths.has(expectedPath) ? 'switchTab' : 'reLaunch',
       isDataReady: (data) => !data.loading && !data.refreshing && predicate(data),
     });
+    result.navigationTimings.push({ path: expectedPath, readyMs: Date.now() - startedAt });
+    return page;
   };
   let miniProgram;
   await runWithReport({
@@ -298,6 +330,20 @@ async function main() {
         },
       );
       await screenshot(miniProgram, '01-activities.png');
+
+      if (activity?.id) {
+        result.detailResponse = await measureDetailNavigation({
+          miniProgram,
+          activityId: activity.id,
+          waitForPageReady,
+        });
+        check(
+          '列表进入详情先展示内容再完成完整刷新',
+          result.detailResponse.contentMs <= result.detailResponse.readyMs,
+          result.detailResponse,
+        );
+        await miniProgram.navigateBack();
+      }
 
       if (editableActivity?.id) {
         page = await relaunchLoaded(
@@ -384,7 +430,7 @@ async function main() {
         const mediaIndex = attendees.findIndex(
           (item) => isHttps(item.avatarUrl) && isHttps(item.backgroundUrl),
         );
-        const attendeeButtons = await page.$$('.attendee-mini-card');
+        const attendeeButtons = await page.$$('.riderlist .rider');
         const attendeeButton = attendeeButtons[Math.max(0, mediaIndex)];
         if (attendeeButton) {
           await attendeeButton.tap();
@@ -404,6 +450,15 @@ async function main() {
             backgroundHttps: isHttps(data.selectedAttendee?.backgroundUrl),
           },
         );
+        if (data.selectedAttendee?.avatarUrl) {
+          const image = await miniProgram.callWxMethod('getImageInfo', {
+            src: data.selectedAttendee.avatarUrl,
+          });
+          check('名片头像可下载并解码', image.width > 0 && image.height > 0, {
+            width: image.width,
+            height: image.height,
+          });
+        }
         if (data.selectedAttendee?.backgroundUrl) {
           const image = await miniProgram.callWxMethod('getImageInfo', {
             src: data.selectedAttendee.backgroundUrl,
@@ -604,6 +659,7 @@ module.exports = {
   additionalReadOnlyRoutes,
   openLegacyProfile,
   captureRouteScreenshot,
+  measureDetailNavigation,
 };
 
 if (require.main === module) {

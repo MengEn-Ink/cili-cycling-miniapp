@@ -175,6 +175,104 @@ test('详情允许读取已结束活动', async () => {
   assert.equal(Number.isFinite(Date.parse(result.data.server_now)), true);
 });
 
+test('详情解析资料已保存的 canonical 头像和背景，并拒绝重复绑定', async () => {
+  const activity = { _id: 'canonical-detail', status: 'published', created_by: 'member-openid' };
+  const avatar = canonicalMedia('cloud://env/profiles/avatar.jpg', 'member-openid', {
+    category: 'profile-avatar',
+    origin: 'wechat',
+    canonical_category: 'profile-avatar',
+  });
+  avatar.canonical_file_id = avatar.canonical_file_id.replace(
+    `/${avatar._id}/`,
+    `/profile-avatar/${avatar._id}/`,
+  );
+  const background = canonicalMedia('cloud://env/profiles/background.jpg', 'member-openid', {
+    category: 'profile-background',
+    canonical_category: 'profile-background',
+  });
+  background.canonical_file_id = background.canonical_file_id.replace(
+    `/${background._id}/`,
+    `/profile-background/${background._id}/`,
+  );
+  const profile = {
+    _id: 'member-openid',
+    nickname: '测试骑友',
+    avatar_file_id: avatar.canonical_file_id,
+    avatar_revision: 1,
+    avatar_source: 'wechat',
+    background_photo: { file_id: background.canonical_file_id, category: 'ride' },
+  };
+  for (const duplicate of [false, true]) {
+    const { main, calls } = loadMain(activity, [], {
+      profiles: [profile],
+      mediaSecret: MEDIA_SECRET,
+      registrations: [
+        {
+          _id: 'reg-canonical',
+          openid: profile._id,
+          activity_id: activity._id,
+          status: 'approved',
+        },
+      ],
+      mediaRecords: [avatar, background, ...(duplicate ? [{ ...avatar, _id: 'forged' }] : [])],
+      getTempFileURL: async ({ fileList }) => ({
+        fileList: fileList.map((fileID) => ({
+          fileID,
+          status: 0,
+          tempFileURL:
+            fileID === avatar.canonical_file_id
+              ? 'https://temp.example/avatar.jpg'
+              : 'https://temp.example/background.jpg',
+        })),
+      }),
+    });
+    const result = await main({ action: 'detail', activityId: activity._id });
+    assert.equal(result.ok, true);
+    assert.equal(
+      result.data.attendees[0].avatar_url,
+      duplicate ? '' : 'https://temp.example/avatar.jpg',
+    );
+    assert.equal(result.data.attendees[0].background_url, 'https://temp.example/background.jpg');
+    assert.equal(
+      result.data.publisher.avatar_url,
+      duplicate ? '' : 'https://temp.example/avatar.jpg',
+    );
+    assert.equal(JSON.stringify(result.data).includes('cloud://'), false);
+    assert.ok(
+      calls.some((call) => call.name === 'profile_media' && call.condition.canonical_file_id),
+    );
+  }
+});
+
+test('详情返回服务端发布者身份且活动图签名不等待报名读取', async () => {
+  let release;
+  const gate = new Promise((resolve) => {
+    release = resolve;
+  });
+  const activity = {
+    _id: 'parallel-detail',
+    status: 'published',
+    created_by: 'member-openid',
+    cover_image: 'cloud://env/cover.jpg',
+  };
+  const { main, calls } = loadMain(activity, [], {
+    beforeRegistrationQuery: () => gate,
+  });
+  const pending = main({ action: 'detail', activityId: activity._id });
+  await new Promise((resolve) => setImmediate(resolve));
+  const started = calls.some((call) => call.type === 'getTempFileURL');
+  release();
+  const result = await pending;
+  assert.equal(started, true);
+  assert.equal(result.data.is_organizer, true);
+  assert.equal(Object.hasOwn(result.data, 'created_by'), false);
+  const other = await loadMain({ ...activity, created_by: 'other-owner' }).main({
+    action: 'detail',
+    activityId: activity._id,
+  });
+  assert.equal(other.data.is_organizer, false);
+});
+
 test('未来列表只查询尚未结束的 published 活动并由同一服务端时间裁决报名状态', async () => {
   const list = [
     {

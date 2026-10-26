@@ -865,9 +865,9 @@
           <p class="release-title">${title}</p>
           <p class="release-summary">${summary}</p>
           <ul class="release-features">
-            <li><span class="feature-arrow" aria-hidden="true">→</span><span>兼容头像与背景的既有文件和新规范副本</span></li>
-            <li><span class="feature-arrow" aria-hidden="true">→</span><span>移除背景后不再恢复历史照片</span></li>
-            <li><span class="feature-arrow" aria-hidden="true">→</span><span>本人仍可预览自己的头像，错误用途或不明确的图片来源不会展示</span></li>
+            <li><span class="feature-arrow" aria-hidden="true">→</span><span>已授权保存的头像和背景可在活动详情与骑友名片中正常显示</span></li>
+            <li><span class="feature-arrow" aria-hidden="true">→</span><span>列表进入活动详情先展示已有内容，完整详情继续刷新</span></li>
+            <li><span class="feature-arrow" aria-hidden="true">→</span><span>头像与资料保存后刷新活动缓存，减少旧图片残留</span></li>
           </ul>
         </div>
       </section>
