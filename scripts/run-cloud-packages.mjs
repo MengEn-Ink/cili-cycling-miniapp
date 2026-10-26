@@ -29,16 +29,24 @@ export function concurrencyLimit(value = process.env.CLOUD_CONCURRENCY) {
 
 export function packageCommand(mode, name) {
   const prefix = `cloudfunctions/${name}`;
-  if (mode === 'install') return ['npm', ['ci', '--prefix', prefix]];
-  if (mode === 'test') return ['npm', ['--prefix', prefix, 'test']];
+  // Windows 下 spawn 无法直接解析无扩展名的 npm，需要使用 npm.cmd。
+  const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+  if (mode === 'install') return [npm, ['ci', '--prefix', prefix]];
+  if (mode === 'test') return [npm, ['--prefix', prefix, 'test']];
   throw new Error(`未知云函数任务：${mode}`);
 }
 
 function runOne(mode, name, spawnCommand = spawn) {
   const [command, args] = packageCommand(mode, name);
   console.log(`[cloud:${mode}:${name}] 开始`);
+  // Node 22 出于 CVE-2024-27980 防护，在 Windows 上 spawn npm.cmd 必须启用 shell。
+  const shell = process.platform === 'win32';
   return new Promise((resolve, reject) => {
-    const child = spawnCommand(command, args, { stdio: 'inherit', env: process.env });
+    const child = spawnCommand(command, args, {
+      stdio: 'inherit',
+      env: process.env,
+      shell,
+    });
     child.once('error', (error) =>
       reject(new Error(`cloud:${mode}:${name} 无法启动：${error.message}`)),
     );
