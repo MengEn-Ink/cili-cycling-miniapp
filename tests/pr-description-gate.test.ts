@@ -130,4 +130,13 @@ describe('PR 提交规范门禁', () => {
       deletions: 2,
     });
   });
+
+  it('拒绝本地生成器留下的中文补充占位符', () => {
+    const errors = validatePullRequest({
+      title: 'ci(pr): 前置最终提交检查',
+      body: validBody.replace('现有模板', '【请补充：背景】'),
+      stats: { files: 2, additions: 10, deletions: 2 },
+    });
+    expect(errors).toContain('PR 描述仍包含“【请补充】”占位内容');
+  });
 });

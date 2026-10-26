@@ -17,53 +17,11 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { classifyUiPath, digestFiles } from '../ui-sync-policy.mjs';
+import { currentPrototypeDigest, currentUiDigest } from '../check-ui-sync.mjs';
 
 const MANIFEST_PATH = 'docs/ui-sync-manifest.json';
-const UI_PATHS = [
-  'miniprogram/app.json',
-  'miniprogram/app.wxss',
-  'miniprogram/pages',
-  'miniprogram/components',
-  'miniprogram/assets',
-];
-const PROTOTYPE_FILES = [
-  'docs/index.html',
-  'docs/styles.css',
-  'docs/app.js',
-  'docs/delivery-center.js',
-  'docs/schema.js',
-  'docs/templates.js',
-];
 
 const git = (args) => execFileSync('git', args, { encoding: 'utf8' });
-const gitBuffer = (args) => execFileSync('git', args);
-const lines = (value) =>
-  value
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-// 统一 LF：CI checkout 的文件均为 LF，Windows 工作区可能是 CRLF。
-// 用 git show HEAD:file 读取仓库 blob（LF），未跟踪文件则规范化 CRLF→LF。
-function readNormalized(file) {
-  try {
-    return gitBuffer(['show', `HEAD:${file}`]).toString('utf8');
-  } catch {
-    return readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
-  }
-}
-
-function currentUiDigest() {
-  const files = lines(
-    git(['ls-files', '--cached', '--others', '--exclude-standard', '--', ...UI_PATHS]),
-  ).filter((file) => classifyUiPath(file).ui);
-  return digestFiles(new Map([...new Set(files)].map((file) => [file, readNormalized(file)])));
-}
-
-function currentPrototypeDigest() {
-  return digestFiles(new Map(PROTOTYPE_FILES.map((file) => [file, readNormalized(file)])));
-}
 
 function run() {
   const write = process.argv.includes('--write');
