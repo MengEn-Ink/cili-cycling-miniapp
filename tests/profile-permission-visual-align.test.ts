@@ -1,12 +1,19 @@
 // @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
 import { readFileSync, readdirSync } from 'node:fs';
+// @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const read = (path: string) => readFileSync(path, 'utf8');
 
+interface DirentLike {
+  name: string;
+  isDirectory: () => boolean;
+  isFile: () => boolean;
+}
+
 const listWxssFiles = (directory: string): string[] =>
-  readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+  readdirSync(directory, { withFileTypes: true }).flatMap((entry: DirentLike) => {
     const path = join(directory, entry.name);
     if (entry.isDirectory()) return listWxssFiles(path);
     return entry.isFile() && entry.name.endsWith('.wxss') ? [path] : [];
