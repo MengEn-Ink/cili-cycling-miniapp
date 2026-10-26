@@ -69,7 +69,7 @@ describe('设置页', () => {
     expect(page.data.currentRelease).toMatchObject({
       version: '2026.10.26.1',
       date: '2026-10-26',
-      title: '我的页授权卡片排版恢复对齐',
+      title: '骑友照片恢复，活动详情更快显示',
       latest: true,
     });
     expect(page.data.releaseNotes[1]).toMatchObject({
