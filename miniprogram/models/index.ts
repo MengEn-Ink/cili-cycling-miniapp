@@ -233,6 +233,7 @@ export interface Activity {
   };
   occupiedCount?: number;
   approvedRegistrationCount?: number;
+  isOrganizer?: boolean;
   description: string;
   images?: string[];
   coverImage?: string;

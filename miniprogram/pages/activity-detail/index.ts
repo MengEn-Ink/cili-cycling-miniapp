@@ -329,6 +329,7 @@ Page({
         isLoggedIn &&
         !isAdmin &&
         !isOrganizer &&
+        typeof detail.isOrganizer !== 'boolean' &&
         typeof rideService.getAdminActivity === 'function'
       ) {
         // 复用现有活动管理读取权限确认发布者身份；普通骑友的无权响应安全降级为 false。

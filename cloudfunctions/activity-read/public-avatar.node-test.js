@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const {
   canonicalPublicAvatar,
+  canonicalPublicBackground,
   compatibleProfileCategory,
   mediaDocumentId,
   publicAvatarSource,
@@ -80,6 +81,67 @@ test('canonicalPublicAvatar 只返回完整匹配的 canonical file ID', () => {
 
   assert.equal(
     canonicalPublicAvatar(profile, record, OWNER_OPENID, MEDIA_SECRET),
+    record.canonical_file_id,
+  );
+});
+
+test('新上传头像可用 source 或 canonical 引用且包含用途目录', () => {
+  const { profile, record } = canonicalFixture();
+  const current = {
+    ...record,
+    category: 'profile-avatar',
+    canonical_category: 'profile-avatar',
+    canonical_file_id: record.canonical_file_id.replace(
+      `/${record._id}/`,
+      `/profile-avatar/${record._id}/`,
+    ),
+  };
+  for (const reference of [SOURCE_FILE_ID, current.canonical_file_id]) {
+    assert.equal(
+      canonicalPublicAvatar(
+        { ...profile, avatar_file_id: reference },
+        current,
+        OWNER_OPENID,
+        MEDIA_SECRET,
+      ),
+      current.canonical_file_id,
+    );
+  }
+});
+
+test('背景保存的 canonical 引用兼容新用途目录与旧路径', () => {
+  const { record } = canonicalFixture();
+  for (const category of ['', 'profile-background']) {
+    const current = {
+      ...record,
+      category: category || 'ride',
+      ...(category ? { canonical_category: category } : {}),
+      canonical_file_id: category
+        ? record.canonical_file_id.replace(`/${record._id}/`, `/${category}/${record._id}/`)
+        : record.canonical_file_id,
+    };
+    const profile = { background_photo: { file_id: current.canonical_file_id, category: 'ride' } };
+    assert.equal(
+      canonicalPublicBackground(profile, current, OWNER_OPENID, MEDIA_SECRET),
+      current.canonical_file_id,
+    );
+  }
+});
+
+test('canonical 引用仍拒绝用途、源文件、owner、状态及路径错配', () => {
+  const { profile, record } = canonicalFixture();
+  const referenced = { ...profile, avatar_file_id: record.canonical_file_id };
+  for (const invalid of [
+    { ...record, canonical_category: 'activity-image' },
+    { ...record, source_file_id: 'cloud://env/profiles/forged.jpg' },
+    { ...record, owner_openid: 'other-owner' },
+    { ...record, status: 'unreferenced' },
+    { ...record, canonical_file_id: record.canonical_file_id.replace(record._id, 'a'.repeat(64)) },
+  ]) {
+    assert.equal(canonicalPublicAvatar(referenced, invalid, OWNER_OPENID, MEDIA_SECRET), '');
+  }
+  assert.equal(
+    canonicalPublicAvatar(referenced, record, OWNER_OPENID, MEDIA_SECRET),
     record.canonical_file_id,
   );
 });

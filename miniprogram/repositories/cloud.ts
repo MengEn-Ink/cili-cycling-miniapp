@@ -678,6 +678,7 @@ function mapActivity(raw: unknown, requireRegistrationDecision = false): Activit
     ...(Number.isInteger(value.approved_registration_count)
       ? { approvedRegistrationCount: value.approved_registration_count }
       : {}),
+    ...(typeof value.is_organizer === 'boolean' ? { isOrganizer: value.is_organizer } : {}),
     registrationState: ['open', 'closed'].includes(value.registration_state)
       ? value.registration_state
       : undefined,

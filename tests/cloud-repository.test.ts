@@ -16,6 +16,16 @@ function cloudWith(...queued: Queued[]) {
 }
 const success = (data: unknown) => ({ ok: true, data });
 
+it('详情保留服务器明确的发布者身份，旧响应不推断身份', async () => {
+  for (const isOrganizer of [true, false, undefined]) {
+    const { cloud } = cloudWith(
+      success({ ...activity, ...(isOrganizer === undefined ? {} : { is_organizer: isOrganizer }) }),
+    );
+    const detail = await new CloudRepository(cloud).getActivity('a1');
+    expect((detail as any).isOrganizer).toBe(isOrganizer);
+  }
+});
+
 const activity = {
   _id: 'a1',
   version: 7,

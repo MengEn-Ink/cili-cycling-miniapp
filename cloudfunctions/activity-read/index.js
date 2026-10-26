@@ -264,15 +264,16 @@ async function loadProfiles(openids) {
 // 依据资料批量解析公开头像与骑行名片背景的服务端签名临时访问地址。
 // canonical fileId 仅在云函数内部用于签名，不下发客户端，避免受保护存储权限失败或标识泄露。
 async function resolveProfileMediaTempUrls(entries, { includeBackground = false } = {}) {
-  const sourceMediaIds = [
+  const references = [
     ...new Set(
       entries.flatMap((entry) => {
         const avatar = publicAvatarSource(entry.profile);
         const background = includeBackground ? publicBackgroundSource(entry.profile) : undefined;
-        return [avatar, background && background.fileId].filter(Boolean).map(mediaDocumentId);
+        return [avatar, background && background.fileId].filter(Boolean);
       }),
     ),
   ];
+  const sourceMediaIds = references.map(mediaDocumentId);
   const mediaRecords = new Map();
   for (let offset = 0; offset < sourceMediaIds.length; offset += 20) {
     const batch = sourceMediaIds.slice(offset, offset + 20);
@@ -287,6 +288,29 @@ async function resolveProfileMediaTempUrls(entries, { includeBackground = false 
       }
     } catch {
       // 媒体登记读取失败时 fail closed，仅隐藏受影响图片。
+    }
+  }
+  // 新资料保存 canonical 引用，登记主键仍绑定 source；批量反查唯一登记。
+  const canonicalReferences = references.filter(
+    (fileId) => !mediaRecords.has(mediaDocumentId(fileId)),
+  );
+  for (let offset = 0; offset < canonicalReferences.length; offset += 20) {
+    const batch = canonicalReferences.slice(offset, offset + 20);
+    try {
+      const response = await db
+        .collection('profile_media')
+        .where({ canonical_file_id: _.in(batch) })
+        .limit(100)
+        .get();
+      const records = Array.isArray(response.data) ? response.data : [];
+      // 满页无法证明没有未读取的冲突记录，整批保持安全空态。
+      if (records.length >= 100) continue;
+      for (const fileId of batch) {
+        const matches = records.filter((record) => record?.canonical_file_id === fileId);
+        if (matches.length === 1) mediaRecords.set(mediaDocumentId(fileId), matches[0]);
+      }
+    } catch {
+      // 不回退到未验证的源图或客户端私有存储地址。
     }
   }
   const canonicalByOpenid = new Map();
@@ -502,15 +526,14 @@ exports.main = async (event = {}) => {
     }
     if (event.action === 'detail') {
       const activity = await visibleActivity(event.activityId);
-      const [publisherByOpenid, attendance] = await Promise.all([
+      const [publisherByOpenid, attendance, [resolvedActivity]] = await Promise.all([
         loadPublishers([activity]),
         loadAttendance(event.activityId, viewerOpenid),
-      ]);
-      const [resolvedActivity] = await resolveActivityMedia([
-        attachPublisher(publicActivity(activity, now), publisherByOpenid.get(activity.created_by)),
+        resolveActivityMedia([publicActivity(activity, now)]),
       ]);
       return ok({
-        ...resolvedActivity,
+        ...attachPublisher(resolvedActivity, publisherByOpenid.get(activity.created_by)),
+        is_organizer: activity.created_by === viewerOpenid,
         attendees: attendance.attendees,
         approved_registration_count: attendance.approvedRegistrationCount,
       });

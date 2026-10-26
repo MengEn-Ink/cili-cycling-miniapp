@@ -168,7 +168,12 @@ export class CachingRepository implements RideRepository {
     this.cacheControl = {
       peekActivityPage: (view) =>
         this.peekFresh<PublicActivityPage>(`${ACTIVITY_PREFIX}page:${view}:`),
-      peekActivity: (id) => this.peekFresh(`${ACTIVITY_PREFIX}item:${id}`),
+      peekActivity: (id) =>
+        this.peekFresh<Awaited<ReturnType<RideRepository['getActivity']>>>(
+          `${ACTIVITY_PREFIX}item:${id}`,
+        ) ??
+        this.cacheControl.peekActivityPage('future')?.items.find((item) => item.id === id) ??
+        this.cacheControl.peekActivityPage('history')?.items.find((item) => item.id === id),
       invalidateActivity: (id) => this.invalidatePrefix(`${ACTIVITY_PREFIX}item:${id}`),
       invalidateActivities: () => this.invalidatePrefix(ACTIVITY_PREFIX),
       invalidateProfiles: () => this.invalidatePrefix(PROFILE_PREFIX),
@@ -554,12 +559,14 @@ export class CachingRepository implements RideRepository {
   async setAvatar(source: Parameters<RideRepository['setAvatar']>[0], fileId: string) {
     const result = await this.inner.setAvatar(source, fileId);
     this.invalidatePrefix(PROFILE_PREFIX);
+    this.cacheControl.invalidateActivities();
     return result;
   }
 
   async updateProfile(profile: Parameters<RideRepository['updateProfile']>[0]) {
     const result = await this.inner.updateProfile(profile);
     this.invalidatePrefix(PROFILE_PREFIX);
+    this.cacheControl.invalidateActivities();
     return result;
   }
 

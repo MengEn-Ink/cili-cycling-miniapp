@@ -67,17 +67,22 @@ function canonicalPublicMedia(
 ) {
   const secret = typeof secretValue === 'string' ? secretValue.trim() : '';
   const extension = MIME_EXTENSIONS[record && record.mime];
+  const originalFileId = record && record.source_file_id;
+  const category = record && record.canonical_category;
   if (
     !sourceFileId ||
     typeof ownerOpenid !== 'string' ||
     !ownerOpenid ||
     secret.length < 32 ||
     !record ||
-    record._id !== mediaDocumentId(sourceFileId) ||
-    record.file_id !== sourceFileId ||
-    record.source_file_id !== sourceFileId ||
+    typeof originalFileId !== 'string' ||
+    !originalFileId.startsWith('cloud://') ||
+    record._id !== mediaDocumentId(originalFileId) ||
+    record.file_id !== originalFileId ||
+    ![originalFileId, record.canonical_file_id].includes(sourceFileId) ||
     record.owner_openid !== ownerOpenid ||
     !compatibleProfileCategory(record.category, expectedCategory) ||
+    (category !== undefined && category !== record.category) ||
     record.origin !== expectedOrigin ||
     record.status !== 'active' ||
     typeof record.canonical_file_id !== 'string' ||
@@ -95,7 +100,8 @@ function canonicalPublicMedia(
     .update(ownerOpenid)
     .digest('hex')
     .slice(0, 32);
-  const expectedPath = `profile-canonical/${ownerAlias}/${mediaDocumentId(sourceFileId)}/${record.sha256}.${extension}`;
+  const categoryPath = category ? `${category}/` : '';
+  const expectedPath = `profile-canonical/${ownerAlias}/${categoryPath}${mediaDocumentId(originalFileId)}/${record.sha256}.${extension}`;
   const slash = record.canonical_file_id.indexOf('/', 'cloud://'.length);
   const actualPath = slash >= 0 ? record.canonical_file_id.slice(slash + 1) : '';
   return actualPath === expectedPath ? record.canonical_file_id : '';
