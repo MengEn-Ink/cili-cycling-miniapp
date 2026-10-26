@@ -1,6 +1,6 @@
 # PR #341 媒体兼容与本人预览交付记录
 
-日期：2026-10-26。来源 PR #341 保持 Draft，源 `0908a021` 只读保全。本片从 `origin/main@b00647db` 创建独立分支 `feat/pr341-media-compat-20261026`，按已批准拆合设计增量实现。当前状态：本地修复、定向验证、规格复审、三组代码审查、跨组复核、严格同步/治理/全量验证和安全审计均通过；PR/main、部署与上传待完成。
+日期：2026-10-26。来源 PR #341 保持 Draft，源 `0908a021` 只读保全。本片从 `origin/main@b00647db` 创建独立分支 `feat/pr341-media-compat-20261026`，提交 `d29d0f4e`，PR #372 已正常 squash 合入 `main@3fd6abfd6acdb872b87ced8404c7219c4e32b1a8`。本地、PR/main CI、CodeQL、Pages 与真实云/微信 receipt 全部通过，自动化交付完成；发布后真实只读、普通成员写链路和双真机仍独立验收。
 
 ## 行为与边界
 
@@ -31,8 +31,11 @@
 | 严格 UI 同步 | PASS |
 | 治理、安全审计 | PASS |
 | 全量 validate | PASS；1297 项 Vitest、13 个云包、16 页 × 3 宽度均通过。首轮 README 旧引用与 Pages 旧断言已最小修复 |
-| PR/main CI、CodeQL、Pages | NOT_EXECUTED |
-| 新云代码部署、配置回读、开发版 receipt | NOT_EXECUTED |
+| PR CI、CodeQL | PASS；CI `40288220486`、ready 后 CI `40288569746` 与 CodeQL `40288220390` |
+| main CI、CodeQL、Pages | CI `40288715495`、CodeQL `40288715460`、Pages `40288715018` PASS |
+| 新云代码部署、配置回读 | `40288912071` PASS；实际增量部署 activity-read/profile，无基础设施变更；目标 Active/配置、媒体密钥一致性与既有数据库 smoke/清理通过 |
+| 开发版 receipt | `40288912044` PASS；实际上传 `0.0.376.1` |
+| 真实 receipt 核验 | 两端 PASS：run/attempt、artifact digest、target SHA、同 SHA CI、Git 内容与环境；云 ap-shanghai。原始 receipt 私有保存 |
 
 ## 双端内容证据
 
@@ -48,4 +51,4 @@ Pages 的 375 与 390 两宽度分别完成 17/17 路由，无横向溢出或脚
 
 ## 后续交付
 
-完成最终跨组审查、严格同步/治理/全量验证与安全审计后，精确提交本片并正常 squash 合并。逐项核对 PR/main、CloudBase 与微信的真实 receipt、累计范围和有无副作用 outcome；再回填本记录与高优清单。权益、Strava 和完整审核继续按独立片开发，交叉围栏只在完整候选中联合启用。
+本片已完成最终预检、合并和自动化发布核验。云真实 baseline 已前移到 `40288912071@3fd6abfd`，微信 baseline 已前移到 `40288912044@3fd6abfd`；后续休眠协议片以真实 receipt 与累计范围核对安全跳过。权益、Strava 和完整审核继续独立开发，交叉围栏在完整候选中联合启用。
