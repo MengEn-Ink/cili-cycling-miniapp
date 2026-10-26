@@ -195,7 +195,7 @@ npm exec -- prettier --check tests/rights-cache-invalidation.test.ts tests/profi
 
 - [x] 执行 `npm run build`（现有脚本末尾 scripts/validate.mjs 是构建资源校验，不是全量 npm run validate）。
 - [x] 复核 git diff、hash，生产补丁只包含本计划边界。最终报告注明 UT 七步顺序、RED/GREEN、覆盖与未覆盖、缓存工具消费者、媒体/transport 合并边界。
-- [ ] 完成集成交付：客户端版本、设置页与 Pages 发布说明、严格 UI 同步、治理、全量 validate、代码审查、PR/main 检查和发布 outcome。真实云只读、普通成员写链路及双物理真机仍为独立现场验收，不能由本地 Mock 替代。
+- [x] 完成集成交付：客户端版本、设置页与 Pages 发布说明、严格 UI 同步、治理、全量 validate、代码审查、PR/main 检查和发布 outcome。PR #378 已 squash 合入 `main@10375994`；微信开发版 `0.0.382.1` 实际上传，CloudBase 无云资源影响并安全跳过。最终 SHA 的 DevTools 真实云只读复跑 30/30、17/17 路由、0 失败/异常；普通成员写链路及双物理真机仍为独立现场验收，不能由本地 Mock 或模拟器替代。
 
 ## 计划自审
 
