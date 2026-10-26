@@ -235,13 +235,16 @@ export async function verifyReleaseDirectory({ directory, base, cwd = process.cw
       throw new Error(`长期发布记录 ${entry.name} 必须是同名 verified 清单`);
     }
   }
-  if (base) {
+  // package.json 里的 "${RELEASE_NOTES_BASE:-}" 是 bash 参数展开；Windows 的 cmd
+  // 不解析它，会把字面量传进来。这里把未展开的占位符视为未提供 base，行为与 bash 默认空值一致。
+  const effectiveBase = typeof base === 'string' && /^\$\{[^}]*\}$/.test(base.trim()) ? '' : base;
+  if (effectiveBase) {
     const { stdout } = await execFileAsync('git', [
       '-C',
       cwd,
       'diff',
       '--name-status',
-      `${base}...HEAD`,
+      `${effectiveBase}...HEAD`,
       '--',
       directory,
     ]);
