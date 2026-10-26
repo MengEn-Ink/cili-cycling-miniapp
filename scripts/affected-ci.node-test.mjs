@@ -120,14 +120,15 @@ test('PR 与 main 检查拆分并保留每日全量门禁', () => {
 
 test('部署影响面测试先安装独立上传工具依赖', () => {
   const source = readFileSync('scripts/affected-ci.mjs', 'utf8');
-  const deploymentBlock = source.match(/if \(plan\.deployment\) \{([\s\S]*?)\n[ ]{2}\}/)?.[1] ?? '';
-
-  assert.match(deploymentBlock, /runNpm\('tool:install'\)/);
-  assert.match(deploymentBlock, /runNpm\('test:deploy'\)/);
-  assert.ok(
-    deploymentBlock.indexOf("runNpm('tool:install')") <
-      deploymentBlock.indexOf("runNpm('test:deploy')"),
-  );
+  // 上传脚本契约 node 测试直接加载 tools/miniprogram-ci，依赖安装必须先于 node 测试。
+  const toolInstall = source.indexOf("runNpm('tool:install')");
+  const nodeTests = source.indexOf('runNodeTests(plan.scriptTests)');
+  const testDeploy = source.indexOf("runNpm('test:deploy')");
+  assert.ok(toolInstall !== -1 && nodeTests !== -1 && testDeploy !== -1);
+  assert.ok(toolInstall < nodeTests, 'tool:install 必须先于 node 测试');
+  assert.ok(testDeploy > toolInstall, 'test:deploy 必须晚于依赖安装');
+  assert.match(source, /if \(plan\.deployment\) \{\n[^}]*tool:install/);
+  assert.match(source, /if \(plan\.deployment\) \{\n[^}]*test:deploy/);
 });
 
 test('云函数影响面仅安装 shared 与具体目标包，并保持 prepare 前置', () => {

@@ -5,7 +5,7 @@
 | 项目 | 内容 |
 | --- | --- |
 | PR | `fix/ci-upload-timeout-20261026` 草稿分支；最终提交以 PR head 为准 |
-| Head SHA | 基于 `879ea813b10e808f9a6a68184f8a8b5f312c978b`，本记录随最终提交固化 |
+| Head SHA | 已同步 `85cbc8f1fb0e16a884760deedaaf49ff7ee8c287`，本记录随最终提交固化 |
 | 客户端版本 | 不适用：没有产品代码变化 |
 | 验收环境 | macOS / Node 24，本地真实隔离子进程与合成配置 |
 | 验收角色 | 工程自动化；没有真实用户或上传凭证 |
@@ -44,7 +44,7 @@
 | `npm run audit:all` | PASS | 根与云包无告警；上传工具 4 项既有评估例外，至 2027-01-15 |
 | 严格 UI 同步 | PASS | `npm run check:ui-sync -- --strict`，只修复失效引用，未重采集截图 |
 | `git diff --check` | PASS | 无空白错误；门禁日志仅私有临时留存 |
-| PR checks | NOT_EXECUTED | 推送后核对 |
+| PR checks | 原提交 PASS | PR #365 required validate / CodeQL 通过；同步主线后复核 |
 
 ## 5. 端到端执行记录
 
@@ -52,6 +52,7 @@
 2. 不提供微信上传密钥，不创建远端版本，不触发 CloudBase 写入。
 3. 上传阶段只从 SDK message=upload 开始计时；SDK 的随机 task id 不作为阶段标志。
 4. 原始 SDK 文本隔离；输出不包含真实资料、URL 参数或凭证。
+5. 主线 WXML 编译修复与 affected 选择器新增的语法测试保持完整；入口采用 supervisor / worker，worker 确认 IPC 后直接退出，覆盖 SDK 失败后残留 socket / timer 的旧入口问题。
 
 **执行结论**：工程进程集成 PASS；微信平台 E2E BLOCKED。
 
@@ -75,4 +76,4 @@
 
 ## 8. 最终结论
 
-定向与全量测试、覆盖率、审计和严格同步通过，可提交草稿 PR 审阅；远端 checks 待核对。代码完成不代表真实上传与发布验收完成。
+定向与全量测试、覆盖率、审计和严格同步通过，草稿 PR #365 原提交远端检查通过；同步主线后的最终预检与远端检查另行核对。代码完成不代表真实上传与发布验收完成。

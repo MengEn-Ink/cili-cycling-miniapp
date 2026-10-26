@@ -359,11 +359,16 @@ Page({
         /^[a-f0-9]{64}$/.test(detail.route.publicRoutePreviewId);
       const hasRouteDetails = hasGpxRoute || hasPublicRouteDetails;
       // 在数据进入视图时统一补齐性别展示信息，列表头像和滑动名片共用同一语义。
+      // 占位字符在逻辑层计算，WXML 数据绑定不支持方法调用（如 slice）。
       const attendees =
         canSeeAttendees && Array.isArray(detail.attendees)
           ? detail.attendees.map((attendee: any) => ({
               ...attendee,
               ...genderView(attendee.gender),
+              avatarPlaceholder:
+                String(attendee.displayName || '骑友')
+                  .trim()
+                  .slice(0, 1) || '骑',
             }))
           : [];
       this.safeSetData({
