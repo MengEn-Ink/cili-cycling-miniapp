@@ -40,6 +40,7 @@
 | P1 | #383 Strava 撤销增量状态机 | `FOUNDATION_DELIVERED / MIGRATION_BLOCKED`；无生产引用的基础契约已由 #380 合入 `main@38643aae`，完成 R07/R08、operation/ledger fence、严格数据库缺失分类、revoke ACK 8 次预算、`read` scope、路线 401 恢复及损坏 ledger/时间元数据 fail-closed RED/GREEN，Strava 76/76、定向组合 193/193 和 PR/main 门禁通过。CloudBase 安全跳过，微信仅上传同 SHA 开发版；当前云函数、客户端和 prepare 未引用该模块，R09 可信手动 GPX 来源、运行消费者、目标配置与现场故障回读仍未实现 | 持久材料/未知操作闭合、旧回调不复活凭证、可恢复授权和可信手动降级；目标配置及现场故障回读通过 |
 | P1 | #385 合规运行资源与目标云回读 | `DEPENDENCY_BLOCKED`；依赖 #382/#383/#384 的生产消费者，旧 workflow、版本和审计放宽不迁移 | 按当前发布基线接入函数、集合、索引、Timer、网关及累计影响映射；同候选 SHA 完成配置、基础设施、数据库和存储回读 |
 | P1 | #386 当前设置、正式材料与联合 UAT | `DEPENDENCY_BLOCKED`；依赖 #382–#385，旧 UI、Pages、截图、版本和示例材料不迁移 | 在当前设计接入权益/审核/Strava 状态，平台核验正式材料并完成体验版、普通成员写链路及 iOS/Android 双真机联合 UAT |
+| P1 | 工程治理与源码卫生 V2 | `PR_A_IMPLEMENTED / REVIEW_PENDING`；PR A 已在冻结基线上实现显式执行位白名单、模式门禁和 68 个 blob 等价降权，完整本地门禁已通过，独立复审与 PR checks 待执行；PR B–D 的 `check:design`、主题契约、视觉校准、活跃文档与 Ruleset 仍待实施 | 按[治理设计](superpowers/specs/2026-10-26-governance-hygiene-v2-design.md)完成四个独立治理片；各片 PR/main 门禁通过，外部 Ruleset 回读与分支删除证据齐全 |
 
 ## 已完成且不再列为阻塞
 

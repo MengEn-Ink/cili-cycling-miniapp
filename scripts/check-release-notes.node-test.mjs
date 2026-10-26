@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { validateReleaseNotes } from './check-release-notes.mjs';
+import * as releaseNotes from './check-release-notes.mjs';
+
+const { validateReleaseNotes } = releaseNotes;
 
 const validSource = `
 const RELEASE_NOTES = [
@@ -47,6 +49,22 @@ test('纯测试、文档和交付脚本改动无需新增 App 更新', () => {
     ),
     { required: false, productFiles: [] },
   );
+});
+
+test('纯 Git mode 变更不触发产品发布说明', () => {
+  assert.equal(typeof releaseNotes.parseContentChangedFiles, 'function');
+
+  const modeOnlyHash = 'a'.repeat(40);
+  const oldContentHash = 'b'.repeat(40);
+  const newContentHash = 'c'.repeat(40);
+  const rawDiff = [
+    `:100755 100644 ${modeOnlyHash} ${modeOnlyHash} M\0miniprogram/pages/profile/index.ts\0`,
+    `:100644 100644 ${oldContentHash} ${newContentHash} M\0cloudfunctions/registration/index.js\0`,
+  ].join('');
+
+  assert.deepEqual(releaseNotes.parseContentChangedFiles(rawDiff), [
+    'cloudfunctions/registration/index.js',
+  ]);
 });
 
 test('App 更新保留历史版本且首条使用统一版本号', () => {
