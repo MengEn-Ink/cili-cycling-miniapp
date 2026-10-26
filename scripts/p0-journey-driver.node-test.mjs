@@ -335,18 +335,12 @@ test('DevTools 诊断脱敏路径账号云资源和 URL 凭证', () => {
 
 test('相邻两个恢复态升级环境不稳定且干净通过重置 streak', () => {
   assert.equal(
-    aggregateStartupOutcomes([
-      'PASS_WITH_STARTUP_RECOVERY',
-      'PASS_WITH_STARTUP_RECOVERY',
-    ]).outcome,
+    aggregateStartupOutcomes(['PASS_WITH_STARTUP_RECOVERY', 'PASS_WITH_STARTUP_RECOVERY']).outcome,
     'BLOCKED_ENVIRONMENT_UNSTABLE',
   );
   assert.equal(
-    aggregateStartupOutcomes([
-      'PASS_WITH_STARTUP_RECOVERY',
-      'PASS',
-      'PASS_WITH_STARTUP_RECOVERY',
-    ]).outcome,
+    aggregateStartupOutcomes(['PASS_WITH_STARTUP_RECOVERY', 'PASS', 'PASS_WITH_STARTUP_RECOVERY'])
+      .outcome,
     'PASS_WITH_STARTUP_RECOVERY',
   );
 });
