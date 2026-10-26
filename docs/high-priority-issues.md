@@ -1,7 +1,7 @@
 # 高优问题清单
 
-> 最后更新：2026-10-26（CST）。PR #362（我的页权限卡排版与旧 WebView 兼容）与 PR #358（activity-read 头像类别兼容）已合入 main。2026-10-26 发现并修复开发版上传链路阻塞：PR #358 引入的 WXML 方法调用表达式（`slice`）导致微信 CI 编译失败（errcode -80054），自 #358 起所有开发版上传均失败且 job 挂满 30 分钟超时，真机始终停留在旧版本——用户报告「还是不可以」的直接原因。WXML 绑定语法契约测试已阻断此类错误再次进入主线（详见 docs/verification/2026-10-26-wxml-binding-upload-fix.md）。
-> CI 第一批上传超时 PR #365 原基线全量与远端检查通过；现同步 `origin/main@85cbc8f1`，保留编译语法测试和 worker 隔离退出，再复核门禁。未合并部署，真实写链路、目标环境与双真机验收状态保持独立。
+> 最后更新：2026-10-26（CST）。PR #362（我的页权限卡排版与旧 WebView 兼容）、PR #358（activity-read 头像类别兼容）与 PR #363（WXML 方法调用导致开发版上传编译失败修复）均已合入 `main@85cbc8f`。开发版 `0.0.366.1`（robot 1）已成功上传并产出同 SHA receipt，上传链路自 #358 起的中断已恢复；WXML 绑定语法契约测试已阻断此类错误再次进入主线（详见 docs/verification/2026-10-26-wxml-binding-upload-fix.md）。剩余：用户真机获取 `0.0.366.1`，验证权限卡排版与授权后头像/背景回读。
+> CI 第一批上传超时 PR #365 已通过 20 项真实 worker、1296 Vitest、最终预检、覆盖率与审计；现同步仅文档更新的 `origin/main@456081f1`，保留编译语法测试、隔离退出与发布凭据组合兼容，再复核最终提交与远端门禁。未合并部署，独立 P0 保留。
 >
 > 本文件只保留尚未完成的实际交付或验收。历史运行和详细口径见 [微信 E2E 与上线准备状态](verification/2026-10-21-wechat-e2e-and-launch-readiness.md)，GitHub Actions 实时状态以 GitHub 为唯一事实源。
 
@@ -25,10 +25,10 @@ CI 第一批第二项采用真实隔离 worker 从 upload 进度开始计时，�
 | P0 | 当前 SHA 的 DevTools 真实云只读运行 | `PARTIAL / BLOCKED`；2026-10-23 视觉细节工作树已完成最终状态 17/17 路由、26 项通过、1 项公开媒体样本失败、0 异常，并补齐活动二维码实际区域截图；公开骑友头像/背景样本仍缺失，且改动尚未提交部署 | 在最终验收 SHA 上复跑 17 路由并取得公开媒体真实样本；总 outcome 通过 |
 | P0 | 普通成员完整写链路 | `BLOCKED`；缺普通成员与隔离环境现场证据 | 创建→发布→报名→人工审批/自动通过→凭证→取消→重报，回读人数、状态、审计、幂等和补偿 |
 | P0 | iOS / Android 双真机 | `BLOCKED`；IDE 设备模拟值不是真机 | 两端完成权限、相册、定位、二维码、Canvas、保存分享、Strava/GPX、弱网和安全区验收 |
-| P0 | 当前云环境一致性与媒体 | `PARTIAL / DEPLOYED`；`f3071cbf` 函数与关键媒体密钥回读通过；2026-10-23 第三轮 17 路由截图确认本人、活动和俱乐部媒体只读可用；2026-10-26 修复 `activity-read` 云函数 category 不兼容（PR #358 已部署至 `cloudbase-d0gizacy77a1ab017`）、我的页权限卡排版错乱（PR #362）、WXML 方法调用导致开发版上传编译失败（PR 待合并，见 docs/verification/2026-10-26-wxml-binding-upload-fix.md）；开发版自 #358 起未成功上传，真机公开头像/背景回读待新开发版上传后验收 | 合并修复后确认微信开发版上传成功；在真机执行头像授权后回读验证；在固化验收 SHA 上回读函数、集合/索引、规则、密钥；执行真实头像、背景、活动图、二维码和路线图 smoke |
+| P0 | 当前云环境一致性与媒体 | `PARTIAL / DEPLOYED`；`f3071cbf` 函数与关键媒体密钥回读通过；2026-10-23 第三轮 17 路由截图确认本人、活动和俱乐部媒体只读可用；2026-10-26 修复 `activity-read` 云函数 category 不兼容（PR #358 已部署至 `cloudbase-d0gizacy77a1ab017`）、我的页权限卡排版错乱（PR #362）、WXML 方法调用导致开发版上传编译失败（PR #363）；开发版 `0.0.366.1` 已成功上传（`main@85cbc8f` 同 SHA receipt，见 docs/verification/2026-10-26-wxml-binding-upload-fix.md），真机公开头像/背景回读待物理设备验收 | 真机获取开发版 `0.0.366.1`，确认权限卡排版恢复且授权后活动详情头像/背景回读正常；在固化验收 SHA 上回读函数、集合/索引、规则、密钥；执行真实头像、背景、活动图、二维码和路线图 smoke |
 | P0 | Strava OAuth / GPX 导入 | `BLOCKED`；代码与契约测试不能替代现场运行 | 配置 callback 后完成授权同意/拒绝、刷新/撤销、导入预览、活动保存消费及手动 GPX 降级 |
 | 上架前 | 主体、备案、类目、隐私与提审材料 | `BLOCKED`；无平台侧完整证据 | 后台核验主体/备案/类目，完成隐私声明、用户权益、内容治理、联系渠道和审核材料 |
-| P1 | 体验版晋级与 UAT | `DEVELOPMENT_UPLOADED / CANDIDATE_BLOCKED`；`main@3d492c77` 的 CI 与开发版 `0.0.350.1` 自动上传均成功；candidate `39942078355` 因 squash 后 `syncedThrough=37b74086` 不是 main 祖先而失败，未进入平台选版 | 将 UI 同步基线绑定至 main squash SHA 并通过严格门禁；随后以新 main 的同 SHA receipt 重跑 candidate、平台人工选为体验版及 verified 回读，再执行体验版 UAT |
+| P1 | 体验版晋级与 UAT | `DEVELOPMENT_UPLOADED / CANDIDATE_BLOCKED`；`main@85cbc8f` 的 CI 与开发版 `0.0.366.1` 自动上传均成功；历史 candidate `39942078355` 因 squash 后 `syncedThrough=37b74086` 不是 main 祖先而失败，未进入平台选版 | 以 `main@85cbc8f` 的同 SHA receipt 重跑 candidate、平台人工选为体验版及 verified 回读，再执行体验版 UAT |
 | P1 | 单俱乐部模式真机核销 | `BLOCKED` | 双端验证普通成员只读、OWNER/ADMIN 无编辑入口、平台管理员编辑、空库创建、多存量失败和弱网迟到响应 |
 | P1 | 个人背景图移除与资料保存口径冲突 | `DEPLOYED / UAT_BLOCKED`；背景选填已部署，保留性别、头像与媒体门槛；资料核心 42 项通过；真实 UI 写入和真机验收未执行 | 回读无背景首次保存、移除后保存、头像独立即时保存；真机验收 |
 | P1 | CI 与发布链路第一批 | `IMPLEMENTING / PR_PARTIAL`；PR #364 远端通过，上传超时本地全量通过；累计发布基线和元数据复用继续实施 | 四项分别通过本地与 PR 门禁，合入后核对 main CI、实际发布 receipt 或有证据的安全跳过；不替代独立 P0 |
