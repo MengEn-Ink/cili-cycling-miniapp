@@ -3,6 +3,7 @@ import { pathToFileURL } from 'node:url';
 
 const ERROR_MESSAGES = Object.freeze({
   PREFLIGHT_SCHEMA_INVALID: '预检文件结构无效',
+  PAGE_FRAMEWORK_NOT_READY: '页面框架未就绪',
   PAGE_NOT_READY: '目标页面未就绪',
   WRITE_OUTCOME_UNKNOWN: '写操作结果无法确认',
   AUDIT_SCHEMA_INVALID: '审计记录结构无效',
@@ -56,10 +57,11 @@ const COMPENSATION_REGISTRATION_KEYS = new Set(['id', 'status']);
 const ACTIVE_REGISTRATION_STATUSES = new Set(['waiting', 'pending', 'approved']);
 
 export class JourneyDriverError extends Error {
-  constructor(code) {
+  constructor(code, diagnostics = null) {
     super(ERROR_MESSAGES[code]);
     this.name = 'JourneyDriverError';
     this.code = code;
+    if (diagnostics) this.diagnostics = diagnostics;
   }
 }
 
@@ -134,6 +136,85 @@ function defaultWait(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+export function redactDevtoolsDiagnostic(value, { projectPath = '', homePath = '' } = {}) {
+  let text;
+  try {
+    text = typeof value === 'string' ? value : JSON.stringify(value);
+  } catch {
+    text = String(value);
+  }
+
+  const paths = [
+    [projectPath, '[project]'],
+    [homePath, '[home]'],
+    ['/private/tmp', '[temp]'],
+    ['/tmp', '[temp]'],
+  ]
+    .filter(([source]) => source)
+    .sort((left, right) => right[0].length - left[0].length);
+  for (const [source, replacement] of paths) {
+    text = text.replace(new RegExp(escapeRegExp(source), 'g'), replacement);
+  }
+
+  return text
+    .replace(/\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b/g, '[email]')
+    .replace(/(?<!\d)1\d{10}(?!\d)/g, '[phone]')
+    .replace(/\bou_[A-Za-z0-9_-]+\b/g, '[account-id]')
+    .replace(/\bopenid\s*[:=]\s*[A-Za-z0-9_-]+\b/gi, 'openid=[account-id]')
+    .replace(/cloud:\/\/[^\s"'`]+/gi, '[cloud-resource]')
+    .replace(/\b(?:cloud|env)-[a-z0-9-]{6,}\b/gi, '[cloud-resource]')
+    .replace(/\b(?:fileID|file_id)\s*[:=]\s*[^\s,"'}]+/gi, 'fileID=[cloud-resource]')
+    .replace(/\b(?:token|cookie)\s*[:=]\s*[^\s,"'}]+/gi, '$1=[redacted]')
+    .replace(/https?:\/\/[^\s"'`]+/gi, (url) => url.replace(/[?#].*$/, ''))
+    .slice(0, 2048);
+}
+
+export function aggregateStartupOutcomes(outcomes) {
+  if (!Array.isArray(outcomes) || outcomes.length === 0) {
+    return { outcome: 'BLOCKED', recoveryStreak: 0 };
+  }
+  let outcome = 'PASS';
+  let recoveryStreak = 0;
+  for (const current of outcomes) {
+    if (current === 'BLOCKED') return { outcome: 'BLOCKED', recoveryStreak };
+    if (current === 'PASS') {
+      outcome = 'PASS';
+      recoveryStreak = 0;
+      continue;
+    }
+    if (current === 'PASS_WITH_STARTUP_RECOVERY') {
+      outcome = current;
+      recoveryStreak += 1;
+      if (recoveryStreak >= 2) {
+        return { outcome: 'BLOCKED_ENVIRONMENT_UNSTABLE', recoveryStreak };
+      }
+      continue;
+    }
+    return { outcome: 'BLOCKED', recoveryStreak };
+  }
+  return { outcome, recoveryStreak };
+}
+
+export function classifyStartupReadError(error, { attempt, frameworkEverReady }) {
+  if (attempt !== 1 || frameworkEverReady) return null;
+  const message = String(error?.message || error || '');
+  if (
+    message.includes('getPageMetaByWebviewId') &&
+    message.includes('rawPath') &&
+    message.includes('null')
+  ) {
+    return 'STARTUP_PAGE_META_NULL';
+  }
+  if (message.includes('timeout waiting for automator response')) {
+    return 'STARTUP_AUTOMATOR_TIMEOUT';
+  }
+  return null;
+}
+
 export function evaluateJourneyPreflight(value) {
   validatePreflightSchema(value);
 
@@ -168,6 +249,58 @@ export function evaluateJourneyPreflight(value) {
   };
 }
 
+export async function waitForFrameworkReady({
+  readPage,
+  timeoutMs = 30_000,
+  deadlineMs = Number.POSITIVE_INFINITY,
+  intervalMs = 250,
+  now = Date.now,
+  wait = defaultWait,
+  onReadError = () => {},
+}) {
+  if (
+    typeof readPage !== 'function' ||
+    !Number.isFinite(timeoutMs) ||
+    timeoutMs < 0 ||
+    (!Number.isFinite(deadlineMs) && deadlineMs !== Number.POSITIVE_INFINITY) ||
+    !Number.isFinite(intervalMs) ||
+    intervalMs < 0 ||
+    typeof now !== 'function' ||
+    typeof wait !== 'function' ||
+    typeof onReadError !== 'function'
+  ) {
+    fail('PAGE_FRAMEWORK_NOT_READY');
+  }
+
+  const startedAt = now();
+  const budgetMs = Math.max(0, Math.min(timeoutMs, deadlineMs - startedAt));
+  let attempts = 0;
+  let lastPath = null;
+  for (;;) {
+    attempts += 1;
+    try {
+      const page = await readPage();
+      const data = page?.data;
+      lastPath = typeof page?.path === 'string' ? page.path : null;
+      if (lastPath) {
+        return { page, data, attempts, elapsedMs: Math.max(0, now() - startedAt) };
+      }
+    } catch (error) {
+      onReadError({ error, attempts, elapsedMs: Math.max(0, now() - startedAt) });
+    }
+
+    const elapsedMs = Math.max(0, now() - startedAt);
+    if (elapsedMs >= budgetMs) {
+      throw new JourneyDriverError('PAGE_FRAMEWORK_NOT_READY', {
+        attempts,
+        elapsedMs,
+        lastPath,
+      });
+    }
+    await wait(Math.min(intervalMs, budgetMs - elapsedMs));
+  }
+}
+
 export async function waitForPageReady({
   readPage,
   expectedPath,
@@ -176,6 +309,8 @@ export async function waitForPageReady({
   intervalMs = 100,
   now = Date.now,
   wait = defaultWait,
+  onReadError = () => {},
+  onObservation = () => {},
 }) {
   if (
     typeof readPage !== 'function' ||
@@ -187,7 +322,9 @@ export async function waitForPageReady({
     !Number.isFinite(intervalMs) ||
     intervalMs < 0 ||
     typeof now !== 'function' ||
-    typeof wait !== 'function'
+    typeof wait !== 'function' ||
+    typeof onReadError !== 'function' ||
+    typeof onObservation !== 'function'
   ) {
     fail('PAGE_NOT_READY');
   }
@@ -196,15 +333,20 @@ export async function waitForPageReady({
   let attempts = 0;
   for (;;) {
     attempts += 1;
-    let ready;
+    let page;
     try {
-      const page = await readPage();
-      ready = page?.path === expectedPath && Boolean(isDataReady(page.data));
-    } catch {
-      ready = false;
+      page = await readPage();
+    } catch (error) {
+      onReadError({ error, attempts, elapsedMs: Math.max(0, now() - startedAt) });
     }
 
     const elapsedMs = Math.max(0, now() - startedAt);
+    let ready = false;
+    if (page) {
+      const dataReady = Boolean(isDataReady(page.data));
+      ready = page.path === expectedPath && dataReady;
+      onObservation({ attempts, elapsedMs, path: page.path ?? null, dataReady });
+    }
     if (ready) return { attempts, elapsedMs };
     if (elapsedMs >= timeoutMs) fail('PAGE_NOT_READY');
 
@@ -218,10 +360,11 @@ export async function relaunchWhenReady({
   isDataReady,
   timeoutMs = 30_000,
   intervalMs = 250,
-  maxAttempts = 2,
   navigationMethod = 'reLaunch',
   now = Date.now,
   wait = defaultWait,
+  onReadError = () => {},
+  onObservation = () => {},
 }) {
   const expectedPath = typeof url === 'string' ? url.split(/[?#]/, 1)[0].replace(/^\/+/, '') : '';
   const navigate = miniProgram?.[navigationMethod];
@@ -231,41 +374,32 @@ export async function relaunchWhenReady({
     typeof navigate !== 'function' ||
     typeof miniProgram.currentPage !== 'function' ||
     !expectedPath ||
-    typeof isDataReady !== 'function' ||
-    !Number.isInteger(maxAttempts) ||
-    maxAttempts < 1 ||
-    maxAttempts > 3
+    typeof isDataReady !== 'function'
   ) {
     fail('PAGE_NOT_READY');
   }
 
-  const attemptTimeoutMs = timeoutMs / maxAttempts;
-  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    let readyPage;
-    try {
-      await navigate.call(miniProgram, url);
-      await waitForPageReady({
-        expectedPath,
-        timeoutMs: attemptTimeoutMs,
-        intervalMs,
-        now,
-        wait,
-        readPage: async () => {
-          const page = await miniProgram.currentPage();
-          readyPage = page;
-          return {
-            path: page?.path,
-            data: await page?.data(),
-          };
-        },
-        isDataReady,
-      });
-      return readyPage;
-    } catch {
-      if (attempt === maxAttempts) fail('PAGE_NOT_READY');
-    }
-  }
-  fail('PAGE_NOT_READY');
+  let readyPage;
+  await navigate.call(miniProgram, url);
+  await waitForPageReady({
+    expectedPath,
+    timeoutMs,
+    intervalMs,
+    now,
+    wait,
+    onReadError,
+    onObservation,
+    readPage: async () => {
+      const page = await miniProgram.currentPage();
+      readyPage = page;
+      return {
+        path: page?.path,
+        data: await page?.data(),
+      };
+    },
+    isDataReady,
+  });
+  return readyPage;
 }
 
 export async function runReconciledWrite({
