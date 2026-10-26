@@ -6,6 +6,29 @@ import { fileURLToPath } from 'node:url';
 const PRODUCT_PATH = /^(?:miniprogram|cloudfunctions)\//;
 const RELEASE_NOTES_PATH = 'miniprogram/pages/settings/index.ts';
 
+export function parseContentChangedFiles(rawDiff) {
+  const fields = rawDiff.split('\0');
+  if (fields.at(-1) === '') fields.pop();
+  if (fields.length % 2 !== 0) throw new Error('无法解析 Git raw diff：记录不完整');
+
+  const contentChangedFiles = [];
+  for (let index = 0; index < fields.length; index += 2) {
+    const metadata = fields[index];
+    const file = fields[index + 1];
+    const match = metadata.match(/^:(\d{6}) (\d{6}) ([0-9a-f]{40}) ([0-9a-f]{40}) [A-Z]$/);
+    if (!match) throw new Error(`无法解析 Git raw diff 元数据：${metadata}`);
+
+    const [, oldMode, newMode, oldHash, newHash] = match;
+    const executableModeOnly =
+      oldHash === newHash &&
+      ((oldMode === '100755' && newMode === '100644') ||
+        (oldMode === '100644' && newMode === '100755'));
+    if (!executableModeOnly) contentChangedFiles.push(file);
+  }
+
+  return contentChangedFiles;
+}
+
 export function validateReleaseNotes(changedFiles, source) {
   const productFiles = changedFiles.filter(
     (file) => PRODUCT_PATH.test(file) && file !== RELEASE_NOTES_PATH,
@@ -57,10 +80,12 @@ function resolveBase() {
 
 export function run() {
   const base = resolveBase();
-  const changedFiles = git(['diff', '--name-only', base])
-    .split('\n')
-    .map((file) => file.trim())
-    .filter(Boolean);
+  const rawDiff = execFileSync(
+    'git',
+    ['diff', '--raw', '--no-abbrev', '--no-renames', '-z', base],
+    { encoding: 'utf8' },
+  );
+  const changedFiles = parseContentChangedFiles(rawDiff);
   const source = readFileSync(RELEASE_NOTES_PATH, 'utf8');
   const result = validateReleaseNotes(changedFiles, source);
 

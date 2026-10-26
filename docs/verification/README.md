@@ -12,6 +12,7 @@
 
 ## 当前文档
 
+- [2026-10-26 源码文件模式治理验收](2026-10-26-source-mode-governance.md)：记录显式 CLI 白名单、68 个 mode-only 修正、TDD 红绿证据和 blob 等价证明。
 - [2026-10-23 微信官方参考项目借鉴方案](2026-10-23-official-miniprogram-reference-adoption.md)：记录三个官方仓库的固定基线、文档变更范围、替代验证和运行态不适用边界。
 - [2026-10-21 俱乐部主页活动列表验收](2026-10-21-club-center-activity-list.md)：记录封面与身份分层、近期活动紧凑列表、弱网隔离、并发重试和三视口 Pages 验收。
 - [PR 端到端验收报告模板](pr-acceptance-report-template.md)：每个 PR 必填的影响范围、测试用例矩阵、自动化门禁、真实路径验收、部署回读和回滚记录。
