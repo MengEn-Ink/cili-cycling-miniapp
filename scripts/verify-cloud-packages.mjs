@@ -21,9 +21,13 @@ function assertRegistryDependencies(name) {
 }
 function pack(name, required) {
   const directory = assertRegistryDependencies(name);
-  const result = spawnSync('npm', ['pack', '--dry-run', '--json'], {
+  // Windows 下 spawn 无法解析无扩展名 npm，且 Node 22 出于 CVE-2024-27980 防护
+  // 要求 npm.cmd 必须启用 shell；Linux CI 行为保持不变。
+  const isWindows = process.platform === 'win32';
+  const result = spawnSync(isWindows ? 'npm.cmd' : 'npm', ['pack', '--dry-run', '--json'], {
     cwd: directory,
     encoding: 'utf8',
+    shell: isWindows,
   });
   if (result.status !== 0) throw new Error(`${name} npm pack --dry-run 失败：${result.stderr}`);
   const files = JSON.parse(result.stdout)[0].files.map((item) => item.path);
