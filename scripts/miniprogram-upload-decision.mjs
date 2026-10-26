@@ -6,6 +6,10 @@ import { promisify } from 'node:util';
 const UPLOAD_PREFIXES = ['miniprogram/', 'cloudfunctions/', 'tools/miniprogram-ci/'];
 const UPLOAD_FILES = new Set([
   'scripts/upload-miniprogram-ci.mjs',
+  'scripts/miniprogram-upload-supervisor.mjs',
+  'scripts/release-baseline.mjs',
+  'scripts/release-baseline-github.mjs',
+  'scripts/release-baseline-cli.mjs',
   'scripts/miniprogram-upload-decision.mjs',
   '.github/workflows/deploy-miniprogram.yml',
   '.github/workflows/promote-miniprogram-experience.yml',
@@ -108,7 +112,7 @@ async function changedPaths(before, sha) {
   const args =
     normalizedBefore === '0'.repeat(40)
       ? ['ls-tree', '-r', '--name-only', '-z', normalizedSha]
-      : ['diff', '--name-only', '--diff-filter=ACMR', '-z', normalizedBefore, normalizedSha];
+      : ['diff', '--no-renames', '--name-only', '-z', normalizedBefore, normalizedSha, '--'];
   const { stdout } = await execFileAsync('git', args, { maxBuffer: 10 * 1024 * 1024 });
   return stdout.split('\0').filter(Boolean);
 }

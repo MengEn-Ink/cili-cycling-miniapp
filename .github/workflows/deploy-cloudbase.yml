@@ -77,7 +77,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           ref: ${{ env.TARGET_SHA }}
-          fetch-depth: 2
+          fetch-depth: 0
 
       - name: Resolve deployment scope
         id: scope
@@ -94,52 +94,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "$(git rev-parse --is-shallow-repository)" == "true" ]]; then
-            git fetch --no-tags --unshallow origin main
-          else
-            git fetch --no-tags origin main
-          fi
-          current_main="$(git rev-parse origin/main)"
-          deployment_head="${TARGET_SHA}"
-          export FORCE_RECONCILE=false
-          if [[ "${TARGET_SHA}" != "${current_main}" ]]; then
-            deployment_head="${current_main}"
-            git checkout --detach "${deployment_head}"
-            base_sha="$(git rev-parse "${deployment_head}^")"
-            export FORCE_RECONCILE=true
-            echo "检测到排队期间 main 已推进，改为完整对账并部署最新 main：${deployment_head}"
-          else
-            mapfile -t successful_runs < <(gh api \
-              "repos/${GITHUB_REPOSITORY}/actions/workflows/deploy-cloudbase.yml/runs?branch=main&status=success&per_page=100" \
-              --jq '.workflow_runs[].head_sha')
-            base_sha=""
-            for successful_sha in "${successful_runs[@]}"; do
-              if [[ "${successful_sha}" != "${TARGET_SHA}" ]]; then
-                base_sha="${successful_sha}"
-                break
-              fi
-            done
-            if [[ -z "${base_sha}" ]] || ! git merge-base --is-ancestor "${base_sha}" "${deployment_head}"; then
-              base_sha="$(git rev-parse "${deployment_head}^")"
-              export FORCE_RECONCILE=true
-              echo "没有可用的上次成功部署基线，执行完整对账"
-            else
-              echo "按上次成功部署基线计算范围：${base_sha}..${deployment_head}"
-            fi
-          fi
-          node scripts/cloudbase-deploy-decision.mjs \
-            --base "${base_sha}" \
-            --head "${deployment_head}" \
-            --output "${RUNNER_TEMP}/cloudbase-deploy-decision.json"
+          git fetch --no-tags origin main
+          node scripts/release-baseline-cli.mjs scope cloudbase "${TARGET_SHA}" \
+            "${RUNNER_TEMP}/cloudbase-release-scope.json"
+          cp "${RUNNER_TEMP}/cloudbase-release-scope.json" "${RUNNER_TEMP}/cloudbase-deploy-decision.json"
           node -e '
             const fs = require("node:fs");
             const decision = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
             const config = JSON.parse(fs.readFileSync("cloudbaserc.json", "utf8"));
-            if (process.env.FORCE_RECONCILE === "true") {
-              decision.shouldDeploy = true;
-              decision.applyInfrastructure = true;
-              decision.functions = config.functions.map(({ name }) => name);
-            }
+            if (decision.reason === "stale-target") process.exit(0);
             if (process.env.FORCE_ALL === "true") {
               decision.shouldDeploy = true;
               decision.functions = config.functions.map(({ name }) => name);
@@ -182,6 +145,7 @@ jobs:
             }
             fs.writeFileSync(process.argv[1], `${JSON.stringify(decision, null, 2)}\n`);
           ' "${RUNNER_TEMP}/cloudbase-deploy-decision.json"
+          cp "${RUNNER_TEMP}/cloudbase-deploy-decision.json" "${RUNNER_TEMP}/cloudbase-release-scope.json"
           jq -e '.shouldDeploy | type == "boolean"' "${RUNNER_TEMP}/cloudbase-deploy-decision.json" >/dev/null
           echo "should_deploy=$(jq -r '.shouldDeploy' "${RUNNER_TEMP}/cloudbase-deploy-decision.json")" >> "${GITHUB_OUTPUT}"
           echo "apply_infrastructure=$(jq -r '.applyInfrastructure' "${RUNNER_TEMP}/cloudbase-deploy-decision.json")" >> "${GITHUB_OUTPUT}"
@@ -272,6 +236,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          touch "${RUNNER_TEMP}/cloudbase-release-started"
           node scripts/bootstrap-cloudbase.mjs \
             --env-id "${CLOUDBASE_ENV_ID}" \
             --region "${CLOUDBASE_REGION}"
@@ -289,6 +254,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          touch "${RUNNER_TEMP}/cloudbase-release-started"
           npm run cloudbase:storage:reconcile -- --env-id "${CLOUDBASE_ENV_ID}"
 
       - name: Deploy affected cloud functions
@@ -312,6 +278,8 @@ jobs:
           for function_name in "${planned_functions[@]}"; do
             [[ "${function_name}" =~ ^[a-z][a-z0-9-]*$ ]] || { echo "非法函数名" >&2; false; }
             echo "部署并逐项验证云函数：${function_name}"
+            touch "${RUNNER_TEMP}/cloudbase-release-started"
+            printf '%s\n' "${function_name}" >> "${RUNNER_TEMP}/cloudbase-actual-functions.txt"
             npx --yes --package @cloudbase/cli@3.8.4 tcb \
               -e "${CLOUDBASE_ENV_ID}" \
               fn deploy "${function_name}" --force --json
@@ -361,6 +329,8 @@ jobs:
             fi
 
             echo "检测到关键密钥缺失或漂移，使用 runner 临时运行时配置仅重部署：${function_name}"
+            touch "${RUNNER_TEMP}/cloudbase-release-started"
+            printf '%s\n' "${function_name}" >> "${RUNNER_TEMP}/cloudbase-actual-functions.txt"
             npx --yes --package @cloudbase/cli@3.8.4 tcb \
               -e "${CLOUDBASE_ENV_ID}" \
               fn deploy "${function_name}" --force --json
@@ -471,6 +441,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          touch "${RUNNER_TEMP}/cloudbase-release-started"
           npm run cloudbase:smoke:club-application -- \
             --env-id "${CLOUDBASE_ENV_ID}" \
             --confirm-env-id "${CLOUDBASE_ENV_ID}" \
@@ -498,5 +469,30 @@ jobs:
 
       - name: Clear temporary login state
         if: always() && steps.scope.outputs.should_deploy == 'true'
-        continue-on-error: true
         run: npx --yes --package @cloudbase/cli@3.8.4 tcb logout --json
+
+      - name: Finalize actual CloudBase release evidence
+        if: always()
+        env:
+          RELEASE_SUCCESS: ${{ success() }}
+        run: >-
+          node scripts/release-baseline-cli.mjs finalize cloudbase "${TARGET_SHA}"
+          "${RUNNER_TEMP}/release-outcome.json"
+
+      - name: Store actual CloudBase release receipt
+        if: success() && steps.scope.outputs.should_deploy == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: cloudbase-release-receipt-${{ env.TARGET_SHA }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/release-receipt.json
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Store bounded CloudBase release outcome
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: cloudbase-release-outcome-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/release-outcome.json
+          if-no-files-found: error
+          retention-days: 90

@@ -190,16 +190,16 @@ test('CI 用完整 push 区间生成小程序上传判定 artifact', async () =>
   assert.match(workflow, /name:\s*miniprogram-upload-decision/);
 });
 
-test('部署工作流校验 CI 判定后才上传且保留手动入口', async () => {
+test('部署工作流按实际基线重算累计判定后才上传且保留手动入口', async () => {
   const workflow = await readFile(
     new URL('../.github/workflows/deploy-miniprogram.yml', import.meta.url),
     'utf8',
   );
   assert.match(workflow, /actions:\s*read/);
   assert.match(workflow, /actions\/checkout@v7/);
-  assert.match(workflow, /actions\/download-artifact@v8/);
-  assert.match(workflow, /run-id:.*workflow_run\.id/);
-  assert.match(workflow, /miniprogram-upload-decision\.mjs verify/);
+  assert.match(workflow, /release-baseline-cli\.mjs scope miniprogram/);
+  assert.match(workflow, /GH_TOKEN:.*secrets\.GITHUB_TOKEN/);
+  assert.match(workflow, /miniprogram-release-scope\.json/);
   assert.match(workflow, /steps\.decision\.outputs\.should_upload == 'true'/);
   assert.match(workflow, /github\.event_name == 'workflow_dispatch'/);
   assert.match(workflow, /actions\/setup-node@v7/);
