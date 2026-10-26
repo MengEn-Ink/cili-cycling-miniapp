@@ -24,9 +24,11 @@ privacy 仅通过明确依赖注入供离线测试；最终迁移时使用唯一
 | 独立规格审查 | 通过；未扩张到生产入口或 R09 |
 | 代码质量分组及跨组审查 | 初审及两轮复审共发现 4 P1 / 4 P2，均已修复；终局复审 0 P0/P1/P2 |
 | 全量、治理、严格同步与安全审计 | 76 项最终组合 `npm run validate` 与 `npm run audit:all` PASS；Vitest 89 文件、1376/1376，严格 UI 同步、治理、云包及构建通过 |
-| PR/main、云/微信真实 outcome | NOT_EXECUTED |
-| 实际 OAuth/GPX、撤销 worker、目标云与双真机 | NOT_EXECUTED |
+| PR/main、云/微信真实 outcome | #380 squash 合入 `main@38643aae`；最终 PR CI `40314565153`、PR CodeQL `40314231693`、main CI `40315012153`、CodeQL `40315012159`、Pages `40315012261` 通过 |
+| CloudBase | `40315246349` 绑定 target/tooling `38643aae`，outcome=`SKIPPED`、`sideEffectsStarted=false`，未执行部署、配置或写 smoke |
+| 微信开发版 | `40315246336` 绑定 target/tooling `38643aae` 与 CI `40315012153`，实际上传 `0.0.384.1`，outcome=`SUCCEEDED`、`sideEffectsStarted=true` |
+| 实际 OAuth/GPX、撤销 worker、目标云与双真机 | NOT_EXECUTED / BLOCKED |
 
 ## 后续
 
-完成两阶段审查和最新主线组合门禁后独立提交合并。继续实现可信手动 GPX 来源及当前消费者，再和权益、内容审核闭合运行入口。状态机的合成数据库、lease 与事务失败测试不替代真实 CloudBase 并发和第三方撤销验收，Strava P1 与现场 P0 保留。
+非激活基础片的自动化交付已完成。下一片继续实现可信手动 GPX 来源及当前消费者，再和权益、内容审核闭合运行入口。状态机的合成数据库、lease、事务失败测试和开发版上传不替代真实 CloudBase 并发、第三方撤销、普通成员写链路或物理真机验收，Strava 迁移 P1 与现场 P0 保留。

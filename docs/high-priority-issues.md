@@ -2,6 +2,7 @@
 
 > 活动详情头像/背景专项：PR #373 已 squash 合入 `main@a1b335c5`，PR/main CI、覆盖率、安全审计、CodeQL 与 Pages 通过；CloudBase `40294771478` 全量对账 12 个函数、数据库/存储基线、配置与媒体密钥回读以及 8 阶段俱乐部写 smoke/清理均通过，微信 `40294771444` 实际上传开发版 `0.0.380.1`。两端 receipt 的 artifact digest、Git 内容、同 SHA CI 与累计范围已核验。发布后干净主线完成 17 个注册路由、20 张运行截图和 30 项检查，0 失败/异常/blocker；内容 1273ms、完整刷新 2049ms。首次冷启动仍有一次首页未就绪失败，双真机与普通成员写链路继续独立阻塞。见 [专项报告](verification/2026-10-26-activity-media-response.md)。
 > 缓存失效片：PR #378 已 squash 合入 `main@10375994`，PR/main CI、CodeQL 与 Pages 全部通过；CloudBase `40306046890` 确认无云资源影响并以 `SKIPPED`、`sideEffectsStarted=false` 安全结束，微信 `40306046868` 实际上传开发版 `0.0.382.1`。不可变 outcome/receipt 的目标 SHA、工具 SHA、同 SHA CI、Git tree、累计范围与 artifact digest 已核对。发布后干净主线首轮冷启动为 0 检查/1 个“目标页面未就绪”异常；显式打开同一工作树后复跑 30/30、17/17 路由、0 失败/异常/blocker，公开名片、头像和背景下载解码通过。普通成员写链路与双真机仍独立阻塞。见 [缓存失效报告](verification/2026-10-26-pr341-cache-invalidation.md)。
+> Strava 非激活基础片：PR #380 已 squash 合入 `main@38643aae`，PR/main CI、覆盖率、安全审计、CodeQL 与 Pages 全部通过；CloudBase `40315246349` 以 `SKIPPED`、`sideEffectsStarted=false` 安全结束，微信 `40315246336` 实际上传开发版 `0.0.384.1`，target/tooling SHA、同 SHA CI、累计范围和不可变 receipt 已核对。当前云函数、小程序与 `cloud:prepare` 不引用该模块，真实 OAuth/GPX、R09、目标云运行回读和双真机仍独立阻塞。见 [Strava 基础片报告](verification/2026-10-26-pr341-strava-contract.md)。
 
 > 最后更新：2026-10-26（CST）。PR #362（我的页权限卡排版与旧 WebView 兼容）、PR #358（activity-read 头像类别兼容）与 PR #363（WXML 编译修复）均已保留在当前主线及开发版 `0.0.372.1`。WXML 绑定语法契约已阻断此类编译错误（详见 docs/verification/2026-10-26-wxml-binding-upload-fix.md）；剩余真机获取该开发版并核对权限卡、授权后头像与背景回读。
 > CI 第一批 #364、#365、#367、#368、#369 已 squash 合入 `main@93ad577f`，最终 CI / CodeQL、1297 项组合门禁通过。微信开发版 `0.0.372.1` 实际回执已核对，CloudBase `40274362993` 完整部署 12 函数、配置回读和数据库 smoke 通过；最终云 `40276863957` 与微信 `40276863918` 的同 SHA CI、真实基线、累计范围及无副作用 SKIPPED outcome 已核对。详见 [第一批交付报告](verification/2026-10-26-ci-first-batch-delivery.md)，独立 P0 保留。
@@ -27,16 +28,16 @@
 | --- | --- | --- | --- |
 | P0 | 普通成员完整写链路 | `BLOCKED`；缺普通成员与隔离环境现场证据 | 创建→发布→报名→人工审批/自动通过→凭证→取消→重报，回读人数、状态、审计、幂等和补偿 |
 | P0 | iOS / Android 双真机 | `BLOCKED`；IDE 设备模拟值不是真机 | 两端完成权限、相册、定位、二维码、Canvas、保存分享、Strava/GPX、弱网和安全区验收 |
-| P0 | 当前云环境一致性与媒体 | `DEPLOYED / CLIENT_RELEASED / DEVICE_UAT_BLOCKED`；`main@a1b335c5` 的云 `40294771478` 已全量对账，`main@10375994` 的云 `40306046890` 确认无云资源影响并安全跳过；微信 `40306046868` 已实际上传开发版 `0.0.382.1`。目标环境配置、媒体密钥、生产写 smoke/清理和发布后公开媒体解码通过。新审核/删除未启用，双真机与普通成员写链路未验 | 以同候选版本在真机确认授权媒体、活动图、二维码与路线图，独立写链路回读通过 |
+| P0 | 当前云环境一致性与媒体 | `DEPLOYED / CLIENT_RELEASED / DEVICE_UAT_BLOCKED`；`main@a1b335c5` 的云 `40294771478` 已全量对账，`main@38643aae` 的云 `40315246349` 确认无云资源影响并安全跳过；微信 `40315246336` 已实际上传开发版 `0.0.384.1`。目标环境配置、媒体密钥、生产写 smoke/清理和发布后公开媒体解码通过。新审核/删除与 Strava 基础片未启用，双真机与普通成员写链路未验 | 以同候选版本在真机确认授权媒体、活动图、二维码与路线图，独立写链路回读通过 |
 | P0 | Strava OAuth / GPX 导入 | `BLOCKED`；代码与契约测试不能替代现场运行 | 配置 callback 后完成授权同意/拒绝、刷新/撤销、导入预览、活动保存消费及手动 GPX 降级 |
 | 上架前 | 主体、备案、类目、隐私与提审材料 | `BLOCKED`；无平台侧完整证据 | 后台核验主体/备案/类目，完成隐私声明、用户权益、内容治理、联系渠道和审核材料 |
 | P1 | 活动详情客户端响应优化交付 | `DEPLOYED / DEVICE_UAT_BLOCKED`；先显摘要、完整回源、云端并行读取与写后失效已发布，`main@10375994` 最终模拟器内容 1197ms、完整刷新 2785ms；发布前两次、两轮发布后各一次首页未就绪失败均保留，间歇性冷启动根因未确认 | 同候选版本完成真机、弱网与普通成员验收；冷启动另需可比证据和稳定复现 |
-| P1 | 体验版晋级与 UAT | `DEVELOPMENT_UPLOADED / UAT_PENDING`；`main@10375994` 的 CI 与开发版 `0.0.382.1` 实际上传 receipt 通过；candidate、平台选版、verified 与 UAT 未执行。历史候选不重标为本版本 | 以 `main@10375994` / `0.0.382.1` 同 SHA receipt 执行 candidate、平台人工选为体验版及 verified 回读，再执行体验版 UAT |
+| P1 | 体验版晋级与 UAT | `DEVELOPMENT_UPLOADED / UAT_PENDING`；`main@38643aae` 的 CI 与开发版 `0.0.384.1` 实际上传 receipt 通过；candidate、平台选版、verified 与 UAT 未执行。历史候选不重标为本版本 | 以 `main@38643aae` / `0.0.384.1` 同 SHA receipt 执行 candidate、平台人工选为体验版及 verified 回读，再执行体验版 UAT |
 | P1 | 单俱乐部模式真机核销 | `BLOCKED` | 双端验证普通成员只读、OWNER/ADMIN 无编辑入口、平台管理员编辑、空库创建、多存量失败和弱网迟到响应 |
 | P1 | 个人背景图移除与资料保存口径冲突 | `DEPLOYED / UAT_BLOCKED`；背景选填已部署，保留性别、头像与媒体门槛；资料核心 42 项通过；真实 UI 写入和真机验收未执行 | 回读无背景首次保存、移除后保存、头像独立即时保存；真机验收 |
 | P1 | #341 隐私权益与代际完整迁移 | `FOUNDATION_DELIVERED / CACHE_DELIVERED / MIGRATION_BLOCKED`；无生产引用的隐私资格与精确删除目标账本协议已由 #375 合入；缓存片 #378 完成 C1-C8 RED/GREEN、缓存与身份聚焦 4 文件 119/119、全量 Vitest 89 文件 1376/1376，并随 `main@10375994` / 开发版 `0.0.382.1` 发布。发布后只读 30/30、17/17 路由与最终复审通过。完整删除事务、generation 消费者和显式同意仍未激活 | 同事务目标移交、所有写/读消费者、显式同意/撤回和缓存闭合；隔离删除/重建写旅程与目标云回读通过 |
 | P1 | #341 完整内容审核迁移 | `MEDIA_DELIVERED / CALLBACK_CONTRACT_DELIVERED / MIGRATION_BLOCKED`；#372 媒体链路与 #376 无生产引用的认证回调协议均已进入 `a1b335c5`，真实发布 receipt 通过；完整运行回调、预占/预算、数据库 ACK、risky 例外和审批重核仍未接线，平台配置与原生转换未验 | 完整链路闭合 upload→pending→回调→pass→保存→active→read，验签、乱序/故障、配置回读和双真机通过 |
-| P1 | #341 Strava 撤销增量状态机 | `LOCAL_FOUNDATION_PASS / MIGRATION_BLOCKED`；无生产引用的基础契约已在最新主线工作树完成 R07/R08、operation/ledger fence、严格数据库缺失分类、revoke ACK 8 次预算、`read` scope、路线 401 恢复及损坏 ledger/时间元数据 fail-closed RED/GREEN，Strava 76/76、定向组合 193/193 通过，终局分组/跨组复审清零。当前云函数、客户端和 prepare 未引用该模块，R09 可信手动 GPX 来源、运行消费者、目标配置与现场故障回读仍未实现 | 持久材料/未知操作闭合、旧回调不复活凭证、可恢复授权和可信手动降级；目标配置及现场故障回读通过 |
+| P1 | #341 Strava 撤销增量状态机 | `FOUNDATION_DELIVERED / MIGRATION_BLOCKED`；无生产引用的基础契约已由 #380 合入 `main@38643aae`，完成 R07/R08、operation/ledger fence、严格数据库缺失分类、revoke ACK 8 次预算、`read` scope、路线 401 恢复及损坏 ledger/时间元数据 fail-closed RED/GREEN，Strava 76/76、定向组合 193/193 和 PR/main 门禁通过。CloudBase 安全跳过，微信仅上传同 SHA 开发版；当前云函数、客户端和 prepare 未引用该模块，R09 可信手动 GPX 来源、运行消费者、目标配置与现场故障回读仍未实现 | 持久材料/未知操作闭合、旧回调不复活凭证、可恢复授权和可信手动降级；目标配置及现场故障回读通过 |
 
 ## 已完成且不再列为阻塞
 
