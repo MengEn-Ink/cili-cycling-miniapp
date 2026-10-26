@@ -84,3 +84,18 @@ test('依赖审计维持 high 门槛且上传工具依赖保持隔离安装', ()
   assert.match(jobBlock('main-audit', null), /npm run tool:install/);
   assert.match(jobBlock('main-audit', null), /npm run harness -- run audit/);
 });
+
+test('metadata 与 source 并发隔离，复用只跳过源码任务，每次保留描述和 required validate', () => {
+  const affected = jobBlock('affected-pr', 'validate');
+  assert.match(ci, /github\.event\.action == 'edited' \|\| github\.event\.action == 'labeled'/);
+  assert.match(ci, /&& 'metadata' \|\| 'source'/);
+  assert.match(ci, /actions: read/);
+  assert.match(affected, /pr-source-evidence\.mjs prepare/);
+  assert.match(affected, /PR_FORK:.*head\.repo\.full_name != github\.repository/);
+  assert.match(affected, /if: steps\.evidence\.outputs\.reuse != 'true'[\s\S]*run: npm ci/);
+  assert.match(affected, /pr-source-evidence\.mjs create/);
+  assert.match(affected, /name: pr-source-evidence-/);
+  assert.match(affected, /if: always\(\) && steps\.evidence\.outputs\.reuse != 'true'/);
+  assert.match(jobBlock('pr-submission', 'upload-decision'), /npm run check:pr-description/);
+  assert.match(jobBlock('validate', 'main-validate'), /needs: \[pr-submission, affected-pr\]/);
+});

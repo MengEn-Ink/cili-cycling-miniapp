@@ -9,10 +9,11 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
-# 同一 PR 的旧检查不再影响交付反馈；main 的发布链仍由独立 workflow_run 串行执行，不能被取消。
+# 描述/标签更新只取消旧 metadata 检查，不取消仍在执行的源码检查；main 不取消。
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
+  group: ci-${{ github.event.pull_request.number || github.ref }}-${{ (github.event.action == 'edited' || github.event.action == 'labeled') && 'metadata' || 'source' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -64,6 +65,12 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      PR_ACTION: ${{ github.event.action }}
+      PR_FORK: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -76,16 +83,34 @@ jobs:
             package-lock.json
             tools/miniprogram-ci/package-lock.json
             cloudfunctions/*/package-lock.json
+      - name: Resolve trusted source evidence
+        id: evidence
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/pr-source-evidence.mjs prepare
       - name: Install root dependencies
+        if: steps.evidence.outputs.reuse != 'true'
         run: npm ci
       - name: Run affected pull request checks through Harness
+        if: steps.evidence.outputs.reuse != 'true'
         env:
           AFFECTED_BASE: ${{ github.event.pull_request.base.sha }}
           AFFECTED_HEAD: ${{ github.event.pull_request.head.sha }}
           RELEASE_NOTES_BASE: ${{ github.event.pull_request.base.sha }}
         run: npm run harness -- run affected
+      - name: Create successful source evidence
+        if: success() && steps.evidence.outputs.reuse != 'true' && github.event.action != 'edited' && github.event.action != 'labeled'
+        run: node scripts/pr-source-evidence.mjs create
+      - name: Store successful source evidence
+        if: success() && steps.evidence.outputs.reuse != 'true' && github.event.action != 'edited' && github.event.action != 'labeled'
+        uses: actions/upload-artifact@v7
+        with:
+          name: pr-source-evidence-${{ github.event.pull_request.number }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/pr-source-evidence
+          if-no-files-found: error
+          retention-days: 14
       - name: Upload Harness report
-        if: always()
+        if: always() && steps.evidence.outputs.reuse != 'true'
         uses: actions/upload-artifact@v6
         with:
           name: harness-report-${{ github.event.pull_request.number }}
