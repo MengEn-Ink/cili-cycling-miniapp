@@ -1,11 +1,11 @@
 # 高优问题清单
 
 > 最后更新：2026-10-26（CST）。PR #362（我的页权限卡排版与旧 WebView 兼容）、PR #358（activity-read 头像类别兼容）与 PR #363（WXML 方法调用导致开发版上传编译失败修复）均已合入 `main@85cbc8f`。开发版 `0.0.366.1`（robot 1）已成功上传并产出同 SHA receipt，上传链路自 #358 起的中断已恢复；WXML 绑定语法契约测试已阻断此类错误再次进入主线（详见 docs/verification/2026-10-26-wxml-binding-upload-fix.md）。剩余：用户真机获取 `0.0.366.1`，验证权限卡排版与授权后头像/背景回读。
-> 用户已授权 CI 第一批合并、推送与部署。#364、#365 已合入 `main@c665c329`，#365 最终 CI `40273355173` 与 CodeQL 通过；#367 已同步并推送最终 head，#368 已整合依赖和全部测试入口。两项源码与已验证组合一致，文档 #369 将回填实际发布结果。状态 `MERGING / RELEASE_PENDING`，独立 P0 保留。
+> 用户已授权 CI 第一批合并、推送与部署。#364、#365、#367、#368 均已 squash 合入 `main@6fe556e7`，全部最终 PR CI 与 CodeQL 通过；完整源码与 1297 项测试通过的组合一致。CloudBase `40274362993` 正在执行 `d0ea0b5a` 的首次完整对账；微信 `40274362963` 仍在计算该目标的上传范围，实际回执待核对；文档 #369 待回填。状态 `MERGED / DEPLOYING`，独立 P0 保留。
 >
 > 本文件只保留尚未完成的实际交付或验收。历史运行和详细口径见 [微信 E2E 与上线准备状态](verification/2026-10-21-wechat-e2e-and-launch-readiness.md)，GitHub Actions 实时状态以 GitHub 为唯一事实源。
 
-2026-10-26 用户批准的 [CI 与发布优化 A 方案第一批](superpowers/specs/2026-10-26-ci-release-optimization-design.md) 已分别交付至 [PR #364](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/364)、[#365](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/365)、[#367](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/367)、[#368](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/368)。预检、五分钟 upload 截止、实际 receipt / 累计范围、元数据可信复用均已实现；1297 / 1296 Vitest、全量、覆盖率、high 审计、严格同步与治理通过。产品与截图字节与最新主线相等；摘要只迁移二进制算法。最终组合与远端证据见 [交付报告](verification/2026-10-26-ci-first-batch-delivery.md)。尚未合并发布，第二、三批未实施，不改变真机、普通成员写链路和目标环境回读。
+2026-10-26 用户批准的 [CI 与发布优化 A 方案第一批](superpowers/specs/2026-10-26-ci-release-optimization-design.md) 已通过 [PR #364](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/364)、[#365](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/365)、[#367](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/367)、[#368](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/368) 合入主线。预检、五分钟 upload 截止、实际 receipt / 累计范围、元数据可信复用和全部测试入口均保留；1297 Vitest、全量、覆盖率、high 审计、严格同步与治理通过。产品与截图字节未变；摘要只迁移二进制算法。最终组合与远端证据见 [交付报告](verification/2026-10-26-ci-first-batch-delivery.md)。当前实际发布验收中，第二、三批未实施，不改变真机、普通成员写链路和目标环境回读。
 
 第三轮骑行影像志布局优化已通过 PR #348 合入 `main@3d492c77b0feb9d1c79894754a8777fd19c3ce82`：17 条路由收口统一 gutter 与 64rpx 主标题，个人/俱乐部/活动 Hero 统一 16:9；活动编辑改为扁平章节和单列长表单，仅上传入口保留虚线；个人与俱乐部资料减少嵌套卡片，管理卡将下架/驳回降为危险文字操作，红色只保留主操作、选中和明确危险动作。微信开发者工具在 366px 华为模拟设备完成 17/17 真实云只读路由截图、活动编辑长页底部和四个重点 WXSS 编译复核，Console/Network 错误筛选为空；16 页 × 340/375/430 三宽度全部通过，1276 项测试通过。当前 UI 摘要为 `sha256:5fc9f6ac10cfd8fff76e2098067e3bf7e0344ba95132f4d3c0238a22b26efc9b`；主包 458760 字节，距硬限额 555 字节。GitHub Actions 已上传开发版 `0.0.350.1` 并生成同 SHA receipt；首次 candidate 仅因 squash 后同步基线 SHA 不可解析而失败，源 UI 与 Pages 摘要未漂移。截图原图含真实资料，仅私有留存，未冒充脱敏公开证据；以上仍属于模拟器和开发版证据，不替代公开媒体、普通成员写链路或 iOS/Android 物理真机验收。
 
@@ -31,7 +31,7 @@
 | P1 | 体验版晋级与 UAT | `DEVELOPMENT_UPLOADED / CANDIDATE_BLOCKED`；`main@85cbc8f` 的 CI 与开发版 `0.0.366.1` 自动上传均成功；历史 candidate `39942078355` 因 squash 后 `syncedThrough=37b74086` 不是 main 祖先而失败，未进入平台选版 | 以 `main@85cbc8f` 的同 SHA receipt 重跑 candidate、平台人工选为体验版及 verified 回读，再执行体验版 UAT |
 | P1 | 单俱乐部模式真机核销 | `BLOCKED` | 双端验证普通成员只读、OWNER/ADMIN 无编辑入口、平台管理员编辑、空库创建、多存量失败和弱网迟到响应 |
 | P1 | 个人背景图移除与资料保存口径冲突 | `DEPLOYED / UAT_BLOCKED`；背景选填已部署，保留性别、头像与媒体门槛；资料核心 42 项通过；真实 UI 写入和真机验收未执行 | 回读无背景首次保存、移除后保存、头像独立即时保存；真机验收 |
-| P1 | CI 与发布链路第一批 | `MERGING / RELEASE_PENDING`；#364、#365 已合入 `c665c329`，#367 最新提交远端检查中，#368 已整合依赖，#369 待回填发布结果 | 合入四项并保留全部测试入口，核对 main CI、实际发布 receipt 或有证据的安全跳过；不替代独立 P0 |
+| P1 | CI 与发布链路第一批 | `MERGED / DEPLOYING`；四项已合入 `6fe556e7`，首次完整云对账执行中；核对最终 main CI、实际回执与有证据的安全跳过后回填 #369 | 核对 main CI、实际发布 receipt 或有证据的安全跳过；不替代独立 P0 |
 
 ## 已完成且不再列为阻塞
 
