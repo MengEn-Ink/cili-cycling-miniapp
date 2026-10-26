@@ -7,7 +7,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:content-contract": "node --test scripts/content-safety/content.node-test.cjs",
+    "test:content-contract": "node --test scripts/content-safety/content.node-test.cjs scripts/content-safety/callback.node-test.cjs",
     "harness": "node scripts/harness.mjs",
     "harness:preflight": "node scripts/harness.mjs preflight verify",
     "harness:verify": "node scripts/harness.mjs run verify",
