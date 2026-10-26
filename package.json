@@ -15,6 +15,7 @@
     "harness:verify": "node scripts/harness.mjs run verify",
     "harness:release": "node scripts/harness.mjs run release",
     "test:devtools:e2e": "node scripts/wechat-devtools-e2e.cjs",
+    "check:devtools:e2e-batch": "node scripts/check-devtools-e2e-batch.mjs",
     "cloud:prepare": "node scripts/prepare-cloudfunctions.mjs",
     "cloud:install": "npm run cloud:prepare && node scripts/run-cloud-packages.mjs install",
     "tool:install": "npx --yes npm@11 ci --ignore-scripts --prefix tools/miniprogram-ci --registry=https://registry.npmjs.org",
