@@ -62,19 +62,19 @@ describe('设置页', () => {
     await import('../miniprogram/pages/settings/index');
   });
 
-  it('当前版本为 2026.10.26.1 且 latest 唯一，上一版转为历史项', () => {
-    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.26.1');
-    expect(page.data.releaseNotes).toHaveLength(37);
+  it('当前版本为 2026.10.26.3 且 latest 唯一，上一版转为历史项', () => {
+    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.26.3');
+    expect(page.data.releaseNotes).toHaveLength(39);
     expect(page.data.currentRelease).toBe(page.data.releaseNotes[0]);
     expect(page.data.currentRelease).toMatchObject({
-      version: '2026.10.26.1',
+      version: '2026.10.26.3',
       date: '2026-10-26',
       title: '骑友照片恢复，活动详情更快显示',
       latest: true,
     });
     expect(page.data.releaseNotes[1]).toMatchObject({
-      version: '2026.10.25.3',
-      title: '活动头像与背景授权后可正常加载',
+      version: '2026.10.26.2',
+      title: '头像与背景读取更准确',
       latest: false,
     });
     expect(page.data.releaseNotes.filter((note: { latest: boolean }) => note.latest)).toHaveLength(

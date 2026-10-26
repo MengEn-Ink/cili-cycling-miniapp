@@ -30,11 +30,13 @@ function publicAvatarSource(profile) {
 }
 
 function publicBackgroundSource(profile) {
-  const current = profile && profile.background_photo;
-  const legacy =
-    profile && Array.isArray(profile.photos) ? profile.photos.find(validPhoto) : undefined;
-  const value = validPhoto(current) ? current : legacy;
-  return value ? { fileId: value.file_id, category: value.category } : undefined;
+  const value =
+    profile && Object.prototype.hasOwnProperty.call(profile, 'background_photo')
+      ? profile.background_photo
+      : profile && Array.isArray(profile.photos)
+        ? profile.photos.find(validPhoto)
+        : undefined;
+  return validPhoto(value) ? { fileId: value.file_id, category: value.category } : undefined;
 }
 
 function validPhoto(value) {
@@ -58,31 +60,35 @@ function compatibleProfileCategory(recordCategory, profileCategory) {
 }
 
 function canonicalPublicMedia(
-  sourceFileId,
+  referenceFileId,
   record,
   ownerOpenid,
   secretValue,
   expectedCategory,
   expectedOrigin,
+  expectedCanonicalCategory,
 ) {
   const secret = typeof secretValue === 'string' ? secretValue.trim() : '';
+  const sourceFileId = record && record.file_id;
+  const canonicalCategory = record && record.canonical_category;
   const extension = MIME_EXTENSIONS[record && record.mime];
-  const originalFileId = record && record.source_file_id;
-  const category = record && record.canonical_category;
   if (
-    !sourceFileId ||
+    !referenceFileId ||
     typeof ownerOpenid !== 'string' ||
     !ownerOpenid ||
     secret.length < 32 ||
     !record ||
-    typeof originalFileId !== 'string' ||
-    !originalFileId.startsWith('cloud://') ||
-    record._id !== mediaDocumentId(originalFileId) ||
-    record.file_id !== originalFileId ||
-    ![originalFileId, record.canonical_file_id].includes(sourceFileId) ||
+    typeof sourceFileId !== 'string' ||
+    !sourceFileId.startsWith('cloud://') ||
+    sourceFileId.length > 512 ||
+    record._id !== mediaDocumentId(sourceFileId) ||
+    (referenceFileId !== sourceFileId && referenceFileId !== record.canonical_file_id) ||
+    record.source_file_id !== sourceFileId ||
     record.owner_openid !== ownerOpenid ||
     !compatibleProfileCategory(record.category, expectedCategory) ||
-    (category !== undefined && category !== record.category) ||
+    (canonicalCategory !== undefined &&
+      canonicalCategory !== '' &&
+      canonicalCategory !== expectedCanonicalCategory) ||
     record.origin !== expectedOrigin ||
     record.status !== 'active' ||
     typeof record.canonical_file_id !== 'string' ||
@@ -100,8 +106,8 @@ function canonicalPublicMedia(
     .update(ownerOpenid)
     .digest('hex')
     .slice(0, 32);
-  const categoryPath = category ? `${category}/` : '';
-  const expectedPath = `profile-canonical/${ownerAlias}/${categoryPath}${mediaDocumentId(originalFileId)}/${record.sha256}.${extension}`;
+  const categoryPath = canonicalCategory ? `${canonicalCategory}/` : '';
+  const expectedPath = `profile-canonical/${ownerAlias}/${categoryPath}${mediaDocumentId(sourceFileId)}/${record.sha256}.${extension}`;
   const slash = record.canonical_file_id.indexOf('/', 'cloud://'.length);
   const actualPath = slash >= 0 ? record.canonical_file_id.slice(slash + 1) : '';
   return actualPath === expectedPath ? record.canonical_file_id : '';
@@ -115,6 +121,7 @@ function canonicalPublicAvatar(profile, record, ownerOpenid, secretValue) {
     secretValue,
     'other',
     profile && profile.avatar_source,
+    'profile-avatar',
   );
 }
 
@@ -127,6 +134,7 @@ function canonicalPublicBackground(profile, record, ownerOpenid, secretValue) {
     secretValue,
     source && source.category,
     'custom',
+    'profile-background',
   );
 }
 

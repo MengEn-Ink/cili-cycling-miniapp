@@ -1,6 +1,7 @@
 // @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { CLIENT_RELEASE_VERSION } from '../miniprogram/config/release';
 
 const read = (path: string) => readFileSync(path, 'utf8');
 const schema = read('docs/schema.js');
@@ -80,14 +81,17 @@ describe('FORMAL GitHub Pages 骑行影像志', () => {
     expect(deliveryCenter).toContain('设计演进记录');
   });
 
-  it('设置页以 2026.10.22.3 展示逐页对齐后的当前版本', () => {
+  it('设置页展示与客户端一致的当前版本并保留历史排版说明', () => {
     expect(schema).toContain(
       "['2026.10.22.3', '影像志排版与设计稿逐页对齐', '16 个核心页面统一使用设计稿的字体、颜色、间距与圆角规范。']",
     );
     runtime.prototypeState = 'default';
     const settings = runtime.pageTemplates?.settings?.() ?? '';
-    expect(settings).toContain('V2026.10.22.3');
-    expect(settings).toContain('2026.10.22');
+    expect(settings).toContain(`V${CLIENT_RELEASE_VERSION}`);
+    expect(settings).toContain('骑友照片恢复，活动详情更快显示');
+    expect(settings).toContain('已授权保存的头像和背景可在活动详情与骑友名片中正常显示');
+    expect(settings).toContain('列表进入活动详情先展示已有内容，完整详情继续刷新');
+    expect(settings).toContain('头像与资料保存后刷新活动缓存');
   });
 
   it('报名提交按审核中、公开通过和满员候补展示真实行程结果', () => {

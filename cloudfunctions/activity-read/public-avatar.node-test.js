@@ -9,6 +9,7 @@ const {
   compatibleProfileCategory,
   mediaDocumentId,
   publicAvatarSource,
+  publicBackgroundSource,
 } = require('./public-avatar');
 
 const MEDIA_SECRET = 'activity-read-test-media-secret-32-bytes';
@@ -207,4 +208,98 @@ test('compatibleProfileCategory 映射 profile-avatar↔other 与 profile-backgr
   assert.equal(compatibleProfileCategory('ride', 'profile-background'), false);
   assert.equal(compatibleProfileCategory('activity-image', 'other'), false);
   assert.equal(compatibleProfileCategory('bike', 'ride'), false);
+});
+
+test('公开头像兼容当前 source/canonical 引用与明确路径类别', async (t) => {
+  for (const category of ['other', 'profile-avatar'])
+    for (const pathCategory of [undefined, 'profile-avatar'])
+      for (const canonicalReference of [false, true])
+        await t.test(`${category}/${pathCategory || 'legacy'}/${canonicalReference}`, () => {
+          const { profile, record } = canonicalFixture();
+          record.category = category;
+          if (pathCategory) {
+            record.canonical_category = pathCategory;
+            record.canonical_file_id = record.canonical_file_id.replace(
+              `/${mediaDocumentId(record.file_id)}/`,
+              `/${pathCategory}/${mediaDocumentId(record.file_id)}/`,
+            );
+          }
+          if (canonicalReference) profile.avatar_file_id = record.canonical_file_id;
+          assert.equal(
+            canonicalPublicAvatar(profile, record, OWNER_OPENID, MEDIA_SECRET),
+            record.canonical_file_id,
+          );
+        });
+});
+
+test('公开路径不能由业务 category 推测或使用其它用途的明确路径', () => {
+  const { profile, record } = canonicalFixture();
+  const modernPath = record.canonical_file_id.replace(
+    `/${mediaDocumentId(record.file_id)}/`,
+    `/profile-avatar/${mediaDocumentId(record.file_id)}/`,
+  );
+  for (const candidate of [
+    { ...record, category: 'profile-avatar', canonical_file_id: modernPath },
+    { ...record, canonical_category: 'profile-avatar' },
+    { ...record, canonical_category: null },
+    { ...record, canonical_category: false },
+    { ...record, canonical_category: 'activity-image' },
+    { ...record, canonical_category: 'profile-background' },
+  ])
+    assert.equal(canonicalPublicAvatar(profile, candidate, OWNER_OPENID, MEDIA_SECRET), '');
+
+  const modern = {
+    ...record,
+    canonical_category: 'profile-avatar',
+    canonical_file_id: modernPath,
+  };
+  for (const candidate of [
+    { ...modern, source_file_id: 'cloud://env/other.jpg' },
+    { ...modern, _id: mediaDocumentId(modern.canonical_file_id) },
+    { ...modern, owner_openid: 'other-owner' },
+    { ...modern, status: 'unreferenced' },
+  ])
+    assert.equal(
+      canonicalPublicAvatar(
+        { ...profile, avatar_file_id: modernPath },
+        candidate,
+        OWNER_OPENID,
+        MEDIA_SECRET,
+      ),
+      '',
+    );
+});
+
+test('公开背景兼容双引用且显式移除不恢复旧 photos', async (t) => {
+  for (const category of ['ride', 'profile-background'])
+    for (const pathCategory of [undefined, 'profile-background'])
+      for (const canonicalReference of [false, true])
+        await t.test(`${category}/${pathCategory || 'legacy'}/${canonicalReference}`, () => {
+          const { record } = canonicalFixture();
+          record.category = category;
+          if (pathCategory) {
+            record.canonical_category = pathCategory;
+            record.canonical_file_id = record.canonical_file_id.replace(
+              `/${mediaDocumentId(record.file_id)}/`,
+              `/${pathCategory}/${mediaDocumentId(record.file_id)}/`,
+            );
+          }
+          const profile = {
+            background_photo: {
+              file_id: canonicalReference ? record.canonical_file_id : record.file_id,
+              category: 'ride',
+            },
+          };
+          assert.equal(
+            canonicalPublicBackground(profile, record, OWNER_OPENID, MEDIA_SECRET),
+            record.canonical_file_id,
+          );
+        });
+  const photos = [{ file_id: SOURCE_FILE_ID, category: 'ride' }];
+  assert.deepEqual(publicBackgroundSource({ photos }), {
+    fileId: SOURCE_FILE_ID,
+    category: 'ride',
+  });
+  for (const background_photo of [null, undefined, { file_id: SOURCE_FILE_ID, category: 'bad' }])
+    assert.equal(publicBackgroundSource({ background_photo, photos }), undefined);
 });

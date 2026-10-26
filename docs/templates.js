@@ -865,9 +865,9 @@
           <p class="release-title">${title}</p>
           <p class="release-summary">${summary}</p>
           <ul class="release-features">
-            <li><span class="feature-arrow" aria-hidden="true">→</span><span>${admin ? '管理员可同步 Strava 线路信息，骑友端不出现该入口' : '创建活动的管理员可同步 Strava 线路信息，直接用于本次活动'}</span></li>
-            <li><span class="feature-arrow" aria-hidden="true">→</span><span>创建活动的报名截止默认按活动开始日 00:00 自动设置</span></li>
-            <li><span class="feature-arrow" aria-hidden="true">→</span><span>Strava 线路旁可通过「+」补充本地路线文件</span></li>
+            <li><span class="feature-arrow" aria-hidden="true">→</span><span>已授权保存的头像和背景可在活动详情与骑友名片中正常显示</span></li>
+            <li><span class="feature-arrow" aria-hidden="true">→</span><span>列表进入活动详情先展示已有内容，完整详情继续刷新</span></li>
+            <li><span class="feature-arrow" aria-hidden="true">→</span><span>头像与资料保存后刷新活动缓存，减少旧图片残留</span></li>
           </ul>
         </div>
       </section>

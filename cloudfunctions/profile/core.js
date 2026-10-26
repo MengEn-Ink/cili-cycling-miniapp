@@ -775,11 +775,29 @@ function validateMediaUpdate(current, update, openid, secretValue, mediaRecords 
     .map((record) => record._id);
   return { data, activate_ids: [...activate], demote_ids: demote };
 }
+function uniqueMediaRecord(mediaRecords, fileId) {
+  const matches = mediaRecords.filter((record) => recordReferencesFile(record, fileId));
+  return matches.length === 1 ? matches[0] : undefined;
+}
+function compatibleCanonicalCategory(record, category) {
+  return (
+    record &&
+    (record.canonical_category === undefined ||
+      record.canonical_category === '' ||
+      record.canonical_category === category)
+  );
+}
 function ownerMedia(profile, openid, secretValue, mediaRecords = []) {
-  const candidates = [
-    effectiveBackgroundPhoto(profile),
-    ...(Array.isArray(profile && profile.photos) ? profile.photos : []),
-  ].filter(Boolean);
+  const backgroundPhoto = effectiveBackgroundPhoto(profile);
+  const explicitlyRemoved =
+    profile &&
+    Object.prototype.hasOwnProperty.call(profile, 'background_photo') &&
+    !backgroundPhoto;
+  const candidates = explicitlyRemoved
+    ? []
+    : [backgroundPhoto, ...(Array.isArray(profile && profile.photos) ? profile.photos : [])].filter(
+        Boolean,
+      );
   const unique = [];
   const seen = new Set();
   for (const candidate of candidates) {
@@ -787,18 +805,14 @@ function ownerMedia(profile, openid, secretValue, mediaRecords = []) {
     seen.add(candidate.file_id);
     unique.push(candidate);
   }
-  const records = new Map();
-  for (const record of mediaRecords) {
-    if (record?.file_id) records.set(record.file_id, record);
-    if (record?.canonical_file_id) records.set(record.canonical_file_id, record);
-  }
   return unique
     .flatMap((background) => {
-      const record = records.get(background.file_id);
+      const record = uniqueMediaRecord(mediaRecords, background.file_id);
       const storageFileId = canonicalFileForRecord(record, background.file_id, openid, secretValue);
       if (
         !isOwnerMedia(record?.file_id, openid, secretValue) ||
         !registeredMedia(record, background, openid) ||
+        !compatibleCanonicalCategory(record, 'profile-background') ||
         !storageFileId
       )
         return [];
@@ -816,21 +830,16 @@ function ownerMedia(profile, openid, secretValue, mediaRecords = []) {
 function ownerAvatarMedia(profile, openid, secretValue, mediaRecords = []) {
   const value = normalizeAvatarProfile(profile && typeof profile === 'object' ? profile : {});
   if (!value.avatar_file_id || !value.avatar_source) return undefined;
-  const record = mediaRecords.find(
-    (item) => item && recordReferencesFile(item, value.avatar_file_id),
-  );
+  const record = uniqueMediaRecord(mediaRecords, value.avatar_file_id);
   const origin =
     record && Object.prototype.hasOwnProperty.call(record, 'origin') ? record.origin : 'custom';
   const canonicalFileId = canonicalFileForRecord(record, value.avatar_file_id, openid, secretValue);
   if (
     origin !== value.avatar_source ||
     !isOwnerMedia(record?.file_id, openid, secretValue) ||
+    !compatibleCanonicalCategory(record, 'profile-avatar') ||
     !canonicalFileId ||
-    !registeredMedia(
-      record,
-      { file_id: value.avatar_file_id, category: record && record.category },
-      openid,
-    )
+    !registeredMedia(record, { file_id: value.avatar_file_id, category: 'other' }, openid)
   )
     return undefined;
   return {

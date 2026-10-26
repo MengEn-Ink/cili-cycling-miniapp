@@ -13,10 +13,10 @@ const {
 const {
   canonicalPublicAvatar,
   canonicalPublicBackground,
-  mediaDocumentId,
   publicAvatarSource,
   publicBackgroundSource,
 } = require('./public-avatar');
+const { loadProfileMediaRecords } = require('./profile-media');
 const { parseListPageRequest, listActivityPage } = require('./list-page');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
@@ -273,46 +273,10 @@ async function resolveProfileMediaTempUrls(entries, { includeBackground = false 
       }),
     ),
   ];
-  const sourceMediaIds = references.map(mediaDocumentId);
-  const mediaRecords = new Map();
-  for (let offset = 0; offset < sourceMediaIds.length; offset += 20) {
-    const batch = sourceMediaIds.slice(offset, offset + 20);
-    try {
-      const response = await db
-        .collection('profile_media')
-        .where({ _id: _.in(batch) })
-        .limit(20)
-        .get();
-      for (const record of Array.isArray(response.data) ? response.data : []) {
-        if (record && batch.includes(record._id)) mediaRecords.set(record._id, record);
-      }
-    } catch {
-      // 媒体登记读取失败时 fail closed，仅隐藏受影响图片。
-    }
-  }
-  // 新资料保存 canonical 引用，登记主键仍绑定 source；批量反查唯一登记。
-  const canonicalReferences = references.filter(
-    (fileId) => !mediaRecords.has(mediaDocumentId(fileId)),
-  );
-  for (let offset = 0; offset < canonicalReferences.length; offset += 20) {
-    const batch = canonicalReferences.slice(offset, offset + 20);
-    try {
-      const response = await db
-        .collection('profile_media')
-        .where({ canonical_file_id: _.in(batch) })
-        .limit(100)
-        .get();
-      const records = Array.isArray(response.data) ? response.data : [];
-      // 满页无法证明没有未读取的冲突记录，整批保持安全空态。
-      if (records.length >= 100) continue;
-      for (const fileId of batch) {
-        const matches = records.filter((record) => record?.canonical_file_id === fileId);
-        if (matches.length === 1) mediaRecords.set(mediaDocumentId(fileId), matches[0]);
-      }
-    } catch {
-      // 不回退到未验证的源图或客户端私有存储地址。
-    }
-  }
+  const mediaRecords = await loadProfileMediaRecords(references, {
+    collection: db.collection('profile_media'),
+    inValues: (values) => _.in(values),
+  });
   const canonicalByOpenid = new Map();
   const canonicalFileIds = [];
   for (const { openid, profile } of entries) {
@@ -320,14 +284,14 @@ async function resolveProfileMediaTempUrls(entries, { includeBackground = false 
     const backgroundSource = includeBackground ? publicBackgroundSource(profile) : undefined;
     const avatarFileId = canonicalPublicAvatar(
       profile,
-      avatarSource ? mediaRecords.get(mediaDocumentId(avatarSource)) : undefined,
+      mediaRecords.get(avatarSource),
       openid,
       process.env.PROFILE_MEDIA_PATH_SECRET,
     );
     const backgroundFileId = backgroundSource
       ? canonicalPublicBackground(
           profile,
-          mediaRecords.get(mediaDocumentId(backgroundSource.fileId)),
+          mediaRecords.get(backgroundSource.fileId),
           openid,
           process.env.PROFILE_MEDIA_PATH_SECRET,
         )
