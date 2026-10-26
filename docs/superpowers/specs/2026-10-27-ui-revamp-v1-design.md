@@ -79,9 +79,9 @@ PR B 先完成表达层迁移，不改变任何视觉值。每个现存颜色字
 
 当前 49 处 rgba 分属 `rgba(12, 10, 7, α)`、`rgba(255, 255, 255, α)`、`rgba(192, 50, 31, 0.08)`、`rgba(0, 0, 0, α)` 与 `rgba(165, 42, 28, 0.92)` 五个基色族。散文不复制完整 alpha 枚举，避免后续统计漂移；`pr-b-literal-token-map.md` 是 53 处字面量位置、基色、alpha 与目标 token 的唯一权威完整清单。所有基色族和 alpha 都必须原值迁移，禁止遗漏或就近归并。
 
-PR B 必须新增版本化的 `docs/designs/2026-10-27-ui-revamp-v1/pr-b-literal-token-map.md`，完整列出 53 处颜色字面量的 `文件:行号 → 当前字面量 → 新 token → token 当前值`。每一行都要求「当前字面量 = token 当前值」且能由 `check:design` 机械复算；还需单列 `components/activity-card/index.wxss` 的字体族字面量到 `--font-family-editorial` 的映射。缺行、近似归并或像素漂移均使 PR B fail-closed。
+PR B 必须新增版本化的 `docs/designs/2026-10-27-ui-revamp-v1/pr-b-literal-token-map.md`，完整列出 53 处颜色字面量的 `文件:行号 → 当前字面量 → 迁移类型 → 新 token → token 当前值`。其中 50 处直接生效的字面量要求「当前字面量 = token 当前值」并由 `check:design` 机械复算；还需单列 `components/activity-card/index.wxss` 的字体族字面量到 `--font-family-editorial` 的映射。缺行、近似归并或像素漂移均使 PR B fail-closed。
 
-其中 3 处 `var(--color-status-warning-soft, rgba(192, 50, 31, 0.08))` fallback 也计入上述 53 行。PR B 必须先用契约测试证明 `--color-status-warning-soft` 在 `app.wxss` 全局存在且当前值等于该 fallback，再把页面写法收口为 `var(--color-status-warning-soft)`；`check:design` 随后拒绝页面或组件 WXSS 中任何颜色字面量 fallback。不得为 fallback 新增豁免，也不得把这 3 处从映射清单扣除。
+其余 3 处是 `var(--color-status-warning-soft, rgba(192, 50, 31, 0.08))` 的 fallback，也计入上述 53 行并标记为 `fallback-only`。当前全局 token 的有效值是 `#fff2c7`，并不等于 fallback；在支持 CSS 变量的目标环境中一直由 token 分支生效。PR B 必须用契约测试证明该 token 在 `app.wxss` 全局存在、目标微信基础库支持当前已广泛使用的 CSS 变量，再把页面写法收口为 `var(--color-status-warning-soft)`，保持有效值 `#fff2c7` 不变；`check:design` 随后拒绝页面或组件 WXSS 中任何颜色字面量 fallback。不得为 fallback 新增豁免，也不得把这 3 处从映射清单扣除。
 
 ### V1 目标叠层：仅 UI 分片启用
 
