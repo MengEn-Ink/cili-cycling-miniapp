@@ -1,11 +1,11 @@
 # 高优问题清单
 
-> 活动详情头像/背景专项：PR #373 首轮 CI / CodeQL 已通过，已整合新主线 #372。组合版本 `2026.10.26.3` / `bf55d7bd` 保留完整媒体校验、本人预览及显式移除语义；308 项定向 Vitest、67 项云检查通过。最终格式修正后全仓格式通过，干净产品真实云 17 路由、30 项通过、0 失败/异常/blocker，名片与图片解码通过；35 张脱敏副本绑定最新摘要，严格 UI 同步通过。内容 1340ms、完整刷新 6538ms，后端仍为 #372，不能重标本 PR 发布性能。该 SHA 两次首页未就绪失败保留，直接云调用与实际导航正常，间歇性根因未确认。最终预检与远端复检进行中；本 PR 仍未合入上传，双真机与成员写链路独立阻塞。见 [专项报告](verification/2026-10-26-activity-media-response.md)。
+> 活动详情头像/背景专项：PR #373 已 squash 合入 `main@a1b335c5`，PR/main CI、覆盖率、安全审计、CodeQL 与 Pages 通过；CloudBase `40294771478` 全量对账 12 个函数、数据库/存储基线、配置与媒体密钥回读以及 8 阶段俱乐部写 smoke/清理均通过，微信 `40294771444` 实际上传开发版 `0.0.380.1`。两端 receipt 的 artifact digest、Git 内容、同 SHA CI 与累计范围已核验。发布后干净主线完成 17 个注册路由、20 张运行截图和 30 项检查，0 失败/异常/blocker；内容 1273ms、完整刷新 2049ms。首次冷启动仍有一次首页未就绪失败，双真机与普通成员写链路继续独立阻塞。见 [专项报告](verification/2026-10-26-activity-media-response.md)。
 
 > 最后更新：2026-10-26（CST）。PR #362（我的页权限卡排版与旧 WebView 兼容）、PR #358（activity-read 头像类别兼容）与 PR #363（WXML 编译修复）均已保留在当前主线及开发版 `0.0.372.1`。WXML 绑定语法契约已阻断此类编译错误（详见 docs/verification/2026-10-26-wxml-binding-upload-fix.md）；剩余真机获取该开发版并核对权限卡、授权后头像与背景回读。
 > CI 第一批 #364、#365、#367、#368、#369 已 squash 合入 `main@93ad577f`，最终 CI / CodeQL、1297 项组合门禁通过。微信开发版 `0.0.372.1` 实际回执已核对，CloudBase `40274362993` 完整部署 12 函数、配置回读和数据库 smoke 通过；最终云 `40276863957` 与微信 `40276863918` 的同 SHA CI、真实基线、累计范围及无副作用 SKIPPED outcome 已核对。详见 [第一批交付报告](verification/2026-10-26-ci-first-batch-delivery.md)，独立 P0 保留。
 > PR #341 按最新主线重新评估：独立基础 #370 已 squash 合入 `0c7463e3`，PR CI / CodeQL、主线 CI / CodeQL / Pages 通过；微信 `40281488762` 实际上传开发版 `0.0.374.1`、同 SHA receipt 已核对，云 `40281488773` 基线与累计范围安全跳过、无副作用。本文档片最终状态在 PR 描述收口。完整业务保留 18 P1 / 1 P2 与现场前置，按隐私代际、媒体/审核、Strava 去重跟踪；#341 仍 Draft，当前 main 未启用旧删除/新审核行为。见 [重新评估报告](verification/2026-10-26-pr341-reassessment.md) 与 [拆合设计](superpowers/specs/2026-10-26-pr341-latest-main-split.md)。
-> 媒体兼容片 PR #372 已正常 squash 合入 `main@3fd6abfd`，PR/main CI、CodeQL 与 Pages 通过；云 `40288912071` 增量部署 `activity-read/profile`、环境与媒体密钥配置回读、既有数据库 smoke/清理通过，微信 `40288912044` 实际上传开发版 `0.0.376.1`。两份真实 receipt 的 SHA、同 SHA CI、制品 digest、Git 内容和目标环境均已核验，自动化交付完成。source/canonical 双通道反查和本人预览已上线，客户端 `2026.10.26.2`。合并前 26 PASS / 1 FAIL / 0 异常的失败证据保留；当前 #373 已用实际 rider 选择重新验证名片与解码，但尚未合入发布。普通成员写链路、双真机和体验版 UAT 仍独立未验。详见 [媒体片报告](verification/2026-10-26-pr341-media-compat.md) 和 [组合验证](verification/2026-10-26-activity-media-response.md)。
+> 媒体兼容片 PR #372 已正常 squash 合入 `main@3fd6abfd` 并由 #373 的 `main@a1b335c5` 发布后真实运行复核；source/canonical 双通道反查、本人预览、名片弹层及图片解码均通过。合并前 26 PASS / 1 FAIL / 0 异常和后续冷启动失败均保留，不重写历史证据。普通成员写链路、双真机和体验版 UAT 仍独立未验。详见 [媒体片报告](verification/2026-10-26-pr341-media-compat.md) 和 [组合验证](verification/2026-10-26-activity-media-response.md)。
 >
 > 本文件只保留尚未完成的实际交付或验收。历史运行和详细口径见 [微信 E2E 与上线准备状态](verification/2026-10-21-wechat-e2e-and-launch-readiness.md)，GitHub Actions 实时状态以 GitHub 为唯一事实源。
 
@@ -24,18 +24,17 @@
 
 | 优先级 | 待办 | 当前状态 | 关闭条件 |
 | --- | --- | --- | --- |
-| P0 | 发布验收 SHA 的 DevTools 真实云只读运行 | `LOCAL_PASS / RELEASE_PENDING`；整合主线 #372 并修正格式后，干净 `bf55d7bd` 的 17 路由、30 项、名片与解码通过，0 失败/异常/blocker；本 SHA 的两次首页未就绪失败保留，间歇性根因未确认；新并行云代码与客户端仍待合入发布 | 组合版本合入部署后，在最终发布验收 SHA 复跑 17 路由、名片弹层与解码，总 outcome 通过 |
 | P0 | 普通成员完整写链路 | `BLOCKED`；缺普通成员与隔离环境现场证据 | 创建→发布→报名→人工审批/自动通过→凭证→取消→重报，回读人数、状态、审计、幂等和补偿 |
 | P0 | iOS / Android 双真机 | `BLOCKED`；IDE 设备模拟值不是真机 | 两端完成权限、相册、定位、二维码、Canvas、保存分享、Strava/GPX、弱网和安全区验收 |
-| P0 | 当前云环境一致性与媒体 | `PARTIAL / DEPLOYED`；主线 #372 / `3fd6abfd` 的 CI、云 `40288912071` 实际部署 activity-read/profile、配置回读与清理通过；微信 `40288912044` 实际上传 `0.0.376.1`。两端 artifact 摘要、Git tree、同 SHA CI 和累计基线通过校验，真实公开媒体及解码通过。本 PR 的新并行云代码与客户端仍未发布；新审核/删除未启用，真机与写链路未验 | 合入上传客户端修复后，固化同一候选版本，真机确认授权媒体、活动图、二维码与路线图，独立写链路回读通过 |
+| P0 | 当前云环境一致性与媒体 | `DEPLOYED / DEVICE_UAT_BLOCKED`；`main@a1b335c5` 的云 `40294771478` 全量对账与微信 `40294771444` 开发版 `0.0.380.1` 实际 receipt 通过；目标环境配置、媒体密钥、生产写 smoke/清理和发布后公开媒体解码通过。新审核/删除未启用，双真机与普通成员写链路未验 | 以同候选版本在真机确认授权媒体、活动图、二维码与路线图，独立写链路回读通过 |
 | P0 | Strava OAuth / GPX 导入 | `BLOCKED`；代码与契约测试不能替代现场运行 | 配置 callback 后完成授权同意/拒绝、刷新/撤销、导入预览、活动保存消费及手动 GPX 降级 |
 | 上架前 | 主体、备案、类目、隐私与提审材料 | `BLOCKED`；无平台侧完整证据 | 后台核验主体/备案/类目，完成隐私声明、用户权益、内容治理、联系渠道和审核材料 |
-| P1 | 活动详情客户端响应优化交付 | `LOCAL_PASS / NOT_UPLOADED`；有效列表摘要先显示、完整回源、并行签名与写后失效已实现，最终模拟器内容 1284ms、完整刷新 2101ms；两次 IDE 冷启动首页超时保留记录，未标为已解决 | 合入上传客户端，同候选版本完成真机、弱网与普通成员验收；冷启动另需可比证据 |
-| P1 | 体验版晋级与 UAT | `DEVELOPMENT_UPLOADED / UAT_PENDING`；`main@0c7463e3` 的 CI 与开发版 `0.0.374.1` 实际上传 receipt 通过；新版本 candidate、平台选版、verified 与 UAT 未执行。历史 `0.0.372.1` 候选核对不重标为本版本，#364 的同步祖先修复保留 | 以 `main@0c7463e3` / `0.0.374.1` 同 SHA receipt 执行 candidate、平台人工选为体验版及 verified 回读，再执行体验版 UAT |
+| P1 | 活动详情客户端响应优化交付 | `DEPLOYED / DEVICE_UAT_BLOCKED`；先显摘要、完整回源、云端并行读取与写后失效已发布，最终模拟器内容 1273ms、完整刷新 2049ms；发布前两次、发布后一次首页未就绪失败保留，间歇性冷启动根因未确认 | 同候选版本完成真机、弱网与普通成员验收；冷启动另需可比证据和稳定复现 |
+| P1 | 体验版晋级与 UAT | `DEVELOPMENT_UPLOADED / UAT_PENDING`；`main@a1b335c5` 的 CI 与开发版 `0.0.380.1` 实际上传 receipt 通过；candidate、平台选版、verified 与 UAT 未执行。历史候选不重标为本版本 | 以 `main@a1b335c5` / `0.0.380.1` 同 SHA receipt 执行 candidate、平台人工选为体验版及 verified 回读，再执行体验版 UAT |
 | P1 | 单俱乐部模式真机核销 | `BLOCKED` | 双端验证普通成员只读、OWNER/ADMIN 无编辑入口、平台管理员编辑、空库创建、多存量失败和弱网迟到响应 |
 | P1 | 个人背景图移除与资料保存口径冲突 | `DEPLOYED / UAT_BLOCKED`；背景选填已部署，保留性别、头像与媒体门槛；资料核心 42 项通过；真实 UI 写入和真机验收未执行 | 回读无背景首次保存、移除后保存、头像独立即时保存；真机验收 |
-| P1 | #341 隐私权益与代际完整迁移 | `FOUNDATION_MERGED / RELEASE_PENDING / MIGRATION_BLOCKED`；无生产引用的隐私资格与精确删除目标账本协议已由 #375 合入，31 项定向、全量及分组/跨组审查通过；main 发布 outcome 核对中，完整删除事务、generation 消费者和显式同意仍未激活 | 同事务目标移交、所有写/读消费者、显式同意/撤回和缓存闭合；隔离删除/重建写旅程与目标云回读通过 |
-| P1 | #341 完整内容审核迁移 | `MEDIA_DELIVERED / CALLBACK_CONTRACT_LOCAL_PASS / MIGRATION_BLOCKED`；#372 云/微信真实 receipt 通过，无生产引用的认证回调协议已完成 74 项内容契约、全量与两阶段审查，准备提交；完整运行回调、预占/预算、数据库 ACK、risky 例外和审批重核仍未接线，平台配置与原生转换未验 | 完整链路闭合 upload→pending→回调→pass→保存→active→read，验签、乱序/故障、配置回读和双真机通过 |
+| P1 | #341 隐私权益与代际完整迁移 | `FOUNDATION_DELIVERED / MIGRATION_BLOCKED`；无生产引用的隐私资格与精确删除目标账本协议已由 #375 合入并包含在 `a1b335c5` 的真实发布范围；完整删除事务、generation 消费者和显式同意仍未激活 | 同事务目标移交、所有写/读消费者、显式同意/撤回和缓存闭合；隔离删除/重建写旅程与目标云回读通过 |
+| P1 | #341 完整内容审核迁移 | `MEDIA_DELIVERED / CALLBACK_CONTRACT_DELIVERED / MIGRATION_BLOCKED`；#372 媒体链路与 #376 无生产引用的认证回调协议均已进入 `a1b335c5`，真实发布 receipt 通过；完整运行回调、预占/预算、数据库 ACK、risky 例外和审批重核仍未接线，平台配置与原生转换未验 | 完整链路闭合 upload→pending→回调→pass→保存→active→read，验签、乱序/故障、配置回读和双真机通过 |
 | P1 | #341 Strava 撤销增量状态机 | `DRAFT / MIGRATION_BLOCKED`；迟到拒绝清撤销屏障、拒绝/过期 authorizing 锁死、撤销后同摘要手动 GPX 被旧来源标记阻断 | 持久材料/未知操作闭合、旧回调不复活凭证、可恢复授权和可信手动降级；目标配置及现场故障回读通过 |
 
 ## 已完成且不再列为阻塞
