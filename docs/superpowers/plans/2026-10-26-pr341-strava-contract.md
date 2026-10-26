@@ -38,7 +38,7 @@
 - [x] Step5：affected 映射与根注册两项 RED 后实现；命令与最终结果见独立执行记录。
 - [x] Step6：最新主线补充两项 P1 RED；严格缺失分类与 ACK 预消费预算实现后 GREEN。
 - [x] Step7：独立分组审查发现并修复 3 个 core P1、1 个 store P1 与 4 个 store P2；scope、401 恢复、ledger、材料调度与 operation 到期元数据均补 RED/GREEN，Strava 76/76，终局复审清零。
-- [ ] Step8：主代理合并与 PR/main 门禁、实际 receipt 或累计安全跳过。
+- [x] Step8：PR #380 squash 合入 `main@38643aae`；PR/main CI、CodeQL、Pages 通过，CloudBase `40315246349` 安全跳过，微信 `40315246336` 实际上传开发版 `0.0.384.1`。
 
 ### 关键契约
 
