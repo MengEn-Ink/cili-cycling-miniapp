@@ -216,7 +216,7 @@
             <view class="rider-dialog-photo__scrim"></view>
             <view class="rider-dialog-photo__identity">
               <image wx:if="{{rider.avatarUrl}}" class="rider-dialog-avatar {{rider.genderClass}}" src="{{rider.avatarUrl}}" mode="aspectFill" lazy-load="{{true}}" data-index="{{index}}" data-url="{{rider.avatarUrl}}" bindload="attendeeAvatarLoad" binderror="attendeeAvatarError" />
-              <view wx:else class="rider-dialog-avatar rider-dialog-avatar--placeholder" aria-label="{{rider.displayName || '骑友'}}尚未公开头像">{{(rider.displayName || '骑友').slice(0, 1)}}</view>
+              <view wx:else class="rider-dialog-avatar rider-dialog-avatar--placeholder" aria-label="{{rider.displayName || '骑友'}}尚未公开头像">{{rider.avatarPlaceholder}}</view>
               <view class="rider-dialog-copy"><view class="rider-dialog-kicker">公开骑行名片</view><view class="rider-dialog-name">{{rider.displayName || '骑友'}}</view><view class="rider-dialog-status">{{rider.status === 'checked_in' ? '已签到' : '已报名'}}</view></view>
             </view>
             <view class="rider-dialog-note">昵称、头像与照片由骑友本人维护，仅展示公开资料。</view>

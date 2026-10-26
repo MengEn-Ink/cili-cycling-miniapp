@@ -256,7 +256,7 @@ jobs:
         env:
           CHECKOUT_SHA: ${{ steps.release.outputs.target_sha || env.TOOLING_SHA }}
           MINIPROGRAM_VERSION: ${{ steps.release.outputs.version }}
-          RELEASE_SUCCESS: ${{ success() }}
+          RELEASE_SUCCESS: ${{ job.status == 'success' }}
         run: >-
           node scripts/release-baseline-cli.mjs finalize miniprogram "${CHECKOUT_SHA}"
           "${RUNNER_TEMP}/release-outcome.json"

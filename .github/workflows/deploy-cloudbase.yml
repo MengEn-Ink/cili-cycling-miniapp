@@ -474,7 +474,7 @@ jobs:
       - name: Finalize actual CloudBase release evidence
         if: always()
         env:
-          RELEASE_SUCCESS: ${{ success() }}
+          RELEASE_SUCCESS: ${{ job.status == 'success' }}
         run: >-
           node scripts/release-baseline-cli.mjs finalize cloudbase "${TARGET_SHA}"
           "${RUNNER_TEMP}/release-outcome.json"
