@@ -145,3 +145,41 @@ test('云函数影响面仅安装 shared 与具体目标包，并保持 prepare 
       cloudBlock.indexOf("'scripts/run-cloud-packages.mjs'"),
   );
 });
+
+test('非激活 Strava foundation 的每个文件映射两项独立契约且不选择云包', () => {
+  for (const name of [
+    'core.cjs',
+    'store.cjs',
+    'fixture.cjs',
+    'core.node-test.cjs',
+    'revocation.node-test.cjs',
+  ]) {
+    const plan = createAffectedPlan([`scripts/strava-state-machine/${name}`]);
+    assert.equal(plan.mode, 'targeted', name);
+    assert.deepEqual(
+      plan.scriptTests,
+      [
+        'scripts/strava-state-machine/core.node-test.cjs',
+        'scripts/strava-state-machine/revocation.node-test.cjs',
+      ],
+      name,
+    );
+    assert.deepEqual(plan.cloudFunctions, []);
+    assert.deepEqual(plan.relatedSources, []);
+    assert.equal(plan.deployment, false);
+    assert.equal(plan.bootstrap, false);
+  }
+});
+
+test('Strava 契约注册于 validate 且不削弱根配置全量 fail-safe', () => {
+  const root = JSON.parse(readFileSync('package.json', 'utf8'));
+  assert.equal(
+    root.scripts['test:strava-contract'],
+    'node --test --test-concurrency=1 scripts/strava-state-machine/*.node-test.cjs',
+  );
+  assert.ok(root.scripts.validate.includes('npm run test:strava-contract'));
+  assert.ok(root.scripts.validate.includes('npm run test:content-contract'));
+  for (const path of ['package.json', 'scripts/affected-ci.mjs']) {
+    assert.equal(createAffectedPlan([path, 'scripts/strava-state-machine/core.cjs']).mode, 'full');
+  }
+});

@@ -36,7 +36,7 @@
 | P1 | 个人背景图移除与资料保存口径冲突 | `DEPLOYED / UAT_BLOCKED`；背景选填已部署，保留性别、头像与媒体门槛；资料核心 42 项通过；真实 UI 写入和真机验收未执行 | 回读无背景首次保存、移除后保存、头像独立即时保存；真机验收 |
 | P1 | #341 隐私权益与代际完整迁移 | `FOUNDATION_DELIVERED / CACHE_DELIVERED / MIGRATION_BLOCKED`；无生产引用的隐私资格与精确删除目标账本协议已由 #375 合入；缓存片 #378 完成 C1-C8 RED/GREEN、缓存与身份聚焦 4 文件 119/119、全量 Vitest 89 文件 1376/1376，并随 `main@10375994` / 开发版 `0.0.382.1` 发布。发布后只读 30/30、17/17 路由与最终复审通过。完整删除事务、generation 消费者和显式同意仍未激活 | 同事务目标移交、所有写/读消费者、显式同意/撤回和缓存闭合；隔离删除/重建写旅程与目标云回读通过 |
 | P1 | #341 完整内容审核迁移 | `MEDIA_DELIVERED / CALLBACK_CONTRACT_DELIVERED / MIGRATION_BLOCKED`；#372 媒体链路与 #376 无生产引用的认证回调协议均已进入 `a1b335c5`，真实发布 receipt 通过；完整运行回调、预占/预算、数据库 ACK、risky 例外和审批重核仍未接线，平台配置与原生转换未验 | 完整链路闭合 upload→pending→回调→pass→保存→active→read，验签、乱序/故障、配置回读和双真机通过 |
-| P1 | #341 Strava 撤销增量状态机 | `DRAFT / MIGRATION_BLOCKED`；迟到拒绝清撤销屏障、拒绝/过期 authorizing 锁死、撤销后同摘要手动 GPX 被旧来源标记阻断 | 持久材料/未知操作闭合、旧回调不复活凭证、可恢复授权和可信手动降级；目标配置及现场故障回读通过 |
+| P1 | #341 Strava 撤销增量状态机 | `LOCAL_FOUNDATION_PASS / MIGRATION_BLOCKED`；无生产引用的基础契约已在最新主线工作树完成 R07/R08、operation/ledger fence、严格数据库缺失分类、revoke ACK 8 次预算、`read` scope、路线 401 恢复及损坏 ledger/时间元数据 fail-closed RED/GREEN，Strava 76/76、定向组合 193/193 通过，终局分组/跨组复审清零。当前云函数、客户端和 prepare 未引用该模块，R09 可信手动 GPX 来源、运行消费者、目标配置与现场故障回读仍未实现 | 持久材料/未知操作闭合、旧回调不复活凭证、可恢复授权和可信手动降级；目标配置及现场故障回读通过 |
 
 ## 已完成且不再列为阻塞
 

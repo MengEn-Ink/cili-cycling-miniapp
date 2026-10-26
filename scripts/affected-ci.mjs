@@ -128,6 +128,16 @@ export function createAffectedPlan(changedFiles) {
       .filter((file) => /^scripts\/.*\.[cm]?js$/.test(file) && !NODE_TEST_PATTERN.test(file))
       .map((file) => file.replace(/\.[cm]?js$/, '.node-test.mjs'))
       .filter((file) => existsSync(file)),
+    ...(files.some((file) =>
+      /^scripts\/strava-state-machine\/(?:core|store|fixture|core\.node-test|revocation\.node-test)\.cjs$/.test(
+        file,
+      ),
+    )
+      ? [
+          'scripts/strava-state-machine/core.node-test.cjs',
+          'scripts/strava-state-machine/revocation.node-test.cjs',
+        ]
+      : []),
   ]);
 
   const design = files.some((file) => /(?:design|ui-sync)/i.test(file));
