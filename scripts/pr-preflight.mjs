@@ -16,8 +16,11 @@
 //
 // 用法：node scripts/pr-preflight.mjs
 
-import { execSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { execFileSync, execSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
+import { createConnection } from 'node:net';
+
+import { parseDiffStats, validatePullRequest } from './check-pr-description.mjs';
 
 const STEPS = [
   {
@@ -35,11 +38,70 @@ const STEPS = [
   { name: 'settings-page test', cmd: 'npx vitest run tests/settings-page.test.ts' },
 ];
 
+const gitText = (args) => execFileSync('git', args, { encoding: 'utf8' });
+
+function resolveBase() {
+  try {
+    return gitText(['merge-base', 'HEAD', 'origin/main']).trim();
+  } catch {
+    return gitText(['rev-parse', 'HEAD']).trim();
+  }
+}
+
+function checkPrDescription() {
+  if (!existsSync('.pr-body.md')) {
+    console.log('▷ check:pr-description 跳过（无 .pr-body.md，可运行 npm run pr:body 生成）');
+    return;
+  }
+  process.stdout.write('▶ check:pr-description ... ');
+  const titleFile = existsSync('.pr-title.txt') ? readFileSync('.pr-title.txt', 'utf8').trim() : '';
+  if (!titleFile) {
+    console.log('✗');
+    return {
+      name: 'check:pr-description',
+      error: '缺少 .pr-title.txt，请用 npm run pr:body -- --title "..." 生成',
+    };
+  }
+  const body = readFileSync('.pr-body.md', 'utf8');
+  const numstat = gitText(['diff', '--numstat', resolveBase()]);
+  const stats = parseDiffStats(numstat);
+  const errors = validatePullRequest({ title: titleFile, body, stats });
+  if (errors.length) {
+    console.log('✗');
+    return { name: 'check:pr-description', error: errors.join('\n') };
+  }
+  const placeholders = (body.match(/【/g) || []).length;
+  console.log(placeholders > 0 ? `⚠ 结构通过，但仍有 ${placeholders} 处【占位】未填写` : '✓');
+  if (placeholders > 0) {
+    return {
+      warning: true,
+      name: 'check:pr-description',
+      issue: `仍有 ${placeholders} 处【占位】未填写`,
+    };
+  }
+  return undefined;
+}
+
+function detectProxy() {
+  return new Promise((resolve) => {
+    const socket = createConnection({ host: '127.0.0.1', port: 7890, timeout: 600 });
+    socket.on('connect', () => {
+      socket.destroy();
+      resolve(true);
+    });
+    socket.on('timeout', () => {
+      socket.destroy();
+      resolve(false);
+    });
+    socket.on('error', () => resolve(false));
+  });
+}
+
 function run(cmd) {
   return execSync(cmd, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
 }
 
-function main() {
+async function main() {
   const failed = [];
   const warnings = [];
 
@@ -64,19 +126,10 @@ function main() {
     }
   }
 
-  // PR 描述校验（可选）
-  if (existsSync('.pr-body.md')) {
-    process.stdout.write('▶ check:pr-description ... ');
-    try {
-      run('node scripts/check-pr-description.mjs');
-      console.log('✓');
-    } catch (e) {
-      console.log('✗');
-      failed.push({ name: 'check:pr-description', error: e.stderr || e.stdout || e.message });
-    }
-  } else {
-    console.log('▷ check:pr-description 跳过（无 .pr-body.md）');
-  }
+  // PR 描述校验（可选，.pr-body.md 存在时才执行）
+  const prResult = checkPrDescription();
+  if (prResult?.error) failed.push(prResult);
+  if (prResult?.warning) warnings.push(prResult);
 
   console.log('\n' + '='.repeat(50));
   if (warnings.length) {
@@ -88,13 +141,20 @@ function main() {
     for (const f of failed) {
       console.log(`  ✗ ${f.name}`);
       if (f.error) {
-        const lines = f.error.trim().split('\n').slice(0, 5).join('\n');
+        const lines = f.error.trim().split('\n').slice(0, 8).join('\n');
         console.log(`    ${lines.replace(/\n/g, '\n    ')}`);
       }
     }
     process.exitCode = 1;
   } else {
     console.log('✓ 全部通过，可以提交 PR');
+  }
+
+  if (await detectProxy()) {
+    console.log('\n提示：检测到本地代理 127.0.0.1:7890，git/gh 访问 GitHub 前请设置：');
+    console.log(
+      "  git -c http.proxy=http://127.0.0.1:7890 ...  或  $env:HTTPS_PROXY='http://127.0.0.1:7890'",
+    );
   }
 }
 
