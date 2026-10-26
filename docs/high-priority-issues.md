@@ -1,8 +1,10 @@
 # 高优问题清单
 
-> 最后更新：2026-10-23（CST）。第三轮布局优化已由 PR #348 合入 `main@3d492c77b0feb9d1c79894754a8777fd19c3ce82`；main CI `39941688294` 与微信开发版自动上传 `39941871719` 均成功，receipt 绑定版本 `0.0.350.1`。体验版 candidate `39942078355` 因 squash 后 UI 同步基线仍指向原分支提交 `37b74086` 而失败，当前正将 `syncedThrough` 重新绑定至 main squash SHA；尚未执行平台人工选版与 verified。
+> 最后更新：2026-10-26（CST）。CI 第一批上传阶段超时已完成本地 20 项子进程用例、全量 validate、覆盖率、审计和严格 UI 同步；草稿分支待推送与远端检查，尚未合并部署。第一项预检 PR #364 的 required validate 与 CodeQL 已通过。实际发布基线及 PR 元数据复用继续实施；本次未复核平台选版、verified 或真实写链路。
 >
 > 本文件只保留尚未完成的实际交付或验收。历史运行和详细口径见 [微信 E2E 与上线准备状态](verification/2026-10-21-wechat-e2e-and-launch-readiness.md)，GitHub Actions 实时状态以 GitHub 为唯一事实源。
+
+CI 第一批第二项采用真实隔离 worker 从 upload 进度开始计时，五分钟绝对截止；超时或远端错误记录 UNKNOWN，不生成成功 receipt，不自动重传。详见 [上传超时验收记录](verification/2026-10-26-ci-upload-timeout.md)。同步清单失效引用已绑定至可达 `879ea813`，内容摘要、截图、状态与采集时间不变，不作为新采集或真机证据。
 
 第三轮骑行影像志布局优化已通过 PR #348 合入 `main@3d492c77b0feb9d1c79894754a8777fd19c3ce82`：17 条路由收口统一 gutter 与 64rpx 主标题，个人/俱乐部/活动 Hero 统一 16:9；活动编辑改为扁平章节和单列长表单，仅上传入口保留虚线；个人与俱乐部资料减少嵌套卡片，管理卡将下架/驳回降为危险文字操作，红色只保留主操作、选中和明确危险动作。微信开发者工具在 366px 华为模拟设备完成 17/17 真实云只读路由截图、活动编辑长页底部和四个重点 WXSS 编译复核，Console/Network 错误筛选为空；16 页 × 340/375/430 三宽度全部通过，1276 项测试通过。当前 UI 摘要为 `sha256:5fc9f6ac10cfd8fff76e2098067e3bf7e0344ba95132f4d3c0238a22b26efc9b`；主包 458760 字节，距硬限额 555 字节。GitHub Actions 已上传开发版 `0.0.350.1` 并生成同 SHA receipt；首次 candidate 仅因 squash 后同步基线 SHA 不可解析而失败，源 UI 与 Pages 摘要未漂移。截图原图含真实资料，仅私有留存，未冒充脱敏公开证据；以上仍属于模拟器和开发版证据，不替代公开媒体、普通成员写链路或 iOS/Android 物理真机验收。
 
@@ -28,6 +30,7 @@
 | P1 | 体验版晋级与 UAT | `DEVELOPMENT_UPLOADED / CANDIDATE_BLOCKED`；`main@3d492c77` 的 CI 与开发版 `0.0.350.1` 自动上传均成功；candidate `39942078355` 因 squash 后 `syncedThrough=37b74086` 不是 main 祖先而失败，未进入平台选版 | 将 UI 同步基线绑定至 main squash SHA 并通过严格门禁；随后以新 main 的同 SHA receipt 重跑 candidate、平台人工选为体验版及 verified 回读，再执行体验版 UAT |
 | P1 | 单俱乐部模式真机核销 | `BLOCKED` | 双端验证普通成员只读、OWNER/ADMIN 无编辑入口、平台管理员编辑、空库创建、多存量失败和弱网迟到响应 |
 | P1 | 个人背景图移除与资料保存口径冲突 | `DEPLOYED / UAT_BLOCKED`；背景选填已部署，保留性别、头像与媒体门槛；资料核心 42 项通过；真实 UI 写入和真机验收未执行 | 回读无背景首次保存、移除后保存、头像独立即时保存；真机验收 |
+| P1 | CI 与发布链路第一批 | `IMPLEMENTING / PR_PARTIAL`；PR #364 远端通过，上传超时本地全量通过；累计发布基线和元数据复用继续实施 | 四项分别通过本地与 PR 门禁，合入后核对 main CI、实际发布 receipt 或有证据的安全跳过；不替代独立 P0 |
 
 ## 已完成且不再列为阻塞
 
