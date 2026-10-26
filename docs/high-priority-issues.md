@@ -31,7 +31,7 @@
 | P1 | 体验版晋级与 UAT | `DEVELOPMENT_UPLOADED / UAT_PENDING`；`main@0c7463e3` 的 CI 与开发版 `0.0.374.1` 实际上传 receipt 通过；新版本 candidate、平台选版、verified 与 UAT 未执行。历史 `0.0.372.1` 候选核对不重标为本版本，#364 的同步祖先修复保留 | 以 `main@0c7463e3` / `0.0.374.1` 同 SHA receipt 执行 candidate、平台人工选为体验版及 verified 回读，再执行体验版 UAT |
 | P1 | 单俱乐部模式真机核销 | `BLOCKED` | 双端验证普通成员只读、OWNER/ADMIN 无编辑入口、平台管理员编辑、空库创建、多存量失败和弱网迟到响应 |
 | P1 | 个人背景图移除与资料保存口径冲突 | `DEPLOYED / UAT_BLOCKED`；背景选填已部署，保留性别、头像与媒体门槛；资料核心 42 项通过；真实 UI 写入和真机验收未执行 | 回读无背景首次保存、移除后保存、头像独立即时保存；真机验收 |
-| P1 | #341 隐私权益与代际完整迁移 | `DRAFT / MIGRATION_BLOCKED`；删除报名可丢账本目标、旧报名可关联新代际、报名/上传与媒体业务保存未贯通 generation、显式同意缺客户端入口；不在当前 main 运行 | 同事务目标移交、所有写/读消费者、显式同意/撤回和缓存闭合；隔离删除/重建写旅程与目标云回读通过 |
+| P1 | #341 隐私权益与代际完整迁移 | `FOUNDATION_MERGED / RELEASE_PENDING / MIGRATION_BLOCKED`；无生产引用的隐私资格与精确删除目标账本协议已由 #375 合入，31 项定向、全量及分组/跨组审查通过；main 发布 outcome 核对中，完整删除事务、generation 消费者和显式同意仍未激活 | 同事务目标移交、所有写/读消费者、显式同意/撤回和缓存闭合；隔离删除/重建写旅程与目标云回读通过 |
 | P1 | #341 完整内容审核迁移 | `MEDIA_DELIVERED / CALLBACK_CONTRACT_LOCAL_PASS / MIGRATION_BLOCKED`；#372 云/微信真实 receipt 通过，无生产引用的认证回调协议已完成 74 项内容契约、全量与两阶段审查，准备提交；完整运行回调、预占/预算、数据库 ACK、risky 例外和审批重核仍未接线，平台配置与原生转换未验 | 完整链路闭合 upload→pending→回调→pass→保存→active→read，验签、乱序/故障、配置回读和双真机通过 |
 | P1 | #341 Strava 撤销增量状态机 | `DRAFT / MIGRATION_BLOCKED`；迟到拒绝清撤销屏障、拒绝/过期 authorizing 锁死、撤销后同摘要手动 GPX 被旧来源标记阻断 | 持久材料/未知操作闭合、旧回调不复活凭证、可恢复授权和可信手动降级；目标配置及现场故障回读通过 |
 
