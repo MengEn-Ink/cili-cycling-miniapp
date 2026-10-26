@@ -431,7 +431,7 @@ test('workflow 上传五分钟阶段诊断独立保存，失败只清理且不�
   assert.match(workflow, /name: Store upload diagnostics[\s\S]*?if: always\(\)/);
   assert.match(
     workflow,
-    /Generate immutable development upload receipt[\s\S]*?if: steps\.upload\.outputs\.uploaded == 'true'/,
+    /Generate immutable development upload receipt[\s\S]*?if: steps\.upload\.outputs\.(?:uploaded|experience_eligible) == 'true'/,
   );
   assert.match(workflow, /Remove temporary private key[\s\S]*?if: always\(\)/);
   assert.doesNotMatch(workflow, /retry.*deploy:miniprogram/);

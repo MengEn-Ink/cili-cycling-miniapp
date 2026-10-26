@@ -53,6 +53,7 @@
 3. 上传阶段只从 SDK message=upload 开始计时；SDK 的随机 task id 不作为阶段标志。
 4. 原始 SDK 文本隔离；输出不包含真实资料、URL 参数或凭证。
 5. 主线 WXML 编译修复与 affected 选择器新增的语法测试保持完整；入口采用 supervisor / worker，worker 确认 IPC 后直接退出，覆盖 SDK 失败后残留 socket / timer 的旧入口问题。
+6. 与实际发布基线组合时，原体验版 receipt 门禁兼容 `uploaded` / `experience_eligible` 两种成功标志；实际发布 receipt 仍独立绑定完成上传。已观察组合旧断言失败，再验证兼容断言通过，避免两个 PR 的工作流门禁相互阻塞。
 
 **执行结论**：工程进程集成 PASS；微信平台 E2E BLOCKED。
 
