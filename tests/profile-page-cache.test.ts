@@ -145,7 +145,7 @@ describe('个人中心缓存', () => {
     expect(wx.removeSavedFile).not.toHaveBeenCalled();
   });
 
-  it('资料更新后只标记缓存过期并保留已保存图片', async () => {
+  it('资料更新后失效卡片缓存并清理已保存图片', async () => {
     const { invalidateProfilePageCache, readProfilePageCache, writeProfilePageCache } =
       await import('../miniprogram/utils/profile-page-cache');
     writeProfilePageCache('openid-a', profile, card, {
@@ -154,8 +154,10 @@ describe('个人中心缓存', () => {
 
     invalidateProfilePageCache();
 
-    expect(readProfilePageCache()).toMatchObject({ cachedAt: 0 });
-    expect(wx.removeSavedFile).not.toHaveBeenCalled();
+    expect(readProfilePageCache()).toBeNull();
+    expect(wx.removeSavedFile).toHaveBeenCalledWith(
+      expect.objectContaining({ filePath: 'saved://avatar.jpg' }),
+    );
   });
 
   it('缺少俱乐部字段的 v2 缓存不会进入新的资料卡缓存', async () => {

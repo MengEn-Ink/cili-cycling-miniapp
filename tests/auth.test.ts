@@ -5,6 +5,7 @@ import {
   parseAuthResponse,
 } from '../miniprogram/services/auth-service';
 import { AppStore } from '../miniprogram/store/app-store';
+import { getProfilePageCacheRevision } from '../miniprogram/utils/profile-page-cache';
 
 const fakeIdentity = {
   openid: 'openid-for-unit-test-only',
@@ -307,6 +308,41 @@ describe('身份 store', () => {
       isSuper: false,
       authStatus: 'error',
     });
+  });
+
+  it('账号切换为不同 openid 时推进个人页缓存 revision', async () => {
+    const authenticate = vi
+      .fn()
+      .mockResolvedValueOnce({ status: 'authenticated', identity: fakeIdentity })
+      .mockResolvedValueOnce({
+        status: 'authenticated',
+        identity: { ...fakeIdentity, openid: 'next-openid' },
+      });
+    const store = new AppStore(memoryStorage(), authenticate);
+    await store.ensureIdentity();
+    const revision = getProfilePageCacheRevision();
+
+    await store.ensureIdentity(undefined, true);
+
+    expect(getProfilePageCacheRevision()).toBe(revision + 1);
+  });
+
+  it('认证失败清除身份时推进个人页缓存 revision', async () => {
+    const authenticate = vi
+      .fn()
+      .mockResolvedValueOnce({ status: 'authenticated', identity: fakeIdentity })
+      .mockResolvedValueOnce({
+        status: 'error',
+        code: 'CALL_FAILED',
+        message: '身份服务暂时不可用，请稍后重试。',
+      });
+    const store = new AppStore(memoryStorage(), authenticate);
+    await store.ensureIdentity();
+    const revision = getProfilePageCacheRevision();
+
+    await store.ensureIdentity(undefined, true);
+
+    expect(getProfilePageCacheRevision()).toBe(revision + 1);
   });
 
   it('身份提示写入失败不改变远端认证成功结果或 TTL', async () => {

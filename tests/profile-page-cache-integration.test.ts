@@ -53,6 +53,14 @@ const card = {
   ],
 };
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((onResolve) => {
+    resolve = onResolve;
+  });
+  return { promise, resolve };
+}
+
 async function mountPage(
   cachedAt = Date.now(),
   ownerOpenid = 'member-openid',
@@ -205,6 +213,109 @@ describe('个人中心缓存优先与主动刷新', () => {
 
     expect(page.data.profile.nickname).toBe('最新骑手');
     expect(wx.removeStorageSync).toHaveBeenCalled();
+  });
+
+  it('强制回源发现旧账号过期缓存时重新加载并提交当前账号名片', async () => {
+    appStore.openid = 'member-b';
+    appStore.ensureIdentity.mockResolvedValue({
+      status: 'authenticated',
+      identity: { openid: 'member-b', role: 'member', isSuper: false },
+    });
+    const page = await mountPage(Date.now() - 7 * 60 * 60_000, 'member-a');
+
+    await page.onShow();
+    if (page.cardLoadPromise) await page.cardLoadPromise;
+
+    expect(rideService.getProfile).toHaveBeenCalledTimes(2);
+    expect(rideService.getPersonalCapabilityCard).toHaveBeenCalledTimes(2);
+    expect(page.data.profile.nickname).toBe('最新骑手');
+    expect(page.data.heroCard.displayName).toBe('最新骑手');
+    expect(wx.setStorageSync).toHaveBeenCalledWith(
+      'cili-profile-page-cache-v3',
+      expect.objectContaining({ ownerOpenid: 'member-b' }),
+    );
+  });
+
+  it('在途认证切换账号并推进 revision 后，重新加载新账号资料', async () => {
+    const identity = deferred<{
+      status: 'authenticated';
+      identity: { openid: string; role: 'member'; isSuper: false };
+    }>();
+    const cache = await import('../miniprogram/utils/profile-page-cache');
+    appStore.openid = 'member-a';
+    appStore.ensureIdentity
+      .mockImplementationOnce(() => {
+        appStore.authStatus = 'loading';
+        return identity.promise;
+      })
+      .mockResolvedValue({
+        status: 'authenticated',
+        identity: { openid: 'member-b', role: 'member', isSuper: false },
+      });
+    rideService.getProfile
+      .mockResolvedValueOnce({ ...fullProfile, nickname: '旧账号资料' })
+      .mockResolvedValueOnce(fullProfile);
+    rideService.getPersonalCapabilityCard
+      .mockResolvedValueOnce({
+        ...card,
+        profile: { ...card.profile, displayName: '旧账号名片' },
+      })
+      .mockResolvedValueOnce({
+        ...card,
+        profile: { ...card.profile, displayName: '最新骑手' },
+      });
+    const page = await mountPage(Date.now(), 'member-a', card, false);
+    const loading = page.onShow();
+    const firstCardLoading = page.cardLoadPromise;
+
+    appStore.openid = 'member-b';
+    appStore.authStatus = 'authenticated';
+    cache.clearProfilePageCache();
+    identity.resolve({
+      status: 'authenticated',
+      identity: { openid: 'member-b', role: 'member', isSuper: false },
+    });
+    await loading;
+    await firstCardLoading;
+    if (page.cardLoadPromise) await page.cardLoadPromise;
+
+    expect(rideService.getProfile).toHaveBeenCalledTimes(2);
+    expect(rideService.getPersonalCapabilityCard).toHaveBeenCalledTimes(2);
+    expect(page.data.profile.nickname).toBe('最新骑手');
+    expect(page.data.heroCard.displayName).toBe('最新骑手');
+  });
+
+  it('在途认证失败推进 revision 后，展示错误状态而不是停在 loading', async () => {
+    const identity = deferred<{
+      status: 'error';
+      code: 'CALL_FAILED';
+      message: string;
+    }>();
+    const cache = await import('../miniprogram/utils/profile-page-cache');
+    appStore.ensureIdentity.mockImplementationOnce(() => {
+      appStore.authStatus = 'loading';
+      return identity.promise;
+    });
+    const page = await mountPage(Date.now(), 'member-openid', card, false);
+    const loading = page.onShow();
+    const cardLoading = page.cardLoadPromise;
+
+    appStore.openid = null;
+    appStore.authStatus = 'error';
+    appStore.authError = '身份服务暂时不可用';
+    cache.clearProfilePageCache();
+    identity.resolve({
+      status: 'error',
+      code: 'CALL_FAILED',
+      message: appStore.authError,
+    });
+    await loading;
+    await cardLoading;
+
+    expect(page.data.authStatus).toBe('error');
+    expect(page.data.authError).toBe('身份服务暂时不可用');
+    expect(page.data.loading).toBe(false);
+    expect(page.data.profile).toBeNull();
   });
 
   it('下拉刷新不会复用仅校验缓存身份的在途请求', async () => {

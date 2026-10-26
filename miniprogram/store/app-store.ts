@@ -5,6 +5,7 @@ import {
   type AuthCloudApi,
 } from '../services/auth-service';
 import { repositoryCache } from '../repositories/index';
+import { clearProfilePageCache } from '../utils/profile-page-cache';
 
 export type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'unavailable' | 'error';
 
@@ -99,7 +100,10 @@ export class AppStore {
           this.role = attempt.identity.role;
           this.isSuper = attempt.identity.isSuper;
           // 账号切换为不同 openid 时清空旧账号只读缓存，避免展示他人的活动或资料。
-          if (previousOpenid && previousOpenid !== attempt.identity.openid) repositoryCache.clear();
+          if (previousOpenid && previousOpenid !== attempt.identity.openid) {
+            repositoryCache.clear();
+            clearProfilePageCache();
+          }
           this.identityVerifiedUntil = verifiedAt + IDENTITY_TTL_MS;
           this.identityHint = { source: 'wechat_cloud', verifiedAt };
           this.authStatus = 'authenticated';
@@ -142,6 +146,7 @@ export class AppStore {
     this.identityVerifiedUntil = 0;
     // 身份失效或登出后清空只读缓存，防止失败后仍展示上一账号数据。
     repositoryCache.clear();
+    clearProfilePageCache();
   }
 
   hasFreshIdentityHint(now = Date.now()): boolean {
