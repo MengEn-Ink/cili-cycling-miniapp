@@ -1,8 +1,13 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
 import { assessUiSyncState, shouldSkipUiSync } from './check-ui-sync.mjs';
+import { digestFiles } from './ui-sync-policy.mjs';
 
 function png() {
   const buffer = Buffer.alloc(24);
@@ -199,4 +204,106 @@ test('v2 按截图对应的内容摘要校验，提交重写不失效，内容�
     /截图.*摘要/,
   );
   assert.throws(() => assessUiSyncState({ ...state, currentUiDigest: undefined }), /截图.*摘要/);
+});
+
+function gitFixture(t, { binary = false } = {}) {
+  const cwd = mkdtempSync(join(tmpdir(), 'cili-ui-sync-'));
+  t.after(() => rmSync(cwd, { recursive: true, force: true }));
+  const git = (...args) =>
+    execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+  const write = (file, value) => {
+    mkdirSync(dirname(join(cwd, file)), { recursive: true });
+    writeFileSync(join(cwd, file), value);
+  };
+  const ui = new Map([
+    ['miniprogram/app.json', '{"pages":["pages/activities/index"]}\n'],
+    ['miniprogram/app.wxss', 'page {\n  color: black;\n}\n'],
+  ]);
+  if (binary) ui.set('miniprogram/assets/test.png', png());
+  const prototype = new Map(
+    ['index.html', 'styles.css', 'app.js', 'delivery-center.js', 'schema.js', 'templates.js'].map(
+      (name) => [`docs/${name}`, 'baseline\n'],
+    ),
+  );
+  for (const [file, content] of [...ui, ...prototype]) write(file, content);
+  git('init', '-q');
+  git('config', 'user.email', 'fixture@example.invalid');
+  git('config', 'user.name', 'Fixture');
+  git('add', '.');
+  git('commit', '-qm', 'fixture baseline');
+  const current = manifest();
+  current.schemaVersion = 2;
+  current.syncedThrough = git('rev-parse', 'HEAD');
+  current.source.digest = digestFiles(ui);
+  current.prototype.digest = digestFiles(prototype);
+  current.evidence.viewport = { width: 390, height: 790 };
+  Object.assign(current.evidence.routes[0], {
+    state: 'loaded',
+    data: 'fixture',
+    review: 'aligned',
+    note: 'Synthetic Node test fixture',
+  });
+  write('docs/ui-sync-manifest.json', JSON.stringify(current));
+  for (const name of ['activities-devtools.png', 'activities-pages.png']) {
+    write(`docs/evidence/ui-sync/baseline/${name}`, png());
+  }
+  git('add', '.');
+  git('commit', '-qm', 'fixture manifest');
+  const run = () =>
+    spawnSync(
+      process.execPath,
+      [fileURLToPath(new URL('./check-ui-sync.mjs', import.meta.url)), '--strict'],
+      { cwd, encoding: 'utf8', env: { ...process.env, CILI_SKIP_UI_SYNC: '0' } },
+    );
+  const baseline = run();
+  assert.equal(baseline.status, 0, `fixture baseline must pass: ${baseline.stderr}`);
+  const runDigest = () =>
+    spawnSync(
+      process.execPath,
+      [fileURLToPath(new URL('./pages-visual-acceptance/sync-ui-digests.mjs', import.meta.url))],
+      { cwd, encoding: 'utf8' },
+    );
+  return { cwd, git, write, run, runDigest, expectedDigest: current.source.digest };
+}
+
+test('严格 CLI 检测已跟踪 UI 的未提交修改，提交后仍检测内容变化', (t) => {
+  const fixture = gitFixture(t);
+  fixture.write('miniprogram/app.wxss', 'page { color: red; }\n');
+  assert.notEqual(fixture.run().status, 0, 'dirty UI must not use the HEAD blob');
+  fixture.git('add', '.');
+  fixture.git('commit', '-qm', 'changed UI');
+  assert.notEqual(fixture.run().status, 0);
+});
+
+test('严格 CLI 检测已跟踪 Pages 的未提交修改', (t) => {
+  const fixture = gitFixture(t);
+  fixture.write('docs/styles.css', 'changed\n');
+  const result = fixture.run();
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /Pages 原型摘要不匹配/);
+});
+
+test('严格 CLI 对新增和删除 UI 计算实际文件集合', (t) => {
+  const fixture = gitFixture(t);
+  fixture.write('miniprogram/pages/activities/index.wxml', '<view>new</view>\n');
+  assert.notEqual(fixture.run().status, 0);
+  rmSync(join(fixture.cwd, 'miniprogram/pages/activities/index.wxml'));
+  rmSync(join(fixture.cwd, 'miniprogram/app.wxss'));
+  const result = fixture.run();
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /截图.*摘要/);
+});
+
+test('严格 CLI 规范 CRLF 文本并保持二进制资源字节', (t) => {
+  const fixture = gitFixture(t, { binary: true });
+  fixture.write('miniprogram/app.wxss', 'page {\r\n  color: black;\r\n}\r\n');
+  fixture.write('docs/styles.css', 'baseline\r\n');
+  assert.equal(fixture.run().status, 0);
+});
+
+test('ui:digest 与严格门禁共用工作树及二进制口径', (t) => {
+  const fixture = gitFixture(t, { binary: true });
+  assert.ok(fixture.runDigest().stdout.includes(fixture.expectedDigest));
+  fixture.write('miniprogram/app.wxss', 'changed\n');
+  assert.ok(!fixture.runDigest().stdout.includes(fixture.expectedDigest));
 });
