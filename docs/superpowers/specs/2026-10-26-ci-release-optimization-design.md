@@ -1,6 +1,6 @@
 # 开发、CI 与发布部署链路优化方案
 
-状态：**FIRST_BATCH_APPROVED / IMPLEMENTING**。用户已确认 A 方案并先执行第一批；第二、三批待第一批验收后推进。日期：2026-10-26（CST）。实施步骤见 [第一批计划](../plans/2026-10-26-ci-release-first-batch.md)。
+状态：**FIRST_BATCH_IMPLEMENTED / PR_VERIFIED / REVIEW_READY / NOT_DEPLOYED**。A 方案第一批四项已分别实现于草稿 PR #364、#365、#367、#368，最终 source CI / CodeQL、真实元数据复用与四项最终 head 的组合全量门禁均通过；第二、三批尚未实施。日期：2026-10-26（CST）。实施步骤见 [第一批计划](../plans/2026-10-26-ci-release-first-batch.md)，实际交付状态见 [交付报告](../../verification/2026-10-26-ci-first-batch-delivery.md)。
 
 建议采用“前置失败检查、复用可信证据、按实际影响部署”的分层方案。优先处理微信上传远端卡住、PR 描述返工和无关云端 smoke，再优化安装、并行与本地证据复用。真机、普通成员写链路和目标云环境回读继续独立验收。
 
@@ -155,6 +155,10 @@ Pages、CodeQL：独立并行工作流
 | 4 | 元数据事件复用可信源码结果；保留稳定 required validate | `ci.yml`、affected/Harness 报告 | 改描述不取消正在执行的源码检查；同内容已有成功证据才复用；base/验证器变更自动重跑 |
 
 第 4 项不得仅移除 `edited/labeled` 触发，否则描述失败后可能无法恢复 required check。元数据与源码使用独立并发域，聚合器核对 head、base、合并内容与检查版本。
+
+实施时补充：产品与编译基线已同步至 `85cbc8f1`，后继 `456081f1` 只回填原上传验收。发布最终目标保持锁定，过期目标安全跳过，不直接改签新 main；只有后继同 SHA CI 成功才能部署它。上传五分钟从 SDK 的 upload 阶段起算，绝对截止不因进度刷新延长。所有 smoke、真机与普通成员写链路的独立门禁保留。
+
+第一批实测：#368 在同 head/base 上完成真实 source `40271458646` 和仅编辑描述的 `40271690906`，后者复用前者 attempt 1，依赖安装与 Harness skipped，描述与 required validate 通过。`affected-pr` 单次耗时从 133 秒降至 14 秒，节省 119 秒；仅代表这一次源码 job 对照，未达到长期中位数统计要求。四个最终 head 组合的 1297 Vitest、全量、覆盖率、审计、严格同步、治理和 actionlint 通过。本批尚未合并发布。
 
 ### 第二批：压缩 CloudBase 实际部署时间
 
