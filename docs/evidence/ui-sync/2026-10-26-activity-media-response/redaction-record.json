@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "captureGit": "ad9c92488e73761e90c22f53f6d7d040ad2eaa18",
-  "captureDirty": true,
-  "captureDirtyReason": "仅 README、计划、清单和证据文档未提交；产品文件为所标注提交",
-  "sourceUiDigest": "sha256:4f7ee686b2f0bc6083be8a4bef94b2946c954bb2e4f0982983a819bdaf35f960",
-  "prototypeDigest": "sha256:89461e3d7e10123a6b78cce68bb929d4a43000574aa29c30e83fe220e50d4688",
-  "devtoolsCapturedAt": "2026-10-26T07:28:51.356Z",
-  "pagesCapturedAt": "2026-10-26T07:27:12.771Z",
+  "captureGit": "bed0d502b1ada6b7fe02861c246d752c2c75e7d7",
+  "captureDirty": false,
+  "captureDirtyReason": "干净提交运行",
+  "sourceUiDigest": "sha256:62c7a0c2887bcd24f51367df4a0a3d6c38da2b550f8cf7f89b6decc70d5ccc60",
+  "prototypeDigest": "sha256:1479e9ba27654b6a72223a6364935ecb22c92e7866d62588d76c66bbcd46a45d",
+  "devtoolsCapturedAt": "2026-10-26T08:00:19.318Z",
+  "pagesCapturedAt": "2026-10-26T07:58:33.235Z",
   "mode": "real-cloud-readonly",
   "devtoolsData": "sanitized-runtime",
   "pagesData": "synthetic-fixture",
@@ -59,7 +59,7 @@
             1664
           ]
         ],
-        "redactedSha256": "e1d3db3d3271f2d0a0d4ea9a63f0fe87e78888a4c0d4e8a7db36cc803cd80e1d"
+        "redactedSha256": "31dd723dac3c94c402243d23d880d7bcec8e6028ce1bdf803d78a6484254987a"
       },
       "prototype": {
         "dimensions": [
@@ -115,7 +115,7 @@
             1664
           ]
         ],
-        "redactedSha256": "4e1f645a083301fc7cb8607738a5a041e4cb45aa60d107cea92a5ff39081eb8c"
+        "redactedSha256": "024b96d03b0dd575376f050f94c7a2aacefc6fc595c1e5aa71f41ff36e4bfdae"
       },
       "prototype": {
         "dimensions": [
@@ -165,7 +165,7 @@
             1664
           ]
         ],
-        "redactedSha256": "c0a3ba47afe994c63b5436cbaa7b9144ee02ab663551d648feb6c3543c1c9c59"
+        "redactedSha256": "49cf68239c81694f0e77dd7e8237bc1810b37471161b73e8825a586fbc0d7ed5"
       },
       "prototype": {
         "dimensions": [
@@ -221,7 +221,7 @@
             1664
           ]
         ],
-        "redactedSha256": "3d0244190c2d5213a4c92df14c89bf603c6c55545a8a8107362a0fe3b89a0f9b"
+        "redactedSha256": "57d8976840177b376c5f46982f141910c25e55badb75b8321be0a0de189575a4"
       },
       "prototype": {
         "dimensions": [
@@ -284,7 +284,7 @@
             1664
           ]
         ],
-        "redactedSha256": "eb6b737555db492336894e99085acefb73ed092813ee75019cac000757cb7975"
+        "redactedSha256": "b502a00a01d2c948e3046b9e3677368c410fa9bff8cffc61d77ea0c21872bbc4"
       },
       "prototype": {
         "dimensions": [
@@ -352,7 +352,7 @@
             1664
           ]
         ],
-        "redactedSha256": "83c50b114c423a7b8bc4e9b43efc94acfa93e92b41c608c2c8be5df0f4d3845e"
+        "redactedSha256": "8a8836733b40d48721f6c74aef95b96ba5325002ec6b8430e71b49876295be21"
       },
       "prototype": {
         "dimensions": [
@@ -415,7 +415,7 @@
             1664
           ]
         ],
-        "redactedSha256": "2cfe35eda49fb269f050057a9a084738a93defb234c78b91e75003d5a49cb67d"
+        "redactedSha256": "aee09b27e56ac82b0405f97cb92d672a570d86c5d0bffaccb5fb295184f8e57a"
       },
       "prototype": {
         "dimensions": [
@@ -431,7 +431,7 @@
     },
     {
       "id": "settings",
-      "state": "管理员 · 本地客户端 2026.10.26.1",
+      "state": "管理员 · 本地客户端 2026.10.26.3",
       "devtools": "settings-devtools.png",
       "pages": "settings-pages.png",
       "runtime": {
@@ -465,7 +465,7 @@
             1664
           ]
         ],
-        "redactedSha256": "01e6c98ccfd356ec093230a11277b7a0653d00e25824d464fed322b617b334ea"
+        "redactedSha256": "821f0a7a6826a1585b474e2801546720fb02a0e593b7bfbec393e796360ccb05"
       },
       "prototype": {
         "dimensions": [
@@ -473,7 +473,7 @@
           844
         ],
         "opaqueRectangles": [],
-        "redactedSha256": "b639d42d43e7a887167d18792624c4972d0aec2197511608e6b298c4916d5abe"
+        "redactedSha256": "37827d2f501f151cb05abb82929936cba7c77b51f7674abec2466bbd88b6687d"
       },
       "review": "本地客户端版本及管理员入口与原型示例不同。",
       "pagesOverflow": false,
@@ -521,7 +521,7 @@
             1664
           ]
         ],
-        "redactedSha256": "2cfe35eda49fb269f050057a9a084738a93defb234c78b91e75003d5a49cb67d"
+        "redactedSha256": "aee09b27e56ac82b0405f97cb92d672a570d86c5d0bffaccb5fb295184f8e57a"
       },
       "prototype": {
         "dimensions": [
@@ -571,7 +571,7 @@
             1664
           ]
         ],
-        "redactedSha256": "dd841c4e6d9afc826f8a1549dd40e248636bd299f1faffc3e00bc445c5c6b674"
+        "redactedSha256": "14ec8984c177868d10a1e6c537172346a0f77c35e47d6d8ed9acc5d3a0f71a73"
       },
       "prototype": {
         "dimensions": [
@@ -628,7 +628,7 @@
             1664
           ]
         ],
-        "redactedSha256": "c62f055c53188134560883c2bd42cca2fff220ef3643742794804b1b34e2c46d"
+        "redactedSha256": "2984ee8537efb3969a95544042b9123e9de413b2079e205fbd3ad771fb465ee8"
       },
       "prototype": {
         "dimensions": [
@@ -678,7 +678,7 @@
             1664
           ]
         ],
-        "redactedSha256": "9fb092da3b132db0878f78a8e484ac8647df2a3a0360e077eef4c75656ca6f0c"
+        "redactedSha256": "622332e80f5766b538ac26562ec54ef720a33090c9a690adff6c0c6b230d01d7"
       },
       "prototype": {
         "dimensions": [
@@ -728,7 +728,7 @@
             1664
           ]
         ],
-        "redactedSha256": "5e96620615e7ff0dd5ba4ee930b5eeffb83d524974a40b1968cafcf4465d3369"
+        "redactedSha256": "20f905b859882e0bed27f0289f4993369a6e55efb2bafc11575d0b8941bff9cc"
       },
       "prototype": {
         "dimensions": [
@@ -784,7 +784,7 @@
             1664
           ]
         ],
-        "redactedSha256": "c8216de463d974cc96858697e550d6d26c00d465e7227d68ef7b421a7f53d51f"
+        "redactedSha256": "ca34e6bd5e5047c040e86caf1de13322d9e2762c4d37f09ffcfba6f3eb8b9459"
       },
       "prototype": {
         "dimensions": [
@@ -847,7 +847,7 @@
             1664
           ]
         ],
-        "redactedSha256": "7f88c10f2f1920e45be83c9dda6306d1d6989c5cddc2f69a6573b1d5ed4d963a"
+        "redactedSha256": "d0b1a7a5eb98726733a9929de2484186d07b1ac20a04129329a7b9f72a56a8e5"
       },
       "prototype": {
         "dimensions": [
@@ -903,7 +903,7 @@
             1664
           ]
         ],
-        "redactedSha256": "4c2bd677bf9689124a9bff9186d123cbf79cc23206156d25ae938f130ca32c69"
+        "redactedSha256": "980f6238b43123bcb870d4127d97654f6b73c035ffe2e95146a5e12acfd46891"
       },
       "prototype": {
         "dimensions": [
@@ -965,7 +965,7 @@
             1664
           ]
         ],
-        "redactedSha256": "24197db0a096c67374850e02b353c005aaad9ad0ac2c8d946c6f45e771f976ca"
+        "redactedSha256": "1ed91887ac32b943a98d606a8bb71df222b04407baab01c2357cdad4aa579517"
       },
       "prototype": {
         "dimensions": [
@@ -1025,6 +1025,6 @@
         1664
       ]
     ],
-    "redactedSha256": "db00c0dd957e3813768e552863730b7b0935bc851ec2ad8fe712fe04aaa94da2"
+    "redactedSha256": "0eefdf4fbd0216959efe3e368e38e1bc04aa832d7c067d8c94f791cbc3ac2708"
   }
 }
