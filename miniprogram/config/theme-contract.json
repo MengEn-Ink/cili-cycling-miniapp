@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 2,
+  "sources": {
+    "wxss": "miniprogram/app.wxss",
+    "themeTs": "miniprogram/config/theme.ts",
+    "appJson": "miniprogram/app.json",
+    "migrationMap": "docs/designs/2026-10-27-ui-revamp-v1/pr-b-literal-token-map.md"
+  },
+  "literalPolicy": {
+    "allowedWxssLiteralFiles": ["miniprogram/app.wxss"],
+    "expectedColorRows": 53,
+    "expectedDirectRows": 49,
+    "expectedFallbackRows": 4,
+    "forbidColorFallbacksOutsideRoot": true,
+    "forbidFontLiteralsOutsideRoot": true
+  },
+  "native": {
+    "page": {
+      "navigationBarBackgroundColor": "#fbf5ea",
+      "navigationBarTextStyle": "black",
+      "backgroundColor": "#fbf5ea",
+      "backgroundColorTop": "#fbf5ea",
+      "backgroundColorBottom": "#fbf5ea"
+    },
+    "appWindow": {
+      "navigationBarBackgroundColor": "#fbf5ea",
+      "navigationBarTextStyle": "black",
+      "backgroundColor": "#fbf5ea",
+      "backgroundColorTop": "#fbf5ea",
+      "backgroundColorBottom": "#fbf5ea"
+    },
+    "appTabBar": {
+      "backgroundColor": "#ffffff",
+      "borderStyle": "white",
+      "color": "#6f675d",
+      "selectedColor": "#c0321f"
+    },
+    "runtimeTabBar": {
+      "backgroundColor": "#ffffff",
+      "borderStyle": "white",
+      "color": "#6f675d",
+      "selectedColor": "#211f1c"
+    }
+  },
+  "sourceSpecificDifferences": [
+    {
+      "role": "selectedColor",
+      "sources": ["appTabBar", "runtimeTabBar"],
+      "reason": "PR B preserves startup and runtime values; alignment requires a later visual slice"
+    }
+  ],
+  "equivalentRoles": [
+    {
+      "role": "brand",
+      "themeTs": "brand",
+      "wxss": "--color-brand"
+    },
+    {
+      "role": "background",
+      "themeTs": "background",
+      "wxss": "--color-bg"
+    },
+    {
+      "role": "surface",
+      "themeTs": "surface",
+      "wxss": "--color-surface"
+    },
+    {
+      "role": "ink",
+      "themeTs": "ink",
+      "wxss": "--color-text"
+    },
+    {
+      "role": "muted",
+      "themeTs": "muted",
+      "wxss": "--color-muted"
+    }
+  ],
+  "fonts": {
+    "body": {
+      "token": "--font-family-body",
+      "value": "-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif"
+    },
+    "editorial": {
+      "token": "--font-family-editorial",
+      "value": "'Songti SC', STSong, serif"
+    },
+    "mono": {
+      "token": "--font-family-mono",
+      "value": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
+    }
+  },
+  "contrastPairs": [
+    {
+      "name": "ink-on-paper",
+      "foreground": "--color-text",
+      "background": "--color-bg",
+      "minimum": 4.5
+    },
+    {
+      "name": "muted-on-paper",
+      "foreground": "--color-muted",
+      "background": "--color-bg",
+      "minimum": 4.5
+    },
+    {
+      "name": "action-on-surface",
+      "foreground": "--color-action",
+      "background": "--color-surface",
+      "minimum": 4.5
+    }
+  ]
+}

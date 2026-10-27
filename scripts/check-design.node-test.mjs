@@ -4,10 +4,13 @@ import test from 'node:test';
 import {
   collectStyleLiteralViolations,
   contrastRatio,
+  parseFontMigrationTable,
   parseMigrationTable,
   parseWxssTokens,
+  runRepositoryCheck,
   validateContractSnapshot,
   validateDocumentedScripts,
+  validateFontContract,
   validateMigrationRows,
 } from './check-design.mjs';
 
@@ -158,6 +161,45 @@ test('53 rows require 49 direct and four fallback-only entries', () => {
   assert.doesNotThrow(() => validateMigrationRows(rows, tokensFixture));
 });
 
+test('font migration requires one exact value-preserving row', () => {
+  const fontMarkdown = `
+| file:line | current font family | token | token current value |
+| --- | --- | --- | --- |
+| miniprogram/components/activity-card/index.wxss:58 | 'Songti SC', STSong, serif | --font-family-editorial | 'Songti SC', STSong, serif |
+`;
+  const fontRows = parseFontMigrationTable(fontMarkdown);
+  const fonts = {
+    body: {
+      token: '--font-family-body',
+      value: '-apple-system, BlinkMacSystemFont, sans-serif',
+    },
+    editorial: {
+      token: '--font-family-editorial',
+      value: "'Songti SC', STSong, serif",
+    },
+    mono: {
+      token: '--font-family-mono',
+      value: 'ui-monospace, monospace',
+    },
+  };
+  const tokens = {
+    '--font-family-body': '-apple-system, BlinkMacSystemFont, sans-serif',
+    '--font-family-editorial': "'Songti SC', STSong, serif",
+    '--font-family-mono': 'ui-monospace, monospace',
+  };
+  assert.equal(fontRows.length, 1);
+  assert.doesNotThrow(() => validateFontContract(fontRows, fonts, tokens));
+  assert.throws(() => validateFontContract([], fonts, tokens), /字体映射/);
+  assert.throws(
+    () =>
+      validateFontContract(fontRows, fonts, {
+        ...tokens,
+        '--font-family-editorial': 'serif',
+      }),
+    /字体保值/,
+  );
+});
+
 test('direct values cannot drift and fallback effective tokens must exist', () => {
   assert.throws(() => validateMigrationRows(directMismatchRows, tokensFixture), /保值/);
   assert.throws(
@@ -186,4 +228,11 @@ test('documented npm commands must resolve', () => {
 test('contrast uses WCAG luminance', () => {
   assert.equal(contrastRatio('#ffffff', '#000000'), 21);
   assert.ok(contrastRatio('#211f1c', '#fbf5ea') >= 4.5);
+});
+
+test('frozen repository exposes the complete pre-migration literal baseline', () => {
+  assert.throws(
+    () => runRepositoryCheck(),
+    /design contract failed: 53 color literals, 1 font-family literals/,
+  );
 });

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const COLOR_LITERAL_PATTERN = /#[0-9a-fA-F]{3,8}\b|rgba?\([^)]*\)/g;
@@ -20,6 +20,10 @@ function normalizeValue(value) {
     return lower === '#fff' ? '#ffffff' : lower;
   }
   return normalized;
+}
+
+function normalizeFontValue(value) {
+  return String(value).replace(/\s+/g, ' ').trim();
 }
 
 function stripCode(value) {
@@ -152,6 +156,22 @@ export function parseMigrationTable(markdown) {
   return rows;
 }
 
+export function parseFontMigrationTable(markdown) {
+  const rows = [];
+  for (const line of markdown.split('\n')) {
+    if (!line.trim().startsWith('|')) continue;
+    const cells = line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(stripCode);
+    if (cells.length !== 4 || !/^miniprogram\/.+:\d+$/.test(cells[0])) continue;
+    rows.push({
+      location: cells[0],
+      literal: cells[1],
+      token: cells[2],
+      tokenCurrentValue: cells[3],
+    });
+  }
+  return rows;
+}
+
 export function validateMigrationRows(rows, tokens) {
   const errors = [];
   const numbers = new Set(rows.map((row) => row.number));
@@ -189,6 +209,39 @@ export function validateMigrationRows(rows, tokens) {
     }
     if (!['direct', 'fallback-only'].includes(row.type)) {
       errors.push(`${row.location}: 未知迁移类型 ${row.type}`);
+    }
+  }
+  if (errors.length) throw new Error(errors.join('\n'));
+}
+
+export function validateFontContract(rows, fonts, tokens) {
+  const errors = [];
+  if (rows.length !== 1) errors.push(`字体映射必须恰好 1 行，实际 ${rows.length}`);
+  for (const [role, definition] of Object.entries(fonts || {})) {
+    const actual = tokenValue(tokens, definition.token);
+    if (actual === undefined) {
+      errors.push(`字体保值失败：${role} token ${definition.token} 不存在`);
+    } else if (normalizeFontValue(actual) !== normalizeFontValue(definition.value)) {
+      errors.push(
+        `字体保值失败：${role} ${definition.token} 期望 ${definition.value}，实际 ${actual}`,
+      );
+    }
+  }
+  if (rows.length === 1) {
+    const row = rows[0];
+    const editorialToken = fonts?.editorial?.token;
+    const actual = tokenValue(tokens, row.token);
+    if (row.token !== editorialToken) {
+      errors.push(`字体映射必须指向 ${editorialToken}，实际 ${row.token}`);
+    }
+    if (
+      actual === undefined ||
+      normalizeFontValue(row.literal) !== normalizeFontValue(actual) ||
+      normalizeFontValue(row.tokenCurrentValue) !== normalizeFontValue(actual)
+    ) {
+      errors.push(
+        `${row.location}: 字体保值失败，${row.literal} → ${row.token}=${actual ?? 'missing'}`,
+      );
     }
   }
   if (errors.length) throw new Error(errors.join('\n'));
@@ -296,9 +349,10 @@ export function runRepositoryCheck(root = process.cwd()) {
   const snapshot = loadRepositorySnapshot(root, contract);
   validateContractSnapshot({ contract, ...snapshot });
 
-  const rows = parseMigrationTable(readFileSync(mappingPath, 'utf8'));
-  validateMigrationRows(rows, snapshot.tokens);
-
+  const mappingMarkdown = readFileSync(mappingPath, 'utf8');
+  const rows = parseMigrationTable(mappingMarkdown);
+  const fontRows = parseFontMigrationTable(mappingMarkdown);
+  validateFontContract(fontRows, contract.fonts, snapshot.tokens);
   const miniprogramRoot = join(root, 'miniprogram');
   const styleEntries = collectFilesRecursively(miniprogramRoot, '.wxss').map((path) => [
     normalizePath(relative(root, path)),
@@ -310,6 +364,16 @@ export function runRepositoryCheck(root = process.cwd()) {
   );
   const colorIssues = literalIssues.filter((issue) => issue.kind === 'color');
   const fontIssues = literalIssues.filter((issue) => issue.kind === 'font-family');
+
+  const migrationTokens = { ...snapshot.tokens };
+  if (literalIssues.length) {
+    for (const row of rows) {
+      if (row.type === 'direct' && migrationTokens[row.token] === undefined) {
+        migrationTokens[row.token] = row.tokenCurrentValue;
+      }
+    }
+  }
+  validateMigrationRows(rows, migrationTokens);
 
   const packageJson = readJson(join(root, 'package.json'));
   const documentedText = [
