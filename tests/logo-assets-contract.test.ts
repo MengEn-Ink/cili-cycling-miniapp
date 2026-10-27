@@ -36,13 +36,17 @@ describe('统一 Logo 物料与页面接入契约', () => {
   it('品牌组件与导出物料共享墨黑白沸点红品牌色', () => {
     const appStyles = read('miniprogram/app.wxss');
     const logoStyles = read('miniprogram/components/brand-logo/index.wxss');
+    const logoMarkup = read('miniprogram/components/brand-logo/index.wxml');
 
     expect(appStyles).toContain('--color-logo-background: #211f1c;');
     expect(appStyles).toContain('--color-logo-foreground: #ffffff;');
     expect(appStyles).toContain('--color-logo-accent: #e13b2b;');
     expect(logoStyles).toContain('background: var(--color-logo-background);');
     expect(logoStyles).toContain('color: var(--color-logo-foreground);');
-    expect(logoStyles).toContain('border: 4rpx solid var(--color-logo-accent);');
+    expect(logoStyles).toContain('background: var(--color-logo-accent);');
+    expect(logoMarkup).toContain('aria-label="CILI"');
+    expect(logoMarkup).toContain('>CILI</text>');
+    expect(logoMarkup).not.toContain('>此</text>');
   });
 
   it('Logo 源稿统一使用沸点墨黑与品牌红，不再保留旧橙黑色值', () => {
@@ -56,6 +60,8 @@ describe('统一 Logo 物料与页面接入契约', () => {
       const source = read(`docs/brand/logo-materials/source/${file}`);
       expect(source).toContain('#211f1c');
       expect(source).toContain('#e13b2b');
+      expect(source).toContain('CILI');
+      expect(source).not.toContain('>此里<');
       expect(source).not.toMatch(/#20241f|#e85b32/i);
     }
   });

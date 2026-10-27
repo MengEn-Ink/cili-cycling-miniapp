@@ -1,6 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="360" height="144" viewBox="0 0 360 144" role="img" aria-label="此里照片角标">
-  <rect width="360" height="144" rx="22" fill="#211f1c"/>
-  <text x="12" y="98" fill="#ffffff" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="88" font-weight="900" letter-spacing="-4">此里</text>
-  <path d="M260 106H360" fill="none" stroke="#ffffff" stroke-width="7"/>
-  <circle cx="334" cy="120" r="10" fill="#211f1c" stroke="#e13b2b" stroke-width="7"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="144" viewBox="0 0 360 144" role="img" aria-label="CILI 照片角标">
+  <rect width="360" height="144" rx="18" fill="#211f1c"/>
+  <text x="24" y="100" fill="#ffffff" font-family="Arial, Helvetica Neue, sans-serif" font-size="92" font-weight="900" letter-spacing="-6">CILI</text>
+  <path d="M55 105h23l-7 10H48z" fill="#e13b2b"/>
 </svg>

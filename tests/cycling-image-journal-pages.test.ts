@@ -88,10 +88,10 @@ describe('FORMAL GitHub Pages 骑行影像志', () => {
     runtime.prototypeState = 'default';
     const settings = runtime.pageTemplates?.settings?.() ?? '';
     expect(settings).toContain(`V${CLIENT_RELEASE_VERSION}`);
-    expect(settings).toContain('资料更新后不再回显旧缓存');
-    expect(settings).toContain('资料更新和账号切换后不再短暂显示旧名片');
-    expect(settings).toContain('失效前启动的离线请求不会恢复已清理的数据');
-    expect(settings).toContain('迟到保存的头像与背景文件会自动回收');
+    expect(settings).toContain('品牌标识升级为 CILI 粗体字标');
+    expect(settings).toContain('品牌标识更新为更简洁醒目的 CILI 粗体字标');
+    expect(settings).toContain('黑底白字与奶白底墨字保持统一识别');
+    expect(settings).toContain('头像、分享图和加载动画同步升级');
   });
 
   it('报名提交按审核中、公开通过和满员候补展示真实行程结果', () => {

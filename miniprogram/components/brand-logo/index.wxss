@@ -17,43 +17,32 @@
   display: inline-flex;
   box-sizing: border-box;
   min-height: 60rpx;
-  padding: 14rpx 44rpx 14rpx 18rpx;
+  padding: 14rpx 18rpx;
   align-items: center;
-  border-radius: var(--radius-sm);
   background: var(--color-logo-background);
   color: var(--color-logo-foreground);
-  font-size: 46rpx;
+  font-family: var(--font-family-body);
+  font-size: 40rpx;
+  font-stretch: condensed;
   font-weight: 900;
+  letter-spacing: -2rpx;
   line-height: 1;
 }
 
-.brand-logo__character {
+.brand-logo__letters {
   position: relative;
   z-index: 1;
 }
 
-.brand-logo__character--li {
-  margin-left: -2rpx;
-}
-
-.brand-logo__route {
+.brand-logo__cut {
   position: absolute;
-  right: 0;
-  bottom: 3rpx;
-  width: 34rpx;
-  height: 12rpx;
-  border-bottom: 4rpx solid currentColor;
-}
-
-.brand-logo__route::after {
-  position: absolute;
-  right: 0;
-  bottom: -7rpx;
-  width: 10rpx;
-  height: 10rpx;
-  border: 4rpx solid var(--color-logo-accent);
-  border-radius: 50%;
-  content: '';
+  left: 31rpx;
+  bottom: 13rpx;
+  z-index: 2;
+  width: 12rpx;
+  height: 5rpx;
+  background: var(--color-logo-accent);
+  transform: skewX(-28deg);
 }
 
 .brand-logo__meta {
@@ -73,10 +62,13 @@
 
 .brand-logo--compact .brand-logo__wordmark {
   min-height: 48rpx;
-  padding: 10rpx 36rpx 10rpx 14rpx;
-  font-size: 38rpx;
+  padding: 10rpx 14rpx;
+  font-size: 34rpx;
 }
 
-.brand-logo--compact .brand-logo__route {
-  width: 29rpx;
+.brand-logo--compact .brand-logo__cut {
+  left: 25rpx;
+  bottom: 9rpx;
+  width: 10rpx;
+  height: 4rpx;
 }
