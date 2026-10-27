@@ -94,11 +94,14 @@
 - [ ] On iPhone X PASS, record logical systemInfo 375×812/DPR3 and empirical PNG dimensions/header/hash. Do not copy historical `731×1583` or any guessed size unless the new PNG independently produces it.
 - [ ] Run supplemental Android typography and `lakeside.jpg` scrim captures; label them functional supplemental evidence only.
 - [ ] Hand PASS evidence to the judge. Only after independent hash/host/tool/HEAD verification, run the approval command to create `e2e/visual-environment.json`.
+- [ ] After target-host calibration is approved, recapture the phase3 UI-sync evidence for all 16 manifest pages at 340/375/430 logical widths (16×3). Use the calibrated host and empirical PNG contract, preserve actual-content summaries and states, and do not use masks or the 390-wide functional巡检 screenshots as baseline evidence.
+- [ ] Recompute the current UI source digest from that approved 16×3 capture, update `docs/ui-sync-manifest.json` `source.digest` to the new digest, and delete the entire `source.valuePreservation` provenance entry. Do not retain a closed or empty provenance placeholder.
 - [ ] Commit sanitized evidence/manifest/report and update both P1 rows to `PR_C_EVIDENCE_READY / REVIEW_PENDING`.
 
 ## Task 6: Full gates, PR, merge, and main proof
 
 - [ ] Run `npm run test:visual-calibration`, `npm run check:design`, `npm run check:ui-sync -- --strict`, `OUT_DIR=/tmp/cili-pr-c-validate npm run validate`, coverage, audit, and diff checks with start/end fences.
+- [ ] Prove `npm run check:ui-sync -- --strict` passes with no `source.valuePreservation` field and ordinary strict equality between the recomputed current source digest and `docs/ui-sync-manifest.json` `source.digest`; any provenance-assisted pass is a failure for PR C.
 - [ ] Judge independently verifies unit tests, evidence hashes, raw UUID absence, PNG header, Android label boundary, and manifest derivation.
 - [ ] Open a PR limited to calibration code/fixture/docs/evidence/manifest/package wiring. Require PR checks and merge by frozen head.
 - [ ] After main CI, update both P1 rows to PR C merged. Baseline availability authorizes route-family visual work; it does not itself prove any UI slice, development upload, experience version, or physical UAT.
@@ -111,3 +114,4 @@
 - [ ] Generic CI runs tests, not the host probe.
 - [ ] Missing execution remains BLOCKED/NOT_RUN, never PASS.
 - [ ] HEAD and porcelain are recorded both before and after every long probe.
+- [ ] Phase3 contains 16 pages × 340/375/430 captures from the calibrated target host, `source.digest` is rebound to their current source, the entire `source.valuePreservation` entry is deleted, and strict UI-sync passes by ordinary digest equality without provenance.

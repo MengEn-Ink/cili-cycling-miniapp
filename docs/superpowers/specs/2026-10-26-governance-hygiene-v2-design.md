@@ -16,8 +16,8 @@
 ## 已确认问题
 
 - 主分支 Ruleset 只要求 `validate`，`strict_required_status_checks_policy=false`，审批数为 0，CodeQL 不是 required check。
-- README 与现行微信验收手册要求 `npm run check:design`，但 `package.json` 没有该脚本；现有 CI 不会因此失败。
-- 26 个 WXSS 文件都消费 CSS 变量，但主题值同时存在于 `app.wxss`、`config/theme.ts`、`app.json` 与 17 个页面 JSON；11 个页面 WXSS 仍有 50 处颜色字面量，其中 4 处 hex（含 1 处 CSS variable fallback）和 46 处 rgba。
+- PR B 启动基线中，README 与现行微信验收手册要求 `npm run check:design`，但 `package.json` 没有该脚本；当时 CI 不会因此失败。
+- PR B 启动基线中，26 个 WXSS 文件都消费 CSS 变量，但主题值同时存在于 `app.wxss`、`config/theme.ts`、`app.json` 与 17 个页面 JSON；app.wxss 外共有 53 处颜色字面量（49 处直接字面量 + 4 处 `var()` fallback）与 1 处非 token 字体声明。逐行权威清单见 [`pr-b-literal-token-map.md`](../../designs/2026-10-27-ui-revamp-v1/pr-b-literal-token-map.md)。
 - main 跟踪 83 个可执行文件，其中 68 个没有 shebang；当前 `check:governance` 不检查 Git 文件模式，仍返回 PASS。
 - `docs/` 有 452 个文件，其中 `docs/verification/` 有 88 个文件（87 份 Markdown 与 1 份 JSON）、26 份 plans、15 份 specs；高优清单包含已完成流水和“已完成”区块，与 `AGENTS.md` 的活跃清单规则冲突。
 - 本地主工作树干净但落后远端 262 个提交，另有一个目录已不存在的 prunable worktree 登记。远端保留分支都含非 main 唯一提交，不能批量删除。
@@ -64,7 +64,7 @@
 - 页面 WXSS 不新增契约外的语义颜色字面量；媒体渐变、透明叠层等特例必须转成命名令牌，不能靠路径级永久豁免；
 - README 和运行手册出现的 `npm run <script>` 都能在 `package.json` 解析。
 
-恢复 `check:design` 与 `test:design` 脚本，并把 `check:design` 接入 `validate`。第一阶段目标是消除现有 50 处页面颜色字面量；不改变视觉值，只把它们映射为全局或组件语义令牌。
+恢复 `check:design` 与 `test:design` 脚本，并把两者接入 `validate`。第一阶段目标是按权威映射表消除现有 53 处页面颜色字面量与 1 处非 token 字体声明；不改变视觉值，只把它们映射为全局或组件语义令牌。
 
 ### PR C：视觉校准与主分支保护
 

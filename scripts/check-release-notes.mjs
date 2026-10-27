@@ -3,39 +3,32 @@ import { readFileSync } from 'node:fs';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
+import {
+  changedContentFilesSinceBase,
+  classifyValuePreservingThemeMigration,
+  collectThemeMigrationSnapshot,
+  parseContentChangedFiles,
+} from './theme-preservation-policy.mjs';
+
 const PRODUCT_PATH = /^(?:miniprogram|cloudfunctions)\//;
 const RELEASE_NOTES_PATH = 'miniprogram/pages/settings/index.ts';
 
-export function parseContentChangedFiles(rawDiff) {
-  const fields = rawDiff.split('\0');
-  if (fields.at(-1) === '') fields.pop();
-  if (fields.length % 2 !== 0) throw new Error('无法解析 Git raw diff：记录不完整');
+export { classifyValuePreservingThemeMigration, parseContentChangedFiles };
 
-  const contentChangedFiles = [];
-  for (let index = 0; index < fields.length; index += 2) {
-    const metadata = fields[index];
-    const file = fields[index + 1];
-    const match = metadata.match(/^:(\d{6}) (\d{6}) ([0-9a-f]{40}) ([0-9a-f]{40}) [A-Z]$/);
-    if (!match) throw new Error(`无法解析 Git raw diff 元数据：${metadata}`);
-
-    const [, oldMode, newMode, oldHash, newHash] = match;
-    const executableModeOnly =
-      oldHash === newHash &&
-      ((oldMode === '100755' && newMode === '100644') ||
-        (oldMode === '100644' && newMode === '100755'));
-    if (!executableModeOnly) contentChangedFiles.push(file);
-  }
-
-  return contentChangedFiles;
-}
-
-export function validateReleaseNotes(changedFiles, source) {
+export function validateReleaseNotes(changedFiles, source, options = {}) {
   const productFiles = changedFiles.filter(
     (file) => PRODUCT_PATH.test(file) && file !== RELEASE_NOTES_PATH,
   );
 
   if (productFiles.length === 0) return { required: false, productFiles };
   if (!changedFiles.includes(RELEASE_NOTES_PATH)) {
+    if (options.themeMigration?.eligible) {
+      return {
+        required: false,
+        productFiles,
+        exemption: options.themeMigration,
+      };
+    }
     throw new Error(
       `检测到产品代码改动，但未更新 ${RELEASE_NOTES_PATH}：\n${productFiles.join('\n')}`,
     );
@@ -64,6 +57,24 @@ export function validateReleaseNotes(changedFiles, source) {
   return { required: true, productFiles };
 }
 
+export function formatReleaseNotesResult(result) {
+  if (result.exemption?.eligible) {
+    const evidence = result.exemption;
+    return [
+      'App 更新保值迁移豁免通过：',
+      `base=${evidence.base.slice(0, 8)}`,
+      `map=${evidence.mappingPath}`,
+      `colors=${evidence.migratedColorCount}`,
+      `direct=${evidence.directCount}`,
+      `fallback=${evidence.fallbackCount}`,
+      `font=${evidence.fontCount}`,
+    ].join(' ');
+  }
+  return result.required
+    ? `App 更新校验通过：${result.productFiles.length} 个产品文件已记录`
+    : 'App 更新校验通过：本次无产品代码改动';
+}
+
 function git(args) {
   return execFileSync('git', args, { encoding: 'utf8' }).trim();
 }
@@ -80,20 +91,14 @@ function resolveBase() {
 
 export function run() {
   const base = resolveBase();
-  const rawDiff = execFileSync(
-    'git',
-    ['diff', '--raw', '--no-abbrev', '--no-renames', '-z', base],
-    { encoding: 'utf8' },
-  );
-  const changedFiles = parseContentChangedFiles(rawDiff);
+  const changedFiles = changedContentFilesSinceBase(base);
   const source = readFileSync(RELEASE_NOTES_PATH, 'utf8');
-  const result = validateReleaseNotes(changedFiles, source);
-
-  console.log(
-    result.required
-      ? `App 更新校验通过：${result.productFiles.length} 个产品文件已记录`
-      : 'App 更新校验通过：本次无产品代码改动',
+  const themeMigration = classifyValuePreservingThemeMigration(
+    collectThemeMigrationSnapshot(base, changedFiles),
   );
+  const result = validateReleaseNotes(changedFiles, source, { themeMigration });
+
+  console.log(formatReleaseNotesResult(result));
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {

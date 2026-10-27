@@ -34,9 +34,9 @@
   left: 0;
   background: linear-gradient(
     to bottom,
-    rgba(12, 10, 7, 0) 0%,
-    rgba(12, 10, 7, 0) 48%,
-    rgba(12, 10, 7, 0.72) 100%
+    var(--scrim-activity-detail-cover-clear) 0%,
+    var(--scrim-activity-detail-cover-clear) 48%,
+    var(--scrim-activity-detail-cover-strong) 100%
   );
   pointer-events: none;
 }
@@ -58,7 +58,7 @@
   letter-spacing: 1rpx;
 }
 .tag.dark {
-  background: rgba(12, 10, 7, 0.72);
+  background: var(--surface-media-tag);
   color: var(--color-on-media);
 }
 .caption {
@@ -100,7 +100,7 @@
   right: 32rpx;
   padding: 4rpx 14rpx;
   border-radius: 999rpx;
-  background: rgba(12, 10, 7, 0.6);
+  background: var(--surface-countdown);
   color: var(--color-on-media);
   font-family: var(--font-family-mono);
   font-size: 22rpx;
@@ -711,7 +711,7 @@
   align-items: center;
   justify-content: center;
   padding: 32rpx;
-  background: rgba(12, 10, 7, 0.68);
+  background: var(--surface-dialog-backdrop);
 }
 .dialog {
   position: relative;
@@ -731,7 +731,7 @@
   padding: 0;
   border: none;
   border-radius: 50%;
-  background: rgba(12, 10, 7, 0.56);
+  background: var(--surface-dialog-control);
   color: var(--color-on-media);
   font-size: 36rpx;
   line-height: 64rpx;
@@ -756,7 +756,11 @@
   right: 0;
   bottom: 0;
   left: 0;
-  background: linear-gradient(to top, rgba(12, 10, 7, 0.76), rgba(12, 10, 7, 0) 60%);
+  background: linear-gradient(
+    to top,
+    var(--scrim-attendee-card-strong),
+    var(--scrim-attendee-card-clear) 60%
+  );
 }
 .rider-dialog-photo__identity {
   position: absolute;
@@ -782,7 +786,7 @@
   font-size: 52rpx;
   font-weight: 600;
   color: var(--color-on-media);
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--surface-attendee-avatar-glass);
 }
 .rider-dialog-copy {
   flex: 1;

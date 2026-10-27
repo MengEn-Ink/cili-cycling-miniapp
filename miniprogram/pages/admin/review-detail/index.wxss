@@ -316,7 +316,7 @@
 }
 .notice--warn {
   border-color: var(--color-status-warning);
-  background: var(--color-status-warning-soft, rgba(192, 50, 31, 0.08));
+  background: var(--color-status-warning-soft);
   color: var(--color-status-warning);
 }
 .notice--warn .notice-dot {

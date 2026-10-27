@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -10,6 +11,11 @@ import {
   evaluateUiSyncPolicy,
   validateManifest,
 } from './ui-sync-policy.mjs';
+import {
+  changedContentFilesSinceBase,
+  classifyValuePreservingThemeMigration,
+  collectThemeMigrationSnapshot,
+} from './theme-preservation-policy.mjs';
 
 const MANIFEST_PATH = 'docs/ui-sync-manifest.json';
 const UI_PATHS = [
@@ -29,12 +35,177 @@ const PROTOTYPE_FILES = [
 ];
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+function provenanceError(message) {
+  throw new Error(`UI 保值谱系无效：${message}`);
+}
+
+function validatePixelEvidenceReport(pixelBytes, record) {
+  let report;
+  try {
+    report = JSON.parse(Buffer.from(pixelBytes).toString('utf8'));
+  } catch {
+    provenanceError('像素证据内容不是有效 JSON');
+  }
+  const routes = report.matrix?.routes;
+  const widths = report.matrix?.widths;
+  const results = report.results;
+  if (
+    report.schemaVersion !== 1 ||
+    report.kind !== 'theme-token-migration-pixel-comparison' ||
+    report.base?.gitSha !== record.base ||
+    report.base?.uiDigest !== record.fromDigest ||
+    report.head?.uiDigest !== record.toDigest ||
+    !/^[0-9a-f]{40}$/.test(report.head?.gitSha || '') ||
+    report.base?.porcelain !== '' ||
+    report.head?.porcelain !== '' ||
+    !Array.isArray(routes) ||
+    routes.length !== 16 ||
+    new Set(routes).size !== 16 ||
+    !Array.isArray(widths) ||
+    widths.join(',') !== '340,375,430' ||
+    report.matrix?.files !== 48 ||
+    !Array.isArray(results) ||
+    results.length !== 48
+  ) {
+    provenanceError('像素证据内容必须证明 16×3 零差异');
+  }
+
+  const combinations = new Set();
+  let totalPixels = 0;
+  let containerByteDifferences = 0;
+  for (const result of results) {
+    const combination = `${result.route}\0${result.width}`;
+    const expectedFile = `${result.route}-${result.width}.png`;
+    if (
+      !routes.includes(result.route) ||
+      !widths.includes(result.width) ||
+      combinations.has(combination) ||
+      result.file !== expectedFile ||
+      !Number.isInteger(result.pixelWidth) ||
+      result.pixelWidth <= 0 ||
+      !Number.isInteger(result.pixelHeight) ||
+      result.pixelHeight <= 0 ||
+      !/^[0-9a-f]{64}$/.test(result.beforePngSha256 || '') ||
+      !/^[0-9a-f]{64}$/.test(result.afterPngSha256 || '') ||
+      result.dimensionMismatch !== false ||
+      result.diffPixels !== 0 ||
+      result.maxChannelDelta !== 0 ||
+      result.meanAbsoluteChannelDelta !== 0
+    ) {
+      provenanceError('像素证据内容必须证明 16×3 零差异');
+    }
+    combinations.add(combination);
+    totalPixels += result.pixelWidth * result.pixelHeight;
+    if (result.beforePngSha256 !== result.afterPngSha256) {
+      containerByteDifferences += 1;
+    }
+  }
+
+  const expectedCombinations = routes.flatMap((route) =>
+    widths.map((width) => `${route}\0${width}`),
+  );
+  const summary = report.summary;
+  if (
+    expectedCombinations.some((combination) => !combinations.has(combination)) ||
+    summary?.exactPixelMatches !== 48 ||
+    summary?.dimensionMismatches !== 0 ||
+    summary?.totalPixels !== totalPixels ||
+    summary?.differentPixels !== 0 ||
+    summary?.maxChannelDelta !== 0 ||
+    summary?.meanAbsoluteChannelDelta !== 0 ||
+    summary?.containerByteDifferences !== containerByteDifferences ||
+    typeof summary?.containerByteDifferenceReason !== 'string' ||
+    summary.containerByteDifferenceReason.trim() === ''
+  ) {
+    provenanceError('像素证据内容必须证明 16×3 零差异');
+  }
+}
+
+export function validateValuePreservationProvenance({
+  manifest,
+  currentUiDigest,
+  preservationBaseDigest,
+  themeMigration,
+  readEvidence,
+}) {
+  const entries = manifest.source?.valuePreservation;
+  if (!Array.isArray(entries) || entries.length !== 1) {
+    provenanceError('摘要不一致时必须且只能有一条记录');
+  }
+  const record = entries[0];
+  if (record.kind !== 'theme-token-migration') provenanceError('kind 不受支持');
+  if (!/^[0-9a-f]{40}$/.test(record.base || '')) provenanceError('base 必须是完整 SHA');
+  if (!/^sha256:[0-9a-f]{64}$/.test(record.fromDigest || '')) {
+    provenanceError('fromDigest 无效');
+  }
+  if (!/^sha256:[0-9a-f]{64}$/.test(record.toDigest || '')) {
+    provenanceError('toDigest 无效');
+  }
+  if (record.fromDigest !== manifest.source.digest) {
+    provenanceError('fromDigest 必须等于旧截图绑定摘要');
+  }
+  if (preservationBaseDigest !== record.fromDigest) {
+    provenanceError('base 重算摘要与 fromDigest 不一致');
+  }
+  if (currentUiDigest !== record.toDigest) {
+    provenanceError('当前摘要与 toDigest 不一致，谱系已自动失效');
+  }
+  if (currentUiDigest === manifest.source.digest) {
+    provenanceError('摘要已自然对齐时必须删除谱系');
+  }
+  if (
+    !themeMigration?.eligible ||
+    themeMigration.base !== record.base ||
+    themeMigration.mappingPath !== record.map ||
+    themeMigration.migratedColorCount !== 53 ||
+    themeMigration.directCount !== 49 ||
+    themeMigration.fallbackCount !== 4 ||
+    themeMigration.fontCount !== 1
+  ) {
+    provenanceError('base→head 不满足冻结的 53/49/4/1 主题保值分类');
+  }
+  if (!record.sunset?.includes('PR C Task 0')) {
+    provenanceError('缺少 PR C Task 0 日落条款');
+  }
+  const pixelRef = record.pixelEvidence?.ref;
+  const pixelSha256 = record.pixelEvidence?.sha256;
+  if (
+    typeof pixelRef !== 'string' ||
+    !/^docs\/verification\/[a-z0-9./_-]+\.(?:json|md)$/.test(pixelRef) ||
+    pixelRef.includes('..') ||
+    !/^sha256:[0-9a-f]{64}$/.test(pixelSha256 || '')
+  ) {
+    provenanceError('像素证据引用或摘要无效');
+  }
+  let pixelBytes;
+  try {
+    pixelBytes = readEvidence(pixelRef);
+  } catch {
+    provenanceError(`像素证据缺失：${pixelRef}`);
+  }
+  const actualPixelSha256 = `sha256:${createHash('sha256').update(pixelBytes).digest('hex')}`;
+  if (actualPixelSha256 !== pixelSha256) provenanceError('像素证据摘要不一致');
+  validatePixelEvidenceReport(pixelBytes, record);
+
+  return {
+    eligible: true,
+    kind: record.kind,
+    base: record.base,
+    fromDigest: record.fromDigest,
+    toDigest: record.toDigest,
+    map: record.map,
+    pixelEvidence: record.pixelEvidence,
+  };
+}
+
 export function assessUiSyncState({
   manifest,
   appPages,
   baselineUiDigest,
   currentUiDigest,
   currentPrototypeDigest,
+  preservationBaseDigest,
+  themeMigration,
   uiCommitShas,
   changedFiles,
   readEvidence,
@@ -42,9 +213,6 @@ export function assessUiSyncState({
   strict = false,
 }) {
   validateManifest(manifest, { appPages, readEvidence });
-  if (manifest.schemaVersion === 2 && currentUiDigest !== manifest.source.digest) {
-    throw new Error('截图对应的 UI 内容摘要不匹配，请重新采集并核对双端证据');
-  }
   if (manifest.schemaVersion === 1 && baselineUiDigest !== manifest.source.digest) {
     throw new Error(`UI 基线摘要不匹配：清单 ${manifest.source.digest}，Git ${baselineUiDigest}`);
   }
@@ -53,6 +221,26 @@ export function assessUiSyncState({
       `Pages 原型摘要不匹配：清单 ${manifest.prototype.digest}，当前 ${currentPrototypeDigest}`,
     );
   }
+  let valuePreservation;
+  if (manifest.schemaVersion === 2) {
+    const hasProvenance = manifest.source?.valuePreservation !== undefined;
+    if (currentUiDigest === manifest.source.digest) {
+      if (hasProvenance) {
+        provenanceError('摘要已自然对齐时必须删除谱系');
+      }
+    } else {
+      if (!hasProvenance) {
+        throw new Error('截图对应的 UI 内容摘要不匹配，请重新采集并核对双端证据');
+      }
+      valuePreservation = validateValuePreservationProvenance({
+        manifest,
+        currentUiDigest,
+        preservationBaseDigest,
+        themeMigration,
+        readEvidence,
+      });
+    }
+  }
   if (manifest.schemaVersion === 2) {
     return {
       ok: true,
@@ -60,7 +248,10 @@ export function assessUiSyncState({
       ageDays: Math.max(0, Math.floor((now.getTime() - Date.parse(manifest.syncedAt)) / DAY_MS)),
       remaining: manifest.policy.maxUnsyncedUiCommits,
       immediateFiles: [],
-      reason: '双端截图与当前 UI / Pages 内容摘要一致（业务与真机验收见独立记录）',
+      reason: valuePreservation
+        ? '主题 token 保值谱系已机械复算（旧截图仍绑定原摘要，PR C Task 0 日落）'
+        : '双端截图与当前 UI / Pages 内容摘要一致（业务与真机验收见独立记录）',
+      ...(valuePreservation ? { valuePreservation } : {}),
     };
   }
 
@@ -188,13 +379,31 @@ export function run({ strict = process.argv.includes('--strict') } = {}) {
   }
 
   const appConfig = JSON.parse(readFileSync('miniprogram/app.json', 'utf8'));
+  const currentSourceDigest = currentUiDigest();
+  const preservationRecord = manifest.source?.valuePreservation?.[0];
+  let preservationBaseDigest;
+  let themeMigration;
+  if (preservationRecord) {
+    try {
+      execFileSync('git', ['merge-base', '--is-ancestor', preservationRecord.base, 'HEAD']);
+    } catch {
+      provenanceError(`base 不是当前 HEAD 祖先：${preservationRecord.base}`);
+    }
+    preservationBaseDigest = baselineUiDigest(preservationRecord.base);
+    const preservationChangedFiles = changedContentFilesSinceBase(preservationRecord.base);
+    themeMigration = classifyValuePreservingThemeMigration(
+      collectThemeMigrationSnapshot(preservationRecord.base, preservationChangedFiles),
+    );
+  }
   const result = assessUiSyncState({
     manifest,
     appPages: appRoutes.expandAppRoutes(appConfig),
     baselineUiDigest:
       manifest.schemaVersion === 1 ? baselineUiDigest(manifest.syncedThrough) : undefined,
-    currentUiDigest: currentUiDigest(),
+    currentUiDigest: currentSourceDigest,
     currentPrototypeDigest: currentPrototypeDigest(),
+    preservationBaseDigest,
+    themeMigration,
     uiCommitShas: uiCommitShas(manifest.syncedThrough),
     changedFiles: changedFiles(manifest.syncedThrough),
     readEvidence: (file) => readFileSync(file),
