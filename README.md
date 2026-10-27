@@ -82,7 +82,8 @@ npm test                 # 小程序与共享领域测试
 npm run test:cloud       # 各云函数与路线函数测试
 npm run coverage         # 覆盖率门禁
 npm run audit:all        # 根项目和云函数依赖审计
-npm run check:design     # 双端设计变量与浅色对比度
+npm run test:design      # 主题契约、迁移映射和门禁接线测试
+npm run check:design     # 53 处颜色 + 1 处字体迁移、17 页原生外观、跨端 token 与浅色对比度
 npm run check:ui-sync -- --strict # 17 路由双端截图与内容摘要
 npm run check:pr-description # PR 八段描述、测试/E2E 报告与 diff 统计（由 PR CI 注入上下文）
 npm run check:governance     # 文档口径、源码卫生与 Actions 安全基线

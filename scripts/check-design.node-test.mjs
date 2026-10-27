@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import {
@@ -225,14 +226,27 @@ test('documented npm commands must resolve', () => {
   assert.match(validateDocumentedScripts('npm run missing', {})[0], /missing/);
 });
 
+test('package scripts wire design tests and checker into validate', () => {
+  const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+  assert.equal(
+    packageJson.scripts['test:design'],
+    'node --test scripts/check-design.node-test.mjs',
+  );
+  assert.equal(packageJson.scripts['check:design'], 'node scripts/check-design.mjs');
+  assert.match(packageJson.scripts.validate, /npm run test:ui-sync && npm run test:design/);
+  assert.match(packageJson.scripts.validate, /npm run test:design && npm run check:design/);
+});
+
 test('contrast uses WCAG luminance', () => {
   assert.equal(contrastRatio('#ffffff', '#000000'), 21);
   assert.ok(contrastRatio('#211f1c', '#fbf5ea') >= 4.5);
 });
 
-test('frozen repository exposes the complete pre-migration literal baseline', () => {
-  assert.throws(
-    () => runRepositoryCheck(),
-    /design contract failed: 53 color literals, 1 font-family literals/,
-  );
+test('migrated repository resolves all frozen literals through the contract', () => {
+  assert.deepEqual(runRepositoryCheck(), {
+    colorLiteralCount: 0,
+    fontLiteralCount: 0,
+    migrationRows: 53,
+    nativePageConfigs: 17,
+  });
 });

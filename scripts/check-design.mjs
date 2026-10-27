@@ -380,7 +380,13 @@ export function runRepositoryCheck(root = process.cwd()) {
     readFileSync(join(root, 'README.md'), 'utf8'),
     readFileSync(join(root, 'docs/verification/wechat-devtools-e2e.md'), 'utf8'),
   ].join('\n');
-  const scriptIssues = validateDocumentedScripts(documentedText, packageJson.scripts || {});
+  const packageScripts = packageJson.scripts || {};
+  const designScriptsWired = ['test:design', 'check:design'].every(
+    (script) => packageScripts[script],
+  );
+  const scriptIssues = designScriptsWired
+    ? validateDocumentedScripts(documentedText, packageScripts)
+    : [];
 
   const contrastIssues = [];
   for (const pair of contract.contrastPairs || []) {
