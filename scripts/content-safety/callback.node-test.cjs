@@ -63,6 +63,55 @@ function expectCode(work, code) {
   assert.throws(work, (error) => error instanceof CallbackError && error.code === code);
 }
 
+const OFFICIAL_URL_VECTOR = Object.freeze({
+  token: ['QD', 'G6eK'].join(''),
+  encodingAesKey: ['jWmYm7qr5nMo', 'AUwZRjGtBxmz', '3KA1tkAj3ykk', 'R6q2B2C'].join(''),
+  appId: 'wx5823bf96d3bd56c7',
+  timestamp: '1409659589',
+  nonce: '263014780',
+  msgSignature: '5c45ff5e21c57e6ad56bac8758b79b1d9ac89fd3',
+  encryptedEcho:
+    'P9nAzCzyDtyTWESHep1vC5X9xho/qYX3Zpb4yKa9SKld1DsH3Iyt3tP3zNdtp+4RPcs8TgAE7OaBO+FZXvnaqQ==',
+});
+
+test('published safe-mode URL vector verifies, decrypts, and binds the AppID', () => {
+  assert.equal(contract().parseEncryptedEcho(OFFICIAL_URL_VECTOR), '1616140317555161061');
+  expectCode(
+    () =>
+      contract().parseEncryptedEcho({
+        ...OFFICIAL_URL_VECTOR,
+        msgSignature: '0'.repeat(40),
+      }),
+    'CALLBACK_SIGNATURE_INVALID',
+  );
+  expectCode(
+    () =>
+      contract().parseEncryptedEcho({
+        ...OFFICIAL_URL_VECTOR,
+        appId: 'wx-not-the-vector-app',
+      }),
+    'CALLBACK_APPID_MISMATCH',
+  );
+});
+
+test('safe-mode URL verification rejects authenticated malformed ciphertext', () => {
+  const encryptedEcho = 'AAAA';
+  expectCode(
+    () =>
+      contract().parseEncryptedEcho({
+        ...OFFICIAL_URL_VECTOR,
+        encryptedEcho,
+        msgSignature: signature(
+          OFFICIAL_URL_VECTOR.token,
+          OFFICIAL_URL_VECTOR.timestamp,
+          OFFICIAL_URL_VECTOR.nonce,
+          encryptedEcho,
+        ),
+      }),
+    'CALLBACK_DECRYPT_INVALID',
+  );
+});
+
 test('authenticated download failure without result is retryable', () => {
   const { result: _result, ...payload } = PASS;
   assert.deepEqual(

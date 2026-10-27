@@ -294,3 +294,64 @@ test('新媒体协议授权与 finalize 都拒绝缺半字段及非法 requestId
   }
   assert.equal((fixture.state.profile_media_imports || new Map()).size, 0);
 });
+
+test('submitMediaReview 入口使用可信 OPENID 并在微信调用前落 operation', async () => {
+  const owner = 'owner-review-entry';
+  const source = `cloud://env/${mediaOwnerPrefix(owner, 'profile-media-secret-for-tests-32-bytes')}123e4567-e89b-42d3-a456-426614174010.jpg`;
+  const mediaId = mediaDocumentId(source);
+  const fixture = statefulDatabase();
+  fixture.state.profile_media = new Map([
+    [
+      mediaId,
+      {
+        _id: mediaId,
+        file_id: source,
+        source_file_id: source,
+        canonical_file_id: 'cloud://env/canonical/review.jpg',
+        sha256: 'a'.repeat(64),
+        owner_openid: owner,
+        category: 'profile-avatar',
+        generation: 1,
+        status: 'unreferenced',
+      },
+    ],
+  ]);
+  cloud.getTempFileURL = async () => ({
+    fileList: [
+      {
+        fileID: 'cloud://env/canonical/review.jpg',
+        status: 0,
+        tempFileURL: 'https://storage.example/review.jpg',
+      },
+    ],
+  });
+  cloud.openapi = {
+    security: {
+      mediaCheckAsync: async () => {
+        assert.equal(fixture.state.profile_media.get(mediaId).security_status, 'submitting');
+        assert.equal(
+          fixture.state.profile_media.get(mediaId).security_operation_id,
+          'operation_entry_1',
+        );
+        return { errCode: 0, traceId: 'trace-entry-1' };
+      },
+    },
+  };
+
+  const result = await loadMain(
+    owner,
+    fixture.db,
+  )({
+    action: 'submitMediaReview',
+    fileId: source,
+    operationId: 'operation_entry_1',
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.data.status, 'pending');
+  assert.equal(result.data.traceId, 'trace-entry-1');
+  assert.equal(fixture.state.profile_media.get(mediaId).security_status, 'pending');
+  assert.equal(
+    fixture.state.content_media_check_operations.get('operation_entry_1').trace_id,
+    'trace-entry-1',
+  );
+});

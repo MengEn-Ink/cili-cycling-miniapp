@@ -1,8 +1,17 @@
 'use strict';
 
 const cloud = require('wx-server-sdk');
-const { createState, authorizationUrl, config, importRoute, StravaError } = require('./core');
+const {
+  createState,
+  authorizationUrl,
+  compatibleStatus,
+  config,
+  importRoute,
+  StravaError,
+} = require('./core');
 const { parseGpx } = require('./gpx');
+const { createStravaStore } = require('./store');
+const privacy = require('./privacy-contract');
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
@@ -44,46 +53,21 @@ function failure(error) {
   return { ok: false, error: { code, message: safeMessage } };
 }
 
-const store = {
-  getCredential: (openid) => maybeGet(db.collection('strava_credentials'), openid),
-  saveCredential: async (openid, value) => {
-    if (value.owner_openid !== openid) throw new StravaError('FORBIDDEN', '凭证所有者不匹配');
-    const { _id, ...data } = value;
-    await db.collection('strava_credentials').doc(openid).set({ data });
-  },
-  getPreview: (id) => maybeGet(db.collection('route_previews'), id),
-  putPreview: async (id, value) => {
-    const { _id, ...data } = value;
-    await db.collection('route_previews').doc(id).set({ data });
-  },
-  uploadFile: (input) => cloud.uploadFile(input),
-};
+const store = createStravaStore(db, { env: process.env, cloud, privacy });
 
 async function handle(event = {}, openid, now = new Date()) {
   assertOpenid(openid);
-  await assertAdmin(openid);
-  if (event.action === 'status') {
-    const credential = await store.getCredential(openid);
-    return {
-      state: credential?.owner_openid === openid ? 'connected' : 'disconnected',
-      athlete_name: credential?.owner_openid === openid ? credential.athlete_name || '' : '',
-    };
+  if (event.action === 'status') return compatibleStatus(await store.status(openid, now));
+  if (event.action === 'disconnect') {
+    await store.disconnect(openid, now);
+    await store.drainRevocations({ owner: openid, now });
+    return compatibleStatus(await store.status(openid, now));
   }
+  await assertAdmin(openid);
   if (event.action === 'start') {
     const configuration = config(process.env);
     const state = createState(now.getTime());
-    await db
-      .collection('oauth_states')
-      .doc(state.hash)
-      .set({
-        data: {
-          state_hash: state.hash,
-          owner_openid: openid,
-          created_at: now,
-          expires_at: state.expiresAt,
-          consumed_at: null,
-        },
-      });
+    await store.start(openid, state, now, event.profileGeneration);
     return {
       authorization_url: authorizationUrl(configuration, state.raw),
       expires_at: state.expiresAt,

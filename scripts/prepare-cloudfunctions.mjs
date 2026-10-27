@@ -16,10 +16,12 @@ copyFileSync(
   resolve(root, 'cloudfunctions/activity-admin/gpx.js'),
   resolve(root, 'cloudfunctions/strava-bridge/gpx.js'),
 );
-copyFileSync(
-  resolve(root, 'cloudfunctions/strava-bridge/core.js'),
-  resolve(root, 'cloudfunctions/strava-callback/core.js'),
-);
+for (const target of ['strava-callback', 'strava-revocation-worker'])
+  for (const file of ['core.js', 'store.js', 'privacy-contract.js'])
+    copyFileSync(
+      resolve(root, 'cloudfunctions/strava-bridge', file),
+      resolve(root, 'cloudfunctions', target, file),
+    );
 console.log(
   `共享领域源码已复制到 ${domainFunctions.length} 个业务函数，Strava 复用 GPX 解析器与 OAuth 核心已同步`,
 );

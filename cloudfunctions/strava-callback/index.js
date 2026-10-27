@@ -1,44 +1,15 @@
 'use strict';
 
 const cloud = require('wx-server-sdk');
-const { callbackFlow, StravaError } = require('./core');
+const { callbackFlow } = require('./core');
+const { createStravaStore } = require('./store');
+const privacy = require('./privacy-contract');
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 
-function isNotFound(error) {
-  return (
-    Number(error?.errCode) === -502001 || /not exist|not found/i.test(String(error?.errMsg || ''))
-  );
-}
-
-async function maybeGet(collection, id) {
-  try {
-    return (await collection.doc(id).get()).data;
-  } catch (error) {
-    if (isNotFound(error)) return undefined;
-    throw error;
-  }
-}
-
 function callbackStore(database) {
-  return {
-    consumeState: (hash, now) =>
-      database.runTransaction(async (transaction) => {
-        const state = await maybeGet(transaction.collection('oauth_states'), hash);
-        if (!state || state.consumed_at) return undefined;
-        await transaction
-          .collection('oauth_states')
-          .doc(hash)
-          .update({ data: { consumed_at: now } });
-        return state;
-      }),
-    saveCredential: async (openid, value) => {
-      if (value.owner_openid !== openid) throw new StravaError('FORBIDDEN', '凭证所有者不匹配');
-      const { _id, ...data } = value;
-      await database.collection('strava_credentials').doc(openid).set({ data });
-    },
-  };
+  return createStravaStore(database, { env: process.env, cloud, privacy });
 }
 
 function html(success) {

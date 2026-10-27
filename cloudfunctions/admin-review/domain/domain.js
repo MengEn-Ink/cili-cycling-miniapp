@@ -140,6 +140,24 @@ function assertActivityOpen(activity, now) {
 function normalizeGender(value) {
   return value === '男' || value === '女' ? value : '';
 }
+function profileGeneration(profile) {
+  const value = profile?.generation;
+  if (value === undefined) return 1;
+  if (!Number.isSafeInteger(value) || value < 1) fail('PROFILE_GENERATION_INVALID', '资料版本无效');
+  return value;
+}
+function isProfileDeleted(profile) {
+  return Boolean(profile?.deletion_status && profile.deletion_status !== 'active');
+}
+function assertProfileWritable(profile, generation) {
+  if (isProfileDeleted(profile))
+    fail('PROFILE_DELETION_LOCKED', '资料删除处理中或已删除，请先查看状态');
+  const current = profileGeneration(profile);
+  // 兼容尚未获得 generation 的已发布客户端；一旦请求显式携带代际，仍严格执行并发围栏。
+  if (generation !== undefined && generation !== current)
+    fail('PROFILE_GENERATION_MISMATCH', '资料版本已变化，请重新读取并明确操作');
+  return current;
+}
 function assertProfileReady(profile) {
   const sensitive = profile && profile.sensitive_status;
   // 存量证件密文保持只读兼容：报名判定不读取、不解密，也不要求资料更新时删除。
@@ -412,6 +430,9 @@ module.exports = {
   ok,
   toErrorResponse,
   normalizeGender,
+  profileGeneration,
+  isProfileDeleted,
+  assertProfileWritable,
   assertTrustedOpenid,
   assertNoForbiddenFields,
   registrationId,

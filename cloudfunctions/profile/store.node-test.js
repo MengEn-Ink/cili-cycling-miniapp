@@ -615,3 +615,251 @@ test('setAvatar 以 canonical fileId 写入业务资料并只激活 source regis
   assert.equal(db.updates[0].id, mediaId);
   assert.equal(db.updates[0].data.status, 'active');
 });
+
+const { sameMediaCheckBinding } = subject;
+
+function reviewMedia() {
+  return {
+    _id: 'media-review-1',
+    owner_openid: 'owner-review',
+    category: 'profile-avatar',
+    generation: 1,
+    canonical_file_id: 'cloud://env/canonical.jpg',
+    sha256: 'a'.repeat(64),
+    status: 'unreferenced',
+  };
+}
+
+test('审核 operation 在外部调用前原子预占并消耗预算', async () => {
+  const media = reviewMedia();
+  const fixture = statefulDb({ profile_media: { [media._id]: media } });
+  const store = createProfileStore(fixture.db);
+  const binding = {
+    media_id: media._id,
+    owner_openid: media.owner_openid,
+    category: media.category,
+    generation: media.generation,
+    canonical_file_id: media.canonical_file_id,
+    sha256: media.sha256,
+  };
+
+  const first = await store.reserveMediaCheck(media.owner_openid, binding, 'operation_0001', 2);
+  assert.equal(first.attempt, 1);
+  assert.equal(fixture.state.profile_media.get(media._id).security_status, 'submitting');
+  assert.equal(fixture.state.profile_media.get(media._id).security_attempts, 1);
+  await assert.rejects(
+    () => store.reserveMediaCheck(media.owner_openid, binding, 'operation_parallel', 2),
+    { code: 'MEDIA_CHECK_IN_PROGRESS' },
+  );
+  const replay = await store.reserveMediaCheck(media.owner_openid, binding, 'operation_0001', 2);
+  assert.equal(replay.replayed, true);
+  assert.equal(fixture.state.profile_media.get(media._id).security_attempts, 1);
+  await store.failMediaCheckOperation(media.owner_openid, binding, 'operation_0001', {
+    code: 'MEDIA_CHECK_RETRY',
+  });
+  const second = await store.reserveMediaCheck(media.owner_openid, binding, 'operation_0002', 2);
+  assert.equal(second.attempt, 2);
+  await store.failMediaCheckOperation(media.owner_openid, binding, 'operation_0002', {
+    code: 'MEDIA_CHECK_RETRY',
+  });
+  await assert.rejects(
+    () => store.reserveMediaCheck(media.owner_openid, binding, 'operation_0003', 2),
+    { code: 'MEDIA_CHECK_RETRY_EXHAUSTED' },
+  );
+});
+
+test('提交 ACK 只接受当前 operation 与完整绑定 CAS', async () => {
+  const media = reviewMedia();
+  const fixture = statefulDb({ profile_media: { [media._id]: media } });
+  const store = createProfileStore(fixture.db);
+  const binding = {
+    media_id: media._id,
+    owner_openid: media.owner_openid,
+    category: media.category,
+    generation: media.generation,
+    canonical_file_id: media.canonical_file_id,
+    sha256: media.sha256,
+  };
+  await store.reserveMediaCheck(media.owner_openid, binding, 'operation_1001', 2);
+  const stale = { ...binding, sha256: 'b'.repeat(64) };
+  await assert.rejects(
+    () =>
+      store.ackMediaCheckSubmission(media.owner_openid, stale, 'operation_1001', 1, {
+        _id: 'trace-stale',
+        trace_id: 'trace-stale',
+        ...stale,
+      }),
+    { code: 'MEDIA_CHECK_BINDING_STALE' },
+  );
+
+  const result = await store.ackMediaCheckSubmission(
+    media.owner_openid,
+    binding,
+    'operation_1001',
+    1,
+    { _id: 'trace-current', trace_id: 'trace-current', ...binding },
+  );
+  assert.equal(result.status, 'pending');
+  assert.equal(
+    fixture.state.content_media_checks.get('trace-current').operation_id,
+    'operation_1001',
+  );
+  assert.equal(fixture.state.profile_media.get(media._id).security_trace_id, 'trace-current');
+  assert.equal(
+    sameMediaCheckBinding(
+      fixture.state.content_media_check_operations.get('operation_1001'),
+      fixture.state.profile_media.get(media._id),
+    ),
+    true,
+  );
+});
+
+test('同 operation 的 submitting 租约未过期时保持处理中且不增加预算', async () => {
+  const media = reviewMedia();
+  const fixture = statefulDb({ profile_media: { [media._id]: media } });
+  const store = createProfileStore(fixture.db);
+  const binding = {
+    media_id: media._id,
+    owner_openid: media.owner_openid,
+    category: media.category,
+    generation: media.generation,
+    canonical_file_id: media.canonical_file_id,
+    sha256: media.sha256,
+  };
+  const reservedAt = new Date('2026-10-27T14:00:00.000Z');
+  await store.reserveMediaCheck(
+    media.owner_openid,
+    binding,
+    'operation_lease_live',
+    2,
+    reservedAt,
+    60_000,
+  );
+
+  const replay = await store.reserveMediaCheck(
+    media.owner_openid,
+    binding,
+    'operation_lease_live',
+    2,
+    new Date('2026-10-27T14:00:59.999Z'),
+    60_000,
+  );
+  assert.equal(replay.replayed, true);
+  assert.equal(replay.attempt, 1);
+  assert.equal(fixture.state.profile_media.get(media._id).security_attempts, 1);
+  assert.equal(
+    fixture.state.content_media_check_operations.get('operation_lease_live').status,
+    'reserved',
+  );
+});
+
+test('同 operation 的 submitting 租约过期后标记外部结果未知且禁止盲目重提', async () => {
+  const media = reviewMedia();
+  const fixture = statefulDb({ profile_media: { [media._id]: media } });
+  const store = createProfileStore(fixture.db);
+  const binding = {
+    media_id: media._id,
+    owner_openid: media.owner_openid,
+    category: media.category,
+    generation: media.generation,
+    canonical_file_id: media.canonical_file_id,
+    sha256: media.sha256,
+  };
+  const reservedAt = new Date('2026-10-27T14:00:00.000Z');
+  await store.reserveMediaCheck(
+    media.owner_openid,
+    binding,
+    'operation_lease_expired',
+    2,
+    reservedAt,
+    60_000,
+  );
+
+  const expired = await store.reserveMediaCheck(
+    media.owner_openid,
+    binding,
+    'operation_lease_expired',
+    2,
+    new Date('2026-10-27T14:01:00.000Z'),
+    60_000,
+  );
+  assert.equal(expired.unknown, true);
+  assert.equal(expired.status, 'submission_unknown');
+  assert.equal(fixture.state.profile_media.get(media._id).security_status, 'submission_unknown');
+  assert.equal(
+    fixture.state.content_media_check_operations.get('operation_lease_expired').status,
+    'submission_unknown',
+  );
+  const repeatedUnknown = await store.reserveMediaCheck(
+    media.owner_openid,
+    binding,
+    'operation_lease_expired',
+    2,
+    new Date('2026-10-27T14:01:30.000Z'),
+    60_000,
+  );
+  assert.equal(repeatedUnknown.unknown, true);
+  await assert.rejects(
+    () =>
+      store.reserveMediaCheck(
+        media.owner_openid,
+        binding,
+        'operation_new_after_unknown',
+        2,
+        new Date('2026-10-27T14:02:00.000Z'),
+        60_000,
+      ),
+    { code: 'MEDIA_CHECK_IN_PROGRESS' },
+  );
+});
+
+test('外部成功凭据先持久化，ACK 失败后同 operation 可幂等恢复', async () => {
+  const media = reviewMedia();
+  const fixture = statefulDb({ profile_media: { [media._id]: media } });
+  const store = createProfileStore(fixture.db);
+  const binding = {
+    media_id: media._id,
+    owner_openid: media.owner_openid,
+    category: media.category,
+    generation: media.generation,
+    canonical_file_id: media.canonical_file_id,
+    sha256: media.sha256,
+  };
+  const operationId = 'operation_ack_store';
+  const reservation = await store.reserveMediaCheck(media.owner_openid, binding, operationId, 2);
+  const trace = {
+    _id: 'trace-ack-store',
+    trace_id: 'trace-ack-store',
+    ...binding,
+    submitted_at: new Date('2026-10-27T14:10:00.000Z'),
+  };
+  await store.recordMediaCheckSubmission(
+    media.owner_openid,
+    binding,
+    operationId,
+    reservation.attempt,
+    trace,
+  );
+  const recoverable = await store.reserveMediaCheck(media.owner_openid, binding, operationId, 2);
+  assert.equal(recoverable.recoverable, true);
+  assert.equal(recoverable.trace.trace_id, trace.trace_id);
+
+  const first = await store.ackMediaCheckSubmission(
+    media.owner_openid,
+    binding,
+    operationId,
+    reservation.attempt,
+    recoverable.trace,
+  );
+  const duplicate = await store.ackMediaCheckSubmission(
+    media.owner_openid,
+    binding,
+    operationId,
+    reservation.attempt,
+    recoverable.trace,
+  );
+  assert.deepEqual(duplicate, first);
+  const completed = await store.reserveMediaCheck(media.owner_openid, binding, operationId, 2);
+  assert.equal(completed.completed, true);
+  assert.equal(completed.trace_id, trace.trace_id);
+});

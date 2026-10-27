@@ -19,6 +19,7 @@ const {
 const { buildCapabilityCard } = require('./capability-card');
 const { createProfileStore, missing: isNotFound } = require('./store');
 const { canonicalizeClientMedia } = require('./media-upload');
+const { submitReservedMediaReview } = require('./media-review');
 const { loadClubMembershipSummaries, resolveClubMembershipAvatars } = require('./club-memberships');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
@@ -208,6 +209,24 @@ exports.main = async (event = {}) => {
         registered: true,
         canonicalFileId: registered.canonical_file_id || registered.file_id,
       });
+    }
+    if (event.action === 'submitMediaReview') {
+      if (Object.prototype.hasOwnProperty.call(event, 'openid'))
+        throw Object.assign(new Error('包含禁止字段'), { code: 'FORBIDDEN_FIELD' });
+      const media = await profileStore.getMedia(mediaDocumentId(event.fileId));
+      if (!media || media.owner_openid !== OPENID)
+        throw Object.assign(new Error('媒体登记不存在'), { code: 'MEDIA_NOT_FOUND' });
+      return ok(
+        await submitReservedMediaReview({
+          openid: OPENID,
+          mediaRecord: media,
+          store: profileStore,
+          operationId: event.operationId,
+          getMediaUrl: (fileId) =>
+            verifyMediaObject(fileId, (input) => cloud.getTempFileURL(input)),
+          mediaCheckAsync: (input) => cloud.openapi.security.mediaCheckAsync(input),
+        }),
+      );
     }
     if (event.action === 'setAvatar') {
       if (Object.prototype.hasOwnProperty.call(event, 'openid'))

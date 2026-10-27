@@ -43,6 +43,29 @@
       "installDependency": true
     },
     {
+      "name": "strava-revocation-worker",
+      "handler": "index.main",
+      "runtime": "Nodejs20.19",
+      "timeout": 30,
+      "memorySize": 256,
+      "installDependency": true,
+      "triggers": [
+        {
+          "name": "strava-revocation-worker",
+          "type": "timer",
+          "config": "0 */1 * * * * *"
+        }
+      ]
+    },
+    {
+      "name": "content-callback",
+      "handler": "index.main",
+      "runtime": "Nodejs20.19",
+      "timeout": 15,
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
       "name": "registration",
       "handler": "index.main",
       "runtime": "Nodejs20.19",
@@ -125,6 +148,13 @@
       {
         "path": "/strava/callback",
         "target": "function:strava-callback",
+        "enableAuth": false,
+        "enablePathTransmission": true,
+        "domain": "*"
+      },
+      {
+        "path": "/content/callback",
+        "target": "function:content-callback",
         "enableAuth": false,
         "enablePathTransmission": true,
         "domain": "*"

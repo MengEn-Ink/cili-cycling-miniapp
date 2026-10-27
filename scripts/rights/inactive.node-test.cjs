@@ -106,9 +106,9 @@ test('graph parser recognizes CommonJS ESM reexports and escaped dynamic paths',
   );
 });
 
-test('prepare never copies dormant contracts into cloud deployment packages', () => {
+test('prepare only activates reviewed Strava privacy contracts and keeps rights ledgers dormant', () => {
   const prepare = resolve(root, 'scripts/prepare-cloudfunctions.mjs');
-  assert.doesNotMatch(read(prepare), /rights|privacy\.cjs|ledger\.cjs|privacy-contract/);
+  assert.doesNotMatch(read(prepare), /rights|privacy\.cjs|ledger\.cjs/);
   for (const specifier of imports(prepare, read(prepare)))
     assert.equal(
       localModule(prepare, specifier),

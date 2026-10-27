@@ -6,6 +6,16 @@ const MINT_LEASE_MS = 2 * 60 * 1000;
 const REVOKE_LEASE_MS = 30 * 1000;
 const MAX_ATTEMPTS = 8;
 const REVOKE_BATCH = 2;
+const REVOKE_SCAN_LIMIT = 20;
+const REVOCATION_MANUAL_REASONS = Object.freeze({
+  INVALID_MATERIAL: 'STRAVA_REVOCATION_MATERIAL_INVALID',
+  AUTHORIZATION_MISSING: 'STRAVA_REVOCATION_AUTHORIZATION_MISSING',
+  OWNER_MISMATCH: 'STRAVA_REVOCATION_OWNER_MISMATCH',
+  GENERATION_MISMATCH: 'STRAVA_REVOCATION_GENERATION_MISMATCH',
+  AUTHORIZATION_INVALID: 'STRAVA_REVOCATION_AUTHORIZATION_INVALID',
+  LEDGER_INVALID: 'STRAVA_REVOCATION_LEDGER_INVALID',
+  ATTEMPTS_EXHAUSTED: 'STRAVA_REVOCATION_ATTEMPTS_EXHAUSTED',
+});
 const withoutId = ({ _id, ...data }) => data;
 const validDate = (value) => value instanceof Date && Number.isFinite(value.getTime());
 function validMaterialSchedule(row) {
@@ -285,7 +295,7 @@ function createStravaStore(db, { env = process.env, cloud, privacy } = {}) {
         tx,
         auth,
         `credential-${crypto.randomUUID()}`,
-        credential.refresh_token_cipher || credential.access_token_cipher,
+        credential.access_token_cipher,
         now,
       );
       await tx.collection('strava_credentials').doc(owner).remove();
@@ -584,24 +594,38 @@ function createStravaStore(db, { env = process.env, cloud, privacy } = {}) {
       owner,
       fetchImpl = fetch,
     } = {}) => {
+      const batchLimit = Math.max(1, Math.min(REVOKE_BATCH, limit));
       const condition = {
         status: 'pending',
         retry_at: db.command.lte(now),
         ...(owner ? { owner_openid: owner } : {}),
       };
-      const rows = (
+      const dueRows = (
         await db
           .collection('strava_revocations')
           .where(condition)
           .orderBy('retry_at', 'asc')
           .orderBy('_id', 'asc')
-          .limit(Math.max(1, Math.min(REVOKE_BATCH, limit)))
+          .limit(REVOKE_SCAN_LIMIT)
           .get()
       ).data;
+      const auditRows = (
+        await db
+          .collection('strava_revocations')
+          .where({ status: 'pending', ...(owner ? { owner_openid: owner } : {}) })
+          .limit(REVOKE_SCAN_LIMIT)
+          .get()
+      ).data;
+      const rows = [...dueRows, ...auditRows].filter(
+        (row, index, all) => all.findIndex((candidate) => candidate._id === row._id) === index,
+      );
+      let attempted = 0;
       let completed = 0;
+      let isolated = 0;
       for (const row of rows) {
+        if (attempted >= batchLimit) break;
         const leaseId = crypto.randomUUID();
-        const claimed = await db.runTransaction(async (tx) => {
+        const claim = await db.runTransaction(async (tx) => {
           const current = await get(tx.collection('strava_revocations'), row._id);
           if (
             !current ||
@@ -609,31 +633,55 @@ function createStravaStore(db, { env = process.env, cloud, privacy } = {}) {
             new Date(current.retry_at) > now ||
             (current.lease_id && new Date(current.lease_expires_at) > now)
           )
-            return false;
-          const auth = await get(tx.collection('strava_authorizations'), current.owner_openid);
+            return { state: 'skipped' };
+          const auth =
+            typeof current.owner_openid === 'string' && current.owner_openid
+              ? await get(tx.collection('strava_authorizations'), current.owner_openid)
+              : undefined;
+          let reason = '';
           if (
-            !auth ||
-            auth.mode !== 'revoking' ||
-            auth.generation !== current.generation ||
-            (await ledger(tx, auth)).invalid
+            typeof current.owner_openid !== 'string' ||
+            !current.owner_openid ||
+            !Number.isSafeInteger(current.generation) ||
+            current.generation < 1 ||
+            !Number.isSafeInteger(current.attempts) ||
+            current.attempts < 0 ||
+            current.attempts > MAX_ATTEMPTS ||
+            !validMaterialSchedule(current) ||
+            !current.token_cipher
           )
-            return false;
-          if (current.attempts >= MAX_ATTEMPTS) {
+            reason = REVOCATION_MANUAL_REASONS.INVALID_MATERIAL;
+          else if (!auth) reason = REVOCATION_MANUAL_REASONS.AUTHORIZATION_MISSING;
+          else if (auth.owner_openid !== current.owner_openid)
+            reason = REVOCATION_MANUAL_REASONS.OWNER_MISMATCH;
+          else if (auth.generation !== current.generation)
+            reason = REVOCATION_MANUAL_REASONS.GENERATION_MISMATCH;
+          else if (auth.mode !== 'revoking')
+            reason = REVOCATION_MANUAL_REASONS.AUTHORIZATION_INVALID;
+          else if ((await ledger(tx, auth)).invalid)
+            reason = REVOCATION_MANUAL_REASONS.LEDGER_INVALID;
+          else if (current.attempts >= MAX_ATTEMPTS)
+            reason = current.last_error_code || REVOCATION_MANUAL_REASONS.ATTEMPTS_EXHAUSTED;
+          if (reason) {
             await put(tx, 'strava_revocations', current._id, {
               ...current,
               status: 'manual',
               lease_id: '',
               lease_expires_at: null,
               retry_at: null,
-              last_error_code: current.last_error_code || 'STRAVA_REVOCATION_ATTEMPTS_EXHAUSTED',
+              last_error_code: reason,
               updated_at: now,
             });
-            if (auth?.generation === current.generation && auth.mode === 'revoking') {
+            if (
+              auth?.owner_openid === current.owner_openid &&
+              auth.generation === current.generation &&
+              auth.mode === 'revoking' &&
+              Number.isSafeInteger(auth.manual_count)
+            ) {
               auth.manual_count += 1;
               await put(tx, 'strava_authorizations', auth._id, auth);
-              await dto(tx, auth, now);
             }
-            return false;
+            return { state: 'isolated' };
           }
           await tx
             .collection('strava_revocations')
@@ -645,13 +693,18 @@ function createStravaStore(db, { env = process.env, cloud, privacy } = {}) {
                 lease_expires_at: new Date(now.getTime() + REVOKE_LEASE_MS),
               },
             });
-          return true;
+          return { state: 'claimed', tokenCipher: current.token_cipher };
         });
-        if (!claimed) continue;
+        if (claim.state === 'isolated') {
+          isolated += 1;
+          continue;
+        }
+        if (claim.state !== 'claimed') continue;
+        attempted += 1;
         let result;
         try {
           result = await revokeToken(
-            decrypt(row.token_cipher, env.STRAVA_TOKEN_ENCRYPTION_KEY),
+            decrypt(claim.tokenCipher, env.STRAVA_TOKEN_ENCRYPTION_KEY),
             env,
             fetchImpl,
           );
@@ -664,6 +717,7 @@ function createStravaStore(db, { env = process.env, cloud, privacy } = {}) {
           const auth = await get(tx.collection('strava_authorizations'), current.owner_openid);
           if (
             !auth ||
+            auth.owner_openid !== current.owner_openid ||
             auth.mode !== 'revoking' ||
             auth.generation !== current.generation ||
             (await ledger(tx, auth)).invalid
@@ -718,7 +772,22 @@ function createStravaStore(db, { env = process.env, cloud, privacy } = {}) {
         );
         uncertain += 1;
       }
-      return { attempted: rows.length, completed, uncertain };
+      const [pendingVisible, manualVisible] = await Promise.all([
+        db.collection('strava_revocations').where({ status: 'pending' }).limit(101).get(),
+        db.collection('strava_revocations').where({ status: 'manual' }).limit(101).get(),
+      ]);
+      const pendingRows = Array.isArray(pendingVisible?.data) ? pendingVisible.data : [];
+      const manualRows = Array.isArray(manualVisible?.data) ? manualVisible.data : [];
+      return {
+        attempted,
+        completed,
+        isolated,
+        uncertain,
+        backlog_pending_visible: Math.min(100, pendingRows.length),
+        backlog_pending_truncated: pendingRows.length > 100,
+        manual_review_visible: Math.min(100, manualRows.length),
+        manual_review_truncated: manualRows.length > 100,
+      };
     },
   };
   return store;

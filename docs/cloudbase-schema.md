@@ -161,7 +161,19 @@ oauth_states: _id = sha256(随机 state)
 state_hash, owner_openid, created_at, expires_at, consumed_at
 ```
 
-客户端对两个集合均全拒绝。原始 state 只出现在短时授权 URL 中，数据库仅保存哈希；callback 在事务中先完成单次消费，再换取 token。`STRAVA_CLIENT_SECRET` 和严格 base64 的 32 字节 `STRAVA_TOKEN_ENCRYPTION_KEY` 只通过云函数环境变量注入。token 自动刷新且永不返回客户端；所有读取以可信 OPENID 隔离。
+客户端对两个集合均全拒绝。原始 state 只出现在短时授权 URL 中，数据库仅保存哈希；callback 在事务中先完成单次消费，再换取 token。`STRAVA_CLIENT_SECRET` 和严格 base64 的 32 字节 `STRAVA_TOKEN_ENCRYPTION_KEY` 只通过云函数环境变量注入。token 自动刷新且永不返回客户端；所有读取以可信 OPENID 隔离。state、credential 与 preview 均绑定 OAuth/profile generation；callback/refresh 使用 operation 预占和结算，撤销后的迟到 token 只能进入撤销材料账本。
+
+### Strava 授权状态机与撤销账本
+
+Strava 运行时以 `strava_authorizations` owner sentinel 为入口。`generation` 在 start/disconnect 时单调递增，`profile_generation` 与资料删除代际绑定；`mode` 为 `disconnected|authorizing|connected|revoking`。`strava_operations` 保存 callback/refresh 的 `operation_id`、双方 generation、`in_flight|uncertain|resolved` 与过期时间；`strava_revocations` 保存待撤销 **access token** 的 AES-256-GCM 密文、generation、租约、尝试次数与重试时间；`strava_route_sources` 保存服务端下载对象路径与双方 generation。
+
+撤销消费者由 `strava-revocation-worker` 每分钟定时触发，无需用户再次打开小程序。消费者调用 Strava 官方 `POST /oauth/deauthorize`，以表单 `access_token` 提交，按持久 `retry_at/attempts/lease` 退避重试；日志仅输出 `backlog_pending_visible`、`manual_review_visible` 及截断标记，不记录 owner 或 token。旧客户端继续读取只含 `connected|disconnected` 的 `state`；服务端详细状态通过 `state_v2`（`authorizing|connected|revocation_pending|disconnected|manual_review`）和 `status_schema_version=2` 保留。
+
+`strava_credentials` 和 `route_previews` 同样保存 `oauth_generation/profile_generation`。callback/refresh 只有在 operation 和双方 generation 仍匹配时才能提交 credential；迟到 mint 只把新 access token 写入撤销材料账本，不得复活旧代凭证。上述四个 Strava 运行集合均由 bootstrap 创建并使用客户端全拒绝 ACL。
+
+### `content_media_check_operations` 与 `content_media_checks`
+
+内容安全提交操作和回调 trace 的持久账本。`content_media_check_operations` 以 operation ID 记录媒体绑定、提交尝试、trace、状态与错误；`content_media_checks` 以可信 trace ID 记录同一媒体 generation/revision 的审核结果。两者只允许云函数事务访问，客户端 ACL 全拒绝；回调协议实现由 #384 维护，本次只交付其实际依赖的 CloudBase 集合。
 
 ### `route_previews`
 
@@ -205,9 +217,14 @@ state_hash, owner_openid, created_at, expires_at, consumed_at
 | profile_media_imports | status ASC, retry_at ASC |
 | route_previews | expires_at ASC |
 | route_previews | owner_openid ASC, expires_at ASC |
+| strava_revocations | status ASC, retry_at ASC, _id ASC |
+| strava_revocations | owner_openid ASC, status ASC, retry_at ASC, _id ASC |
+| strava_operations | status ASC, expires_at ASC, _id ASC |
+| strava_operations | owner_openid ASC, status ASC, expires_at ASC, _id ASC |
+| strava_operations | owner_openid ASC, status ASC |
 | audit_logs | actor_openid ASC, created_at DESC |
 
-bootstrap 当前管理 14 集合、全拒绝规则与 36 索引。`route_previews`、`strava_credentials`、`oauth_states` 与 `club_applications` 使用客户端全拒绝 ACL。
+bootstrap 当前管理 20 集合、全拒绝规则与 41 索引。`route_previews`、Strava 运行账本、内容安全账本、`strava_credentials`、`oauth_states` 与 `club_applications` 均使用客户端全拒绝 ACL。
 
 ## 部署后验证
 

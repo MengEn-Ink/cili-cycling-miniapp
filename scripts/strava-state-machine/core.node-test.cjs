@@ -98,7 +98,7 @@ test('callback consumes state once before saving fenced encrypted credentials', 
     finishMint: async (owner, supplied, value, material) => {
       assert.equal(owner, 'synthetic-owner');
       assert.equal(supplied.operation_id, fence.operation_id);
-      assert.equal(core.decrypt(material, KEY), 'synthetic-refresh');
+      assert.equal(core.decrypt(material, KEY), token().access_token);
       saved = value;
       return true;
     },
@@ -270,14 +270,11 @@ test('callback requires read scope before reserving or exchanging a token', asyn
   assert.equal(calls, 0);
 });
 
-test('revoke uses refresh material and Basic app auth; empty 200 is complete', async () => {
-  const result = await core.revokeToken('synthetic-refresh', ENV, async (url, options) => {
-    assert.equal(url, 'https://www.strava.com/oauth/revoke');
-    assert.equal(new URLSearchParams(options.body).get('token'), 'synthetic-refresh');
-    assert.equal(
-      options.headers.authorization,
-      `Basic ${Buffer.from(`${ENV.STRAVA_CLIENT_ID}:${ENV.STRAVA_CLIENT_SECRET}`).toString('base64')}`,
-    );
+test('deauthorize uses official endpoint with access_token material; empty 200 is complete', async () => {
+  const result = await core.revokeToken('synthetic-access', ENV, async (url, options) => {
+    assert.equal(url, 'https://www.strava.com/oauth/deauthorize');
+    assert.equal(new URLSearchParams(options.body).get('access_token'), 'synthetic-access');
+    assert.equal(options.headers.authorization, undefined);
     assert.ok(options.signal);
     return new Response('');
   });
@@ -289,17 +286,32 @@ test('revoke uses refresh material and Basic app auth; empty 200 is complete', a
     [503, 'pending'],
   ])
     assert.equal(
-      (await core.revokeToken('synthetic-refresh', ENV, async () => new Response('', { status })))
+      (await core.revokeToken('synthetic-access', ENV, async () => new Response('', { status })))
         .state,
       state,
     );
   assert.equal(
     (
-      await core.revokeToken('synthetic-refresh', ENV, async () => {
+      await core.revokeToken('synthetic-access', ENV, async () => {
         throw new Error('network');
       })
     ).state,
     'pending',
+  );
+});
+
+test('兼容状态 DTO 保持旧 state 枚举并通过 state_v2 暴露详细状态', () => {
+  assert.deepEqual(core.compatibleStatus({ state: 'revocation_pending', import_ready: false }), {
+    state: 'disconnected',
+    state_v2: 'revocation_pending',
+    status_schema_version: 2,
+    import_ready: false,
+  });
+  assert.equal(core.compatibleStatus({ state: 'manual_review' }).state, 'disconnected');
+  assert.equal(core.compatibleStatus({ state: 'authorizing' }).state, 'disconnected');
+  assert.equal(
+    core.compatibleStatus({ state: 'connected', import_ready: true }).state,
+    'connected',
   );
 });
 

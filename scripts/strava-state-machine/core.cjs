@@ -183,29 +183,22 @@ async function tokenRequest(fetchImpl, body) {
   }
 }
 
-async function revokeToken(token, env, fetchImpl = fetch) {
-  if (!/^\d+$/.test(env.STRAVA_CLIENT_ID || '') || !env.STRAVA_CLIENT_SECRET || !token)
-    return { state: 'manual', code: 'STRAVA_REVOCATION_CONFIG' };
+async function revokeToken(token, _env, fetchImpl = fetch) {
+  if (!token) return { state: 'manual', code: 'STRAVA_REVOCATION_TOKEN_MISSING' };
   let response;
   try {
-    response = await fetchImpl('https://www.strava.com/oauth/revoke', {
+    response = await fetchImpl('https://www.strava.com/oauth/deauthorize', {
       method: 'POST',
       signal: AbortSignal.timeout(EXTERNAL_TIMEOUT_MS),
-      headers: {
-        'content-type': 'application/x-www-form-urlencoded',
-        authorization: `Basic ${Buffer.from(
-          `${env.STRAVA_CLIENT_ID}:${env.STRAVA_CLIENT_SECRET}`,
-        ).toString('base64')}`,
-      },
-      body: new URLSearchParams({ token }).toString(),
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ access_token: token }).toString(),
     });
   } catch {
     return { state: 'pending', code: 'STRAVA_REVOCATION_UNAVAILABLE' };
   }
-  // The official endpoint returns empty 200 even when the token is already absent.
   if (response.status === 200) return { state: 'completed', code: '' };
-  if (response.status === 401) return { state: 'manual', code: 'STRAVA_APPLICATION_AUTH_INVALID' };
-  if (response.status === 400) return { state: 'manual', code: 'STRAVA_REVOKE_TOKEN_MISSING' };
+  if ([400, 401].includes(response.status))
+    return { state: 'manual', code: 'STRAVA_DEAUTHORIZE_TOKEN_REJECTED' };
   return { state: 'pending', code: 'STRAVA_REVOCATION_UNAVAILABLE' };
 }
 
@@ -218,11 +211,7 @@ async function mintCredential({ owner, fence, body, env, store, fetchImpl, now, 
     throw error;
   }
   const raw =
-    typeof token?.refresh_token === 'string' && token.refresh_token
-      ? token.refresh_token
-      : typeof token?.access_token === 'string' && token.access_token
-        ? token.access_token
-        : '';
+    typeof token?.access_token === 'string' && token.access_token ? token.access_token : '';
   if (!raw) {
     await store.failMint(owner, fence, true, now);
     throw new StravaError('OAUTH_TOKEN_INVALID', 'Strava 换取凭证失败，需核验撤销状态');
@@ -324,6 +313,17 @@ async function accessToken({
   });
   await store.checkFence(credential.owner_openid, fence);
   return decrypt(next.access_token_cipher, configuration.encryptionKey);
+}
+
+function compatibleStatus(detail) {
+  const detailedState = String(detail?.state || 'manual_review');
+  return {
+    ...detail,
+    state:
+      detailedState === 'connected' && detail?.import_ready === true ? 'connected' : 'disconnected',
+    state_v2: detailedState,
+    status_schema_version: 2,
+  };
 }
 
 async function boundedBody(response) {
@@ -478,6 +478,7 @@ module.exports = {
   tokenDocument,
   callbackFlow,
   accessToken,
+  compatibleStatus,
   boundedBody,
   mapDownloadError,
   routePreviewId,

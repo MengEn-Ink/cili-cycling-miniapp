@@ -2,262 +2,423 @@
 
 const assert = require('node:assert/strict');
 const test = require('node:test');
-const {
-  MAX_GPX_BYTES,
-  accessToken,
-  callbackFlow,
-  createState,
-  decrypt,
-  encrypt,
-  hashState,
-  importRoute,
-  parseRouteUrl,
-  StravaError,
-  tokenDocument,
-} = require('./core');
-const { parseGpx } = require('./gpx');
-
+const core = require('./core');
 const KEY = Buffer.alloc(32, 7).toString('base64');
 const ENV = {
   STRAVA_CLIENT_ID: '12345',
-  STRAVA_CLIENT_SECRET: 'client-secret',
+  STRAVA_CLIENT_SECRET: 'synthetic-secret',
   STRAVA_TOKEN_ENCRYPTION_KEY: KEY,
-  STRAVA_CALLBACK_URL: 'https://example.com/strava/callback',
+  STRAVA_CALLBACK_URL: 'https://example.test/strava/callback',
 };
-const NOW = new Date('2026-10-21T02:57:00.000Z');
-const GPX = Buffer.from(
-  '<?xml version="1.0"?><gpx><metadata><name>授权路线</name></metadata><trk><trkseg>' +
-    '<trkpt lat="30" lon="120"><ele>10</ele></trkpt>' +
-    '<trkpt lat="30.01" lon="120.01"><ele>30</ele></trkpt>' +
-    '<trkpt lat="30.02" lon="120.02"><ele>15</ele></trkpt>' +
-    '</trkseg></trk></gpx>',
-);
-
-function token(overrides = {}) {
-  return {
-    access_token: 'access-token',
-    refresh_token: 'refresh-token',
-    expires_at: Math.floor(NOW.getTime() / 1000) + 3600,
-    athlete: { id: 42, firstname: 'Route', lastname: 'Owner' },
-    ...overrides,
-  };
-}
-
-function response(body, status = 200, headers = {}) {
-  return new Response(body, { status, headers });
-}
-
-test('严格解析标准 Strava route URL 与路由 ID', () => {
-  assert.deepEqual(parseRouteUrl('https://www.strava.com/routes/123456/'), {
-    routeId: '123456',
-    url: 'https://www.strava.com/routes/123456',
-  });
-  assert.deepEqual(parseRouteUrl('https://strava.com/zh-CN/routes/9'), {
-    routeId: '9',
-    url: 'https://www.strava.com/routes/9',
-  });
-  for (const invalid of [
-    'http://www.strava.com/routes/1',
-    'https://evil.example/routes/1',
-    'https://www.strava.com/routes/0',
-    'https://www.strava.com/routes/1/export_gpx',
-    'https://www.strava.com/routes/1#token',
-  ])
-    assert.throws(() => parseRouteUrl(invalid), { code: 'STRAVA_ROUTE_URL_INVALID' });
+const NOW = new Date('2026-10-26T00:00:00Z');
+const token = (extra = {}) => ({
+  access_token: 'synthetic-access',
+  refresh_token: 'synthetic-refresh',
+  expires_at: NOW.getTime() / 1000 + 3600,
+  athlete: { id: 42, firstname: 'Synthetic' },
+  ...extra,
 });
+const fence = { operation_id: 'synthetic-operation', oauth_generation: 2, profile_generation: 1 };
+const response = (value) => new Response(JSON.stringify(value));
 
-test('OAuth state 随机、只持久化哈希且 token 使用 AES-256-GCM', () => {
-  const state = createState(NOW.getTime(), () => Buffer.alloc(32, 3));
-  assert.equal(state.hash, hashState(state.raw));
-  assert.notEqual(state.raw, state.hash);
-  assert.equal(state.expiresAt.getTime(), NOW.getTime() + 10 * 60 * 1000);
-  const envelope = encrypt('secret-token', KEY, () => Buffer.alloc(12, 5));
-  assert.equal(envelope.alg, 'A256GCM');
-  assert.equal(decrypt(envelope, KEY), 'secret-token');
-  assert.throws(() => decrypt({ ...envelope, ciphertext: 'AAAA' }, KEY), {
+test('strict config and authenticated encryption retain v1 compatibility', () => {
+  assert.equal(core.config(ENV).callbackUrl, ENV.STRAVA_CALLBACK_URL);
+  for (const change of [
+    { STRAVA_CLIENT_ID: 'x' },
+    { STRAVA_CLIENT_SECRET: '' },
+    { STRAVA_CALLBACK_URL: 'http://example.test/callback' },
+    { STRAVA_CALLBACK_URL: 'https://user:pass@example.test/callback' },
+    { STRAVA_TOKEN_ENCRYPTION_KEY: `${KEY.slice(0, 10)} ${KEY.slice(10)}` },
+  ]) {
+    assert.throws(() => core.config({ ...ENV, ...change }), { code: 'STRAVA_CONFIG_INVALID' });
+  }
+  const cipher = core.encrypt('synthetic-refresh', KEY);
+  assert.equal(cipher.v, 1);
+  assert.equal(core.decrypt(cipher, KEY), 'synthetic-refresh');
+  assert.doesNotMatch(JSON.stringify(cipher), /synthetic-refresh/);
+  assert.throws(() => core.encrypt('x', 'bad-key'), { code: 'STRAVA_CONFIG_INVALID' });
+  assert.throws(() => core.decrypt({ ...cipher, tag: Buffer.alloc(16).toString('base64') }, KEY), {
     code: 'STRAVA_TOKEN_INVALID',
   });
 });
 
-test('callback 原子单次消费 state 并把加密凭证保存到对应 OPENID', async () => {
-  const state = createState(NOW.getTime(), () => Buffer.alloc(32, 4));
-  let consumed = false;
+test('state is hashed and authorization URL contains only explicit OAuth fields', () => {
+  const state = core.createState(NOW.getTime(), () => Buffer.alloc(32, 3));
+  assert.equal(core.hashState(state.raw), state.hash);
+  assert.notEqual(state.raw, state.hash);
+  assert.equal(state.expiresAt.getTime(), NOW.getTime() + core.OAUTH_STATE_TTL_MS);
+  assert.throws(() => core.hashState('invalid'), { code: 'OAUTH_STATE_INVALID' });
+  const url = new URL(core.authorizationUrl(core.config(ENV), state.raw));
+  assert.equal(url.origin, 'https://www.strava.com');
+  assert.equal(url.searchParams.get('state'), state.raw);
+  assert.equal(url.searchParams.get('scope'), 'read');
+  assert.equal(url.searchParams.get('approval_prompt'), 'force');
+  assert.equal(url.searchParams.has('client_secret'), false);
+});
+
+test('route parser rejects nonstandard URLs and canonicalizes accepted routes', () => {
+  assert.deepEqual(core.parseRouteUrl('https://strava.com/zh-CN/routes/42/'), {
+    routeId: '42',
+    url: 'https://www.strava.com/routes/42',
+  });
+  for (const url of [
+    'http://strava.com/routes/42',
+    'https://evil.test/routes/42',
+    'https://strava.com/routes/0',
+    'https://strava.com/routes/42/export_gpx',
+    'https://strava.com/routes/42#x',
+    'https://user:pass@strava.com/routes/42',
+  ])
+    assert.throws(() => core.parseRouteUrl(url), { code: 'STRAVA_ROUTE_URL_INVALID' });
+});
+
+test('token documents encrypt both tokens and reject incomplete responses', () => {
+  const row = core.tokenDocument('synthetic-owner', token(), KEY, NOW);
+  assert.equal(row.owner_openid, 'synthetic-owner');
+  assert.equal(core.decrypt(row.refresh_token_cipher, KEY), 'synthetic-refresh');
+  assert.equal(row.access_token, undefined);
+  for (const change of [{ refresh_token: '' }, { expires_at: 'x' }, { athlete: null }])
+    assert.throws(() => core.tokenDocument('synthetic-owner', token(change), KEY, NOW), {
+      code: 'OAUTH_TOKEN_INVALID',
+    });
+});
+
+test('callback consumes state once before saving fenced encrypted credentials', async () => {
+  const state = core.createState(NOW.getTime());
+  let used = false;
   let saved;
   const store = {
-    consumeState: async (hash) => {
+    consumeState: async (hash, _now, mint) => {
       assert.equal(hash, state.hash);
-      if (consumed) return undefined;
-      consumed = true;
-      return { owner_openid: 'openid-a', expires_at: state.expiresAt, consumed_at: null };
+      assert.equal(mint, true);
+      if (used) return undefined;
+      used = true;
+      return { owner_openid: 'synthetic-owner', expires_at: state.expiresAt, ...fence };
     },
-    saveCredential: async (openid, value) => {
-      saved = { openid, value };
+    finishMint: async (owner, supplied, value, material) => {
+      assert.equal(owner, 'synthetic-owner');
+      assert.equal(supplied.operation_id, fence.operation_id);
+      assert.equal(core.decrypt(material, KEY), token().access_token);
+      saved = value;
+      return true;
     },
   };
-  const fetchImpl = async (_url, options) => {
-    assert.doesNotMatch(String(options.body), /openid-a/);
-    return response(JSON.stringify(token()), 200, { 'content-type': 'application/json' });
-  };
-  await callbackFlow({
-    query: { code: 'code-1', state: state.raw },
+  const input = {
+    query: { state: state.raw, code: 'synthetic-code', scope: 'read' },
     env: ENV,
     store,
-    fetchImpl,
     now: NOW,
-  });
-  assert.equal(saved.openid, 'openid-a');
-  assert.equal(saved.value.owner_openid, 'openid-a');
-  assert.equal(decrypt(saved.value.access_token_cipher, KEY), 'access-token');
-  assert.equal(saved.value.access_token, undefined);
-  await assert.rejects(
-    callbackFlow({
-      query: { code: 'code-1', state: state.raw },
-      env: ENV,
-      store,
-      fetchImpl,
-      now: NOW,
-    }),
-    { code: 'OAUTH_STATE_INVALID' },
-  );
-});
-
-test('过期 state 被拒绝且已消费标记不会回滚为可重放', async () => {
-  const state = createState(NOW.getTime() - 20 * 60 * 1000, () => Buffer.alloc(32, 6));
-  let consumes = 0;
-  await assert.rejects(
-    callbackFlow({
-      query: { code: 'code', state: state.raw },
-      env: ENV,
-      store: {
-        consumeState: async () => {
-          consumes += 1;
-          return { owner_openid: 'openid-a', expires_at: state.expiresAt };
-        },
-        saveCredential: async () => assert.fail('must not save'),
-      },
-      fetchImpl: async () => assert.fail('must not fetch'),
-      now: NOW,
-    }),
-    { code: 'OAUTH_STATE_EXPIRED' },
-  );
-  assert.equal(consumes, 1);
-});
-
-test('到期 token 自动刷新、保存轮换密文且不把 token 返回前端模型', async () => {
-  const credential = tokenDocument('openid-a', token({ expires_at: 1 }), KEY, NOW);
-  let saved;
-  const value = await accessToken({
-    credential,
-    env: ENV,
-    store: { saveCredential: async (_openid, next) => (saved = next) },
     fetchImpl: async (_url, options) => {
-      assert.match(String(options.body), /grant_type=refresh_token/);
-      assert.match(String(options.body), /refresh_token=refresh-token/);
-      return response(
-        JSON.stringify(
-          token({
-            access_token: 'new-access',
-            refresh_token: 'new-refresh',
-            expires_at: 2_000_000_000,
-          }),
-        ),
-      );
+      assert.ok(options.signal);
+      assert.equal(new URLSearchParams(options.body).get('grant_type'), 'authorization_code');
+      return response(token());
     },
-    now: NOW,
-  });
-  assert.equal(value, 'new-access');
-  assert.equal(decrypt(saved.refresh_token_cipher, KEY), 'new-refresh');
+  };
+  assert.deepEqual(await core.callbackFlow(input), { connected: true });
   assert.equal(saved.access_token, undefined);
+  await assert.rejects(core.callbackFlow(input), { code: 'OAUTH_STATE_INVALID' });
 });
 
-test('Strava 下载 Buffer 直接复用当前 parseGpx 并生成可消费 route_previews 票据', async () => {
-  const credential = tokenDocument('openid-a', token(), KEY, NOW);
-  let uploaded;
-  let preview;
-  const store = {
-    getCredential: async (openid) => (openid === 'openid-a' ? credential : undefined),
-    saveCredential: async () => {},
-    getPreview: async () => undefined,
-    uploadFile: async (input) => {
-      uploaded = input;
-      return { fileID: `cloud://env/${input.cloudPath}` };
-    },
-    putPreview: async (_id, value) => (preview = value),
-  };
-  const result = await importRoute({
-    request: {
-      openid: 'openid-a',
-      routeUrl: 'https://www.strava.com/routes/123',
-      requestId: 'route_request_123',
-    },
-    env: ENV,
-    store,
-    fetchImpl: async (url, options) => {
-      assert.equal(url, 'https://www.strava.com/api/v3/routes/123/export_gpx');
-      assert.equal(options.headers.authorization, 'Bearer access-token');
-      return response(GPX, 200, { 'content-type': 'application/gpx+xml' });
-    },
-    parseGpx,
-    now: NOW,
-  });
-  assert.deepEqual(uploaded.fileContent, GPX);
-  assert.match(uploaded.cloudPath, /^activity-routes\/openid-a\/[a-f0-9]{64}\.gpx$/);
-  assert.deepEqual(preview.summary, parseGpx(GPX, { fileName: 'strava-route-123.gpx' }));
-  assert.equal(result.route_name, '授权路线');
-  assert.equal(result.external_route_id, '123');
-  assert.equal(preview.owner_openid, 'openid-a');
-});
-
-test('OPENID 隔离、下载错误映射与 4 MiB 上限关闭失败', async () => {
-  const credential = tokenDocument('openid-b', token(), KEY, NOW);
-  const base = {
-    request: {
-      openid: 'openid-a',
-      routeUrl: 'https://www.strava.com/routes/123',
-      requestId: 'route_request_123',
-    },
-    env: ENV,
-    parseGpx,
-    now: NOW,
-  };
-  await assert.rejects(
-    importRoute({
-      ...base,
-      store: { getCredential: async () => credential },
-      fetchImpl: async () => assert.fail('must not fetch'),
-    }),
-    { code: 'STRAVA_AUTH_REQUIRED' },
-  );
-  for (const [status, code] of [
-    [403, 'STRAVA_ROUTE_FORBIDDEN'],
-    [404, 'STRAVA_ROUTE_NOT_FOUND'],
-    [429, 'STRAVA_RATE_LIMITED'],
-  ]) {
+for (const [status, uncertain, code] of [
+  [400, false, 'STRAVA_TOKEN_INVALID'],
+  [401, false, 'STRAVA_TOKEN_INVALID'],
+  [429, true, 'STRAVA_UNAVAILABLE'],
+  [503, true, 'STRAVA_UNAVAILABLE'],
+]) {
+  test(`token HTTP ${status} settles only with the appropriate uncertainty`, async () => {
+    let failed;
     await assert.rejects(
-      importRoute({
-        ...base,
-        store: {
-          getCredential: async () => ({ ...credential, owner_openid: 'openid-a' }),
-          saveCredential: async () => {},
+      core.callbackFlow({
+        query: {
+          state: core.createState(NOW.getTime()).raw,
+          code: 'synthetic-code',
+          scope: 'read',
         },
-        fetchImpl: async () => response('', status),
+        env: ENV,
+        now: NOW,
+        store: {
+          consumeState: async () => ({
+            owner_openid: 'synthetic-owner',
+            expires_at: new Date(NOW.getTime() + 1000),
+            ...fence,
+          }),
+          failMint: async (_owner, supplied, unknown) => {
+            failed = [supplied, unknown];
+          },
+        },
+        fetchImpl: async () => new Response('private-upstream-body', { status }),
       }),
       { code },
     );
-  }
+    assert.deepEqual(failed, [expectFence(), uncertain]);
+  });
+}
+function expectFence() {
+  return { owner_openid: 'synthetic-owner', expires_at: new Date(NOW.getTime() + 1000), ...fence };
+}
+
+test('DB settlement failures propagate instead of returning callback success', async () => {
+  const failure = new Error('synthetic-db-failure');
   await assert.rejects(
-    importRoute({
-      ...base,
-      store: {
-        getCredential: async () => ({ ...credential, owner_openid: 'openid-a' }),
-        saveCredential: async () => {},
+    core.callbackFlow({
+      query: {
+        state: core.createState(NOW.getTime()).raw,
+        code: 'synthetic-code',
+        scope: 'read',
       },
-      fetchImpl: async () => response('', 200, { 'content-length': String(MAX_GPX_BYTES + 1) }),
+      env: ENV,
+      now: NOW,
+      store: {
+        consumeState: async () => expectFence(),
+        finishMint: async () => {
+          throw failure;
+        },
+      },
+      fetchImpl: async () => response(token()),
     }),
-    { code: 'GPX_TOO_LARGE' },
+    (error) => error === failure,
   );
 });
 
-test('token 密钥必须是严格 base64 的 32 字节值', () => {
-  assert.throws(() => encrypt('x', 'not-a-key'), StravaError);
+test('refresh rotates tokens and fresh access avoids token exchange', async () => {
+  const credential = core.tokenDocument('synthetic-owner', token(), KEY, NOW);
+  const store = { checkFence: async () => {} };
+  assert.equal(
+    await core.accessToken({
+      credential,
+      env: ENV,
+      store,
+      now: NOW,
+      fetchImpl: async () => assert.fail('fresh token must not exchange'),
+    }),
+    'synthetic-access',
+  );
+  credential.token_expires_at = new Date(0);
+  store.beginRefresh = async () => fence;
+  store.finishMint = async (_owner, _fence, value) => {
+    assert.equal(core.decrypt(value.refresh_token_cipher, KEY), 'rotated-refresh');
+    return true;
+  };
+  assert.equal(
+    await core.accessToken({
+      credential,
+      env: ENV,
+      store,
+      now: NOW,
+      fetchImpl: async () =>
+        response(token({ access_token: 'rotated-access', refresh_token: 'rotated-refresh' })),
+    }),
+    'rotated-access',
+  );
+});
+
+test('refresh decrypts material before reserving a credential operation', async () => {
+  const credential = core.tokenDocument('synthetic-owner', token(), KEY, NOW);
+  credential.token_expires_at = new Date(0);
+  credential.refresh_token_cipher = {
+    ...credential.refresh_token_cipher,
+    tag: Buffer.alloc(16).toString('base64'),
+  };
+  let reservations = 0;
+  await assert.rejects(
+    core.accessToken({
+      credential,
+      env: ENV,
+      now: NOW,
+      store: {
+        checkFence: async () => {},
+        beginRefresh: async () => {
+          reservations += 1;
+          return fence;
+        },
+      },
+      fetchImpl: async () => assert.fail('invalid material must not call Strava'),
+    }),
+    { code: 'STRAVA_TOKEN_INVALID' },
+  );
+  assert.equal(reservations, 0);
+});
+
+test('callback requires read scope before reserving or exchanging a token', async () => {
+  const state = core.createState(NOW.getTime());
+  let mint;
+  let calls = 0;
+  await assert.rejects(
+    core.callbackFlow({
+      query: { state: state.raw, code: 'synthetic-code', scope: 'activity:write' },
+      env: ENV,
+      now: NOW,
+      store: {
+        consumeState: async (_hash, _now, shouldMint) => {
+          mint = shouldMint;
+          return {
+            owner_openid: 'synthetic-owner',
+            expires_at: state.expiresAt,
+            ...fence,
+          };
+        },
+        finishMint: async () => true,
+      },
+      fetchImpl: async () => {
+        calls += 1;
+        return response(token());
+      },
+    }),
+    { code: 'OAUTH_SCOPE_REQUIRED' },
+  );
+  assert.equal(mint, false);
+  assert.equal(calls, 0);
+});
+
+test('deauthorize uses official endpoint with access_token material; empty 200 is complete', async () => {
+  const result = await core.revokeToken('synthetic-access', ENV, async (url, options) => {
+    assert.equal(url, 'https://www.strava.com/oauth/deauthorize');
+    assert.equal(new URLSearchParams(options.body).get('access_token'), 'synthetic-access');
+    assert.equal(options.headers.authorization, undefined);
+    assert.ok(options.signal);
+    return new Response('');
+  });
+  assert.deepEqual(result, { state: 'completed', code: '' });
+  for (const [status, state] of [
+    [400, 'manual'],
+    [401, 'manual'],
+    [429, 'pending'],
+    [503, 'pending'],
+  ])
+    assert.equal(
+      (await core.revokeToken('synthetic-access', ENV, async () => new Response('', { status })))
+        .state,
+      state,
+    );
+  assert.equal(
+    (
+      await core.revokeToken('synthetic-access', ENV, async () => {
+        throw new Error('network');
+      })
+    ).state,
+    'pending',
+  );
+});
+
+test('兼容状态 DTO 保持旧 state 枚举并通过 state_v2 暴露详细状态', () => {
+  assert.deepEqual(core.compatibleStatus({ state: 'revocation_pending', import_ready: false }), {
+    state: 'disconnected',
+    state_v2: 'revocation_pending',
+    status_schema_version: 2,
+    import_ready: false,
+  });
+  assert.equal(core.compatibleStatus({ state: 'manual_review' }).state, 'disconnected');
+  assert.equal(core.compatibleStatus({ state: 'authorizing' }).state, 'disconnected');
+  assert.equal(
+    core.compatibleStatus({ state: 'connected', import_ready: true }).state,
+    'connected',
+  );
+});
+
+test('download limits reject both advertised and streamed excess bytes', async () => {
+  await assert.rejects(
+    core.boundedBody(
+      new Response('', { headers: { 'content-length': String(core.MAX_GPX_BYTES + 1) } }),
+    ),
+    { code: 'GPX_TOO_LARGE' },
+  );
+  await assert.rejects(core.boundedBody(new Response(Buffer.alloc(core.MAX_GPX_BYTES + 1))), {
+    code: 'GPX_TOO_LARGE',
+  });
+  assert.equal((await core.boundedBody(new Response('gpx'))).toString(), 'gpx');
+  for (const [status, code] of [
+    [401, 'STRAVA_AUTH_REQUIRED'],
+    [403, 'STRAVA_ROUTE_FORBIDDEN'],
+    [404, 'STRAVA_ROUTE_NOT_FOUND'],
+    [429, 'STRAVA_RATE_LIMITED'],
+    [500, 'STRAVA_UNAVAILABLE'],
+  ])
+    assert.equal(core.mapDownloadError(status).code, code);
+});
+
+test('import preserves bytes, parser summary, source fence and idempotent preview', async () => {
+  const credential = { ...core.tokenDocument('synthetic-owner', token(), KEY, NOW), ...fence };
+  const bytes = Buffer.from('<gpx>synthetic-route</gpx>');
+  let preview;
+  let uploads = 0;
+  const store = {
+    getCredential: async () => credential,
+    checkFence: async () => {},
+    getPreview: async () => preview,
+    reserveRouteSource: async (_owner, path, supplied) => {
+      assert.match(path, /^activity-routes\/synthetic-owner\/[a-f0-9]{64}\.gpx$/);
+      assert.equal(supplied.oauth_generation, fence.oauth_generation);
+    },
+    uploadFile: async ({ cloudPath, fileContent }) => {
+      uploads += 1;
+      assert.deepEqual(fileContent, bytes);
+      return { fileID: `cloud://synthetic/${cloudPath}` };
+    },
+    putPreview: async (_id, row) => (preview = row),
+  };
+  const input = {
+    request: {
+      openid: 'synthetic-owner',
+      routeUrl: 'https://strava.com/routes/42',
+      requestId: 'synthetic-request',
+    },
+    env: ENV,
+    store,
+    now: NOW,
+    parseGpx: (data, { fileName }) => {
+      assert.deepEqual(data, bytes);
+      return { route_name: fileName };
+    },
+    fetchImpl: async () => new Response(bytes),
+  };
+  const first = await core.importRoute(input);
+  assert.deepEqual(await core.importRoute(input), first);
+  assert.equal(uploads, 1);
+  assert.equal(first.route_name, 'strava-route-42.gpx');
+  assert.equal(preview.oauth_generation, fence.oauth_generation);
+  assert.equal(core.routePreviewId('a', 'b', 'c').length, 64);
+});
+
+test('route 401 refreshes once and starts revocation after repeated unauthorized responses', async () => {
+  let credential = { ...core.tokenDocument('synthetic-owner', token(), KEY, NOW), ...fence };
+  let routeCalls = 0;
+  let tokenCalls = 0;
+  let disconnects = 0;
+  const store = {
+    getCredential: async () => credential,
+    checkFence: async () => {},
+    beginRefresh: async () => ({ ...fence, kind: 'refresh' }),
+    finishMint: async (_owner, supplied, value) => {
+      credential = { ...value, ...supplied };
+      return true;
+    },
+    disconnect: async () => {
+      disconnects += 1;
+    },
+  };
+  await assert.rejects(
+    core.importRoute({
+      request: {
+        openid: 'synthetic-owner',
+        routeUrl: 'https://strava.com/routes/42',
+        requestId: 'synthetic-request',
+      },
+      env: ENV,
+      store,
+      now: NOW,
+      parseGpx: () => assert.fail('unauthorized response must not be parsed'),
+      fetchImpl: async (url) => {
+        if (url === 'https://www.strava.com/oauth/token') {
+          tokenCalls += 1;
+          return response(token({ access_token: 'rotated-access' }));
+        }
+        routeCalls += 1;
+        return new Response('', { status: 401 });
+      },
+    }),
+    { code: 'STRAVA_AUTH_REQUIRED' },
+  );
+  assert.equal(routeCalls, 2);
+  assert.equal(tokenCalls, 1);
+  assert.equal(disconnects, 1);
 });

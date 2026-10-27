@@ -114,16 +114,6 @@ function transactionStore() {
   };
 }
 
-function tripActivity(activity) {
-  if (!activity || typeof activity !== 'object') return undefined;
-  return {
-    _id: activity._id,
-    title: typeof activity.title === 'string' ? activity.title : '活动信息不可用',
-    event_start: activity.event_start,
-    status: activity.status,
-  };
-}
-
 exports.main = async (event = {}) => {
   try {
     const openid = cloud.getWXContext().OPENID;
@@ -133,7 +123,13 @@ exports.main = async (event = {}) => {
       return ok(
         await submitRegistration(
           transactionStore(),
-          { openid, activityId: event.activityId, options: event.options, team: event.team },
+          {
+            openid,
+            activityId: event.activityId,
+            options: event.options,
+            team: event.team,
+            generation: event.generation,
+          },
           new Date(),
         ),
       );

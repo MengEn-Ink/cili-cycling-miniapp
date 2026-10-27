@@ -3,6 +3,7 @@
 const {
   fail,
   normalizeGender,
+  assertProfileWritable,
   assertNoForbiddenFields,
   assertActivityOpen,
   assertProfileReady,
@@ -126,7 +127,11 @@ async function resolveTeam(tx, activityId, openid, rawTeam) {
   return { team_id: team.teamId, team_name: leader.team_name, is_team_leader: false };
 }
 
-async function submitRegistration(store, { openid, activityId, options, team }, now = new Date()) {
+async function submitRegistration(
+  store,
+  { openid, activityId, options, team, generation },
+  now = new Date(),
+) {
   assertNoForbiddenFields(options);
   assertNoForbiddenFields(team);
   if (typeof activityId !== 'string' || !activityId) fail('VALIDATION_FAILED', '缺少活动 ID');
@@ -137,6 +142,7 @@ async function submitRegistration(store, { openid, activityId, options, team }, 
     const profile = await tx.getProfile(openid);
     const existing = await tx.getRegistration(id);
     const admin = typeof tx.getAdmin === 'function' ? await tx.getAdmin(openid) : undefined;
+    const currentGeneration = assertProfileWritable(profile, generation);
     assertActivityOpen(activity, now);
     assertProfileReady(profile);
     assertCanSubmit(existing);
@@ -172,6 +178,7 @@ async function submitRegistration(store, { openid, activityId, options, team }, 
       _id: id,
       activity_id: activityId,
       openid,
+      profile_generation: currentGeneration,
       status,
       options: safeOptions,
       ...teamFields,

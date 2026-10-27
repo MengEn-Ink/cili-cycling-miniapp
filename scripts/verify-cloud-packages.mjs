@@ -50,21 +50,49 @@ for (const name of ['activity-read', 'registration', 'admin-review']) {
     ...(name === 'activity-read' ? ['public-avatar.js', 'list-page.js'] : []),
   ]);
 }
-pack('strava-bridge', ['index.js', 'core.js', 'gpx.js', 'package.json']);
-pack('strava-callback', ['index.js', 'core.js', 'package.json']);
+pack('strava-bridge', [
+  'index.js',
+  'core.js',
+  'store.js',
+  'privacy-contract.js',
+  'gpx.js',
+  'package.json',
+]);
+pack('strava-callback', ['index.js', 'core.js', 'store.js', 'privacy-contract.js', 'package.json']);
 if (
   hash(resolve(root, 'cloudfunctions/activity-admin/gpx.js')) !==
   hash(resolve(root, 'cloudfunctions/strava-bridge/gpx.js'))
 )
   throw new Error('strava-bridge/gpx.js 未复用当前 activity-admin parseGpx');
+const cloudbaseConfig = JSON.parse(readFileSync(resolve(root, 'cloudbaserc.json'), 'utf8'));
+for (const target of ['strava-callback', 'strava-revocation-worker'])
+  for (const file of ['core.js', 'store.js', 'privacy-contract.js'])
+    if (
+      hash(resolve(root, 'cloudfunctions/strava-bridge', file)) !==
+      hash(resolve(root, 'cloudfunctions', target, file))
+    )
+      throw new Error(`${target}/${file} 与 strava-bridge/${file} 不一致`);
+const stravaWorkerFunction = cloudbaseConfig.functions.find(
+  (item) => item.name === 'strava-revocation-worker',
+);
+const stravaWorkerTimer = stravaWorkerFunction?.triggers?.find(
+  (item) => item.name === 'strava-revocation-worker' && item.type === 'timer',
+);
 if (
-  hash(resolve(root, 'cloudfunctions/strava-bridge/core.js')) !==
-  hash(resolve(root, 'cloudfunctions/strava-callback/core.js'))
+  !stravaWorkerTimer ||
+  typeof stravaWorkerTimer.config !== 'string' ||
+  !stravaWorkerTimer.config.trim()
 )
-  throw new Error('strava-callback/core.js 与 strava-bridge/core.js 不一致');
+  throw new Error('strava-revocation-worker 缺少可部署的定时触发器');
+pack('strava-revocation-worker', [
+  'index.js',
+  'core.js',
+  'store.js',
+  'privacy-contract.js',
+  'package.json',
+]);
 pack('notification-send', ['index.js', 'core.js', 'store.js', 'access.js', 'package.json']);
 pack('club-application', ['index.js', 'core.js', 'media.js', 'package.json']);
-const cloudbaseConfig = JSON.parse(readFileSync(resolve(root, 'cloudbaserc.json'), 'utf8'));
 const notificationFunction = cloudbaseConfig.functions.find(
   (item) => item.name === 'notification-send',
 );

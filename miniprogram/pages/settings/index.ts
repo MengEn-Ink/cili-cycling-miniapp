@@ -12,10 +12,23 @@ const MAX_SUBSCRIPTION_TEMPLATES = 3;
 const RELEASE_NOTES = [
   {
     version: CLIENT_RELEASE_VERSION,
+    date: '2026-10-27',
+    title: '隐私、路线授权与内容审核底座升级',
+    summary:
+      '加强报名资料代际隔离、Strava 撤销围栏与媒体审核回调可靠性，为后续合规能力开放做好准备。',
+    latest: true,
+    features: [
+      '报名写入服务端确认的资料代际，阻止删除或重建期间的迟到请求',
+      'Strava 回调与刷新使用撤销围栏，旧授权不会在断开后恢复',
+      '媒体审核先预占次数并验证回调绑定，重放与旧结果不会覆盖新内容',
+    ],
+  },
+  {
+    version: '2026.10.26.4',
     date: '2026-10-26',
     title: '资料更新后不再回显旧缓存',
     summary: '资料更新、退出或媒体失效后立即清理旧卡片，并阻止迟到请求和图片重新写回。',
-    latest: true,
+    latest: false,
     features: [
       '资料更新和账号切换后不再短暂显示旧名片',
       '失效前启动的离线请求不会恢复已清理的数据',

@@ -52,6 +52,7 @@ function fixture(seed = {}) {
       avatar_file_id: 'cloud://avatar',
       background_photo: { file_id: 'cloud://bg', category: 'ride' },
       sensitive_status: { real_name: true, phone_verified: true, emergency_phone: true },
+      ...seed.profile,
     }),
     getRegistration: async (id) => state.registrations.get(id),
     getStravaCredential: async () => ({
@@ -122,6 +123,67 @@ test('公开模式普通用户有名额直接通过，审核模式与旧数据�
 
   const legacy = fixture();
   assert.equal((await submit(legacy, 'member-legacy')).status, 'pending');
+});
+
+test('缺 generation 的旧客户端兼容 g1 和 g2，并始终写入服务端实际代际', async () => {
+  for (const [profile, expectedGeneration] of [
+    [{}, 1],
+    [{ generation: 2 }, 2],
+  ]) {
+    const store = fixture({ profile });
+    const dto = await submit(store, `legacy-g${expectedGeneration}`);
+    assert.equal(store.state.registrations.get(dto._id).profile_generation, expectedGeneration);
+    assert.equal(dto.profile_generation, undefined);
+  }
+});
+
+test('显式 generation 匹配时写入服务端实际代际且不以公共同意替代本人报名资料', async () => {
+  const generationTwo = fixture({
+    profile: {
+      generation: 2,
+      avatar_visibility: 'private',
+      public_consent: {
+        nickname: { consented: false },
+        media: { consented: false },
+      },
+    },
+  });
+  const dto = await submit(generationTwo, 'private-member', { generation: 2 });
+  const stored = generationTwo.state.registrations.get(dto._id);
+  assert.equal(stored.profile_generation, 2);
+  assert.equal(stored.profile_snapshot.nickname, '骑手');
+  assert.equal(dto.profile_snapshot.nickname, '骑手');
+  assert.equal(dto.profile_generation, undefined);
+});
+
+test('显式过时代际被严格拒绝且不产生写副作用', async () => {
+  const store = fixture({ profile: { generation: 2, deletion_status: 'active' } });
+  await assert.rejects(() => submit(store, 'stale-member', { generation: 1 }), {
+    code: 'PROFILE_GENERATION_MISMATCH',
+  });
+  assert.equal(store.state.registrations.size, 0);
+  assert.equal(store.state.occupiedWrites, 0);
+  assert.equal(store.state.audits.length, 0);
+});
+
+test('删除锁优先阻断报名且不产生写副作用', async () => {
+  const store = fixture({ profile: { generation: 2, deletion_status: 'pending' } });
+  await assert.rejects(() => submit(store, 'locked-member'), {
+    code: 'PROFILE_DELETION_LOCKED',
+  });
+  assert.equal(store.state.registrations.size, 0);
+  assert.equal(store.state.occupiedWrites, 0);
+  assert.equal(store.state.audits.length, 0);
+});
+
+test('非法服务端代际被拒绝且不产生写副作用', async () => {
+  const store = fixture({ profile: { generation: 0 } });
+  await assert.rejects(() => submit(store, 'invalid-generation-member'), {
+    code: 'PROFILE_GENERATION_INVALID',
+  });
+  assert.equal(store.state.registrations.size, 0);
+  assert.equal(store.state.occupiedWrites, 0);
+  assert.equal(store.state.audits.length, 0);
 });
 
 test('正常报名占位，满员报名进入 waiting 且通知幂等键稳定', async () => {

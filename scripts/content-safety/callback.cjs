@@ -85,6 +85,20 @@ function decryptSafeMessage(encrypted, encodingAesKey, expectedAppId) {
   return plaintext.subarray(20, messageEnd).toString('utf8');
 }
 
+function parseEncryptedEcho({
+  token,
+  encodingAesKey,
+  appId,
+  timestamp,
+  nonce,
+  msgSignature,
+  encryptedEcho,
+}) {
+  if (!verifyMessageSignature(token, timestamp, nonce, encryptedEcho, msgSignature))
+    fail('CALLBACK_SIGNATURE_INVALID', 'Invalid callback signature');
+  return decryptSafeMessage(encryptedEcho, encodingAesKey, appId);
+}
+
 function parseMediaCheckCallback({
   token,
   encodingAesKey,
@@ -135,6 +149,7 @@ function parseMediaCheckCallback({
 module.exports = {
   CallbackError,
   decryptSafeMessage,
+  parseEncryptedEcho,
   parseMediaCheckCallback,
   sha1Signature,
   verifyUrlSignature,

@@ -49,7 +49,7 @@ test('disconnect retains encrypted material and duplicate calls preserve generat
   assert.equal(f.state.strava_credentials.size, 0);
   assert.equal(
     core.decrypt(rows(f)[0].token_cipher, ENV.STRAVA_TOKEN_ENCRYPTION_KEY),
-    'synthetic-refresh',
+    token().access_token,
   );
   assert.doesNotMatch(JSON.stringify(rows(f)), /synthetic-refresh|synthetic-access|Synthetic/);
   await assert.rejects(f.start(), { code: 'STRAVA_REVOCATION_PENDING' });
@@ -206,10 +206,10 @@ test('late success rotation is separately queued after the old material was revo
   await f.store.disconnect(OWNER, NOW);
   await drain(f);
   assert.equal((await f.store.status(OWNER, NOW)).revocation_complete, false);
-  const material = core.encrypt('rotated-refresh', ENV.STRAVA_TOKEN_ENCRYPTION_KEY);
+  const material = core.encrypt('rotated-access', ENV.STRAVA_TOKEN_ENCRYPTION_KEY);
   const value = core.tokenDocument(
     OWNER,
-    token({ refresh_token: 'rotated-refresh' }),
+    token({ access_token: 'rotated-access', refresh_token: 'rotated-refresh' }),
     ENV.STRAVA_TOKEN_ENCRYPTION_KEY,
     NOW,
   );
@@ -227,7 +227,7 @@ test('repeated resolved success and failure cannot replace credential or enqueue
   const f = await connected();
   const fence = await refresh(f);
   const value = core.tokenDocument(OWNER, token(), ENV.STRAVA_TOKEN_ENCRYPTION_KEY, NOW);
-  const material = value.refresh_token_cipher;
+  const material = value.access_token_cipher;
   assert.equal(await f.store.finishMint(OWNER, fence, value, material, NOW), true);
   const before = snapshot(f);
   assert.equal(
@@ -262,7 +262,7 @@ for (const action of ['finishMint', 'failMint']) {
               OWNER,
               forged,
               core.tokenDocument(OWNER, token(), ENV.STRAVA_TOKEN_ENCRYPTION_KEY, NOW),
-              core.encrypt('synthetic-refresh', ENV.STRAVA_TOKEN_ENCRYPTION_KEY),
+              core.encrypt(token().access_token, ENV.STRAVA_TOKEN_ENCRYPTION_KEY),
               NOW,
             )
           : f.store.failMint(OWNER, forged, false, NOW),
@@ -359,7 +359,7 @@ for (const [name, action] of [
     await f.store.disconnect(OWNER, NOW);
     const before = snapshot(f);
     f.failNext(name, action);
-    const material = core.encrypt('late-refresh', ENV.STRAVA_TOKEN_ENCRYPTION_KEY);
+    const material = core.encrypt('late-access', ENV.STRAVA_TOKEN_ENCRYPTION_KEY);
     await assert.rejects(
       f.store.finishMint(OWNER, fence, undefined, material, NOW),
       /synthetic-db-failure/,
@@ -452,6 +452,105 @@ test('revoke ACK failures consume the bounded budget before another external cal
   assert.equal((await f.store.status(OWNER, NOW)).state, 'manual_review');
 });
 
+test('毒记录原子隔离后同轮继续处理后续合法撤销，manual_review 重跑幂等且可观测', async () => {
+  const f = await connected();
+  await f.store.disconnect(OWNER, NOW);
+  const valid = rows(f)[0];
+  const poisonId = 'poison-ledger-missing';
+  f.state.strava_revocations.set(poisonId, {
+    ...valid,
+    _id: poisonId,
+    owner_openid: 'missing-owner',
+    retry_at: new Date(NOW.getTime() - 1),
+  });
+  let calls = 0;
+  const first = await f.store.drainRevocations({
+    now: NOW,
+    fetchImpl: async () => {
+      calls += 1;
+      return new Response('');
+    },
+  });
+  assert.equal(calls, 1);
+  assert.equal(first.attempted, 1);
+  assert.equal(first.completed, 1);
+  assert.equal(first.isolated, 1);
+  assert.equal(first.backlog_pending_visible, 0);
+  assert.equal(first.manual_review_visible, 1);
+  const poison = f.state.strava_revocations.get(poisonId);
+  assert.equal(poison.status, 'manual');
+  assert.equal(poison.last_error_code, 'STRAVA_REVOCATION_AUTHORIZATION_MISSING');
+  assert.doesNotMatch(poison.last_error_code, /missing-owner|token|cipher/i);
+
+  const second = await f.store.drainRevocations({ now: NOW });
+  assert.equal(second.attempted, 0);
+  assert.equal(second.isolated, 0);
+  assert.equal(second.manual_review_visible, 1);
+  assert.equal(f.state.strava_revocations.get(poisonId).last_error_code, poison.last_error_code);
+});
+
+for (const [label, mutate, code] of [
+  [
+    'generation mismatch',
+    (f) => {
+      rows(f)[0].generation += 1;
+    },
+    'STRAVA_REVOCATION_GENERATION_MISMATCH',
+  ],
+  [
+    'owner mismatch',
+    (f) => {
+      auth(f).owner_openid = 'different-owner';
+    },
+    'STRAVA_REVOCATION_OWNER_MISMATCH',
+  ],
+  [
+    'invalid structure',
+    (f) => {
+      delete rows(f)[0].token_cipher;
+    },
+    'STRAVA_REVOCATION_MATERIAL_INVALID',
+  ],
+]) {
+  test(`${label} uses a fixed redacted manual-review reason`, async () => {
+    const f = await connected();
+    await f.store.disconnect(OWNER, NOW);
+    mutate(f);
+    const result = await drain(f);
+    assert.equal(result.attempted, 0);
+    assert.equal(result.isolated, 1);
+    assert.equal(rows(f)[0].status, 'manual');
+    assert.equal(rows(f)[0].last_error_code, code);
+    assert.doesNotMatch(rows(f)[0].last_error_code, /synthetic-owner|different-owner|cipher/i);
+  });
+}
+
+test('领取阶段可恢复数据库错误继续抛出且不隔离记录', async () => {
+  const f = await connected();
+  await f.store.disconnect(OWNER, NOW);
+  const error = new Error('synthetic-retryable-transaction-error');
+  f.failNext('strava_authorizations', 'get', error);
+  await assert.rejects(drain(f), (value) => value === error);
+  assert.equal(rows(f)[0].status, 'pending');
+  assert.equal(rows(f)[0].attempts, 0);
+  const retried = await drain(f);
+  assert.equal(retried.completed, 1);
+});
+
+test('drain 返回持久积压与 manual_review 可观测计数', async () => {
+  const f = await connected();
+  await f.store.disconnect(OWNER, NOW);
+  const pending = await drain(f, 503);
+  assert.equal(pending.backlog_pending_visible, 1);
+  assert.equal(pending.manual_review_visible, 0);
+  for (let n = 1; n < MAX_ATTEMPTS; n += 1) await drain(f, 503, later(n * 3600000));
+  const manual = await f.store.drainRevocations({ now: later(MAX_ATTEMPTS * 3600000) });
+  assert.equal(manual.backlog_pending_visible, 0);
+  assert.equal(manual.manual_review_visible, 1);
+  assert.equal(manual.backlog_pending_truncated, false);
+  assert.equal(manual.manual_review_truncated, false);
+});
+
 test('only the matching revoke lease commits, and work is capped at two calls', async () => {
   const f = await connected();
   await f.store.disconnect(OWNER, NOW);
@@ -514,8 +613,10 @@ test('revocation drain refuses a mismatched material ledger before any external 
     },
   });
   assert.equal(result.completed, 0);
+  assert.equal(result.isolated, 1);
   assert.equal(calls, 0);
-  assert.equal(rows(f)[0].status, 'pending');
+  assert.equal(rows(f)[0].status, 'manual');
+  assert.equal(rows(f)[0].last_error_code, 'STRAVA_REVOCATION_LEDGER_INVALID');
   assert.equal(auth(f).pending_count, 0);
   assert.equal((await f.store.status(OWNER, NOW)).state, 'manual_review');
 });
@@ -539,23 +640,26 @@ for (const [label, attempts] of [
       },
     });
     assert.equal(result.completed, 0);
+    assert.equal(result.isolated, 1);
     assert.equal(calls, 0);
-    assert.equal(rows(f)[0].status, 'pending');
+    assert.equal(rows(f)[0].status, 'manual');
+    assert.equal(rows(f)[0].last_error_code, 'STRAVA_REVOCATION_MATERIAL_INVALID');
     assert.equal((await f.store.status(OWNER, NOW)).state, 'manual_review');
   });
 }
 
-for (const [label, mutate] of [
-  ['missing retry time', (row) => delete row.retry_at],
-  ['invalid retry time', (row) => (row.retry_at = 'invalid-date')],
-  ['boolean retry time', (row) => (row.retry_at = false)],
-  ['missing lease expiry', (row) => (row.lease_id = 'synthetic-lease')],
+for (const [label, mutate, isolated] of [
+  ['missing retry time', (row) => delete row.retry_at, true],
+  ['invalid retry time', (row) => (row.retry_at = 'invalid-date'), true],
+  ['boolean retry time', (row) => (row.retry_at = false), true],
+  ['missing lease expiry', (row) => (row.lease_id = 'synthetic-lease'), true],
   [
     'invalid lease expiry',
     (row) => {
       row.lease_id = 'synthetic-lease';
       row.lease_expires_at = 'invalid-date';
     },
+    true,
   ],
   [
     'boolean lease expiry',
@@ -563,6 +667,7 @@ for (const [label, mutate] of [
       row.lease_id = 'synthetic-lease';
       row.lease_expires_at = false;
     },
+    true,
   ],
 ]) {
   test(`${label} fails closed before revocation`, async () => {
@@ -579,8 +684,10 @@ for (const [label, mutate] of [
       },
     });
     assert.equal(result.completed, 0);
+    assert.equal(result.isolated, isolated ? 1 : 0);
     assert.equal(calls, 0);
-    assert.equal(rows(f)[0].status, 'pending');
+    assert.equal(rows(f)[0].status, isolated ? 'manual' : 'pending');
+    if (isolated) assert.equal(rows(f)[0].last_error_code, 'STRAVA_REVOCATION_MATERIAL_INVALID');
     assert.equal((await f.store.status(OWNER, NOW)).state, 'manual_review');
   });
 }

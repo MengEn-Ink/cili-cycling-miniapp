@@ -254,7 +254,7 @@ test('活动首页 planner 索引纳入 bootstrap exact plan 与 verify', () => 
     INDEXES.filter((index) => index.name.startsWith('activities_public_event_')),
     [PUBLIC_EVENT_START, PUBLIC_EVENT_END],
   );
-  assert.equal(INDEXES.length, 36);
+  assert.equal(INDEXES.length, 41);
 
   const missing = completeState();
   missing.indexes.set(
@@ -460,8 +460,8 @@ test('保留可信 GPX 预览与最小 Strava OAuth 集合及清理索引', () =
       unique: false,
     },
   );
-  assert.equal(COLLECTIONS.length, 14);
-  assert.equal(INDEXES.length, 36);
+  assert.equal(COLLECTIONS.length, 20);
+  assert.equal(INDEXES.length, 41);
   const complete = completeState();
   assert.deepEqual(complete.rules.get('route_previews'), {
     AclTag: 'CUSTOM',
@@ -472,6 +472,43 @@ test('保留可信 GPX 预览与最小 Strava OAuth 集合及清理索引', () =
   assert.match(schema, /### `strava_credentials` 与 `oauth_states`/);
   assert.doesNotMatch(schema, /oauth_attempts|strava_snapshots/);
   assert.match(schema, /客户端全拒绝 ACL/);
+});
+
+test('#383/#384 运行集合、全拒绝 ACL 与持久消费者索引纳入可重复 plan/verify', () => {
+  const required = [
+    'strava_authorizations',
+    'strava_operations',
+    'strava_revocations',
+    'strava_route_sources',
+    'content_media_check_operations',
+    'content_media_checks',
+  ];
+  for (const collection of required) assert.ok(COLLECTIONS.includes(collection));
+  assert.deepEqual(
+    INDEXES.find((item) => item.name === 'strava_revocations_status_retry_at_id')?.keys,
+    [
+      ['status', 1],
+      ['retry_at', 1],
+      ['_id', 1],
+    ],
+  );
+  assert.deepEqual(
+    INDEXES.find((item) => item.name === 'strava_operations_owner_status_expires_at_id')?.keys,
+    [
+      ['owner_openid', 1],
+      ['status', 1],
+      ['expires_at', 1],
+      ['_id', 1],
+    ],
+  );
+  const complete = completeState();
+  for (const collection of required)
+    assert.deepEqual(complete.rules.get(collection), {
+      AclTag: 'CUSTOM',
+      Rule: JSON.stringify(DENY_RULE),
+    });
+  assert.deepEqual(buildPlan(complete), { actions: [], conflicts: [] });
+  assert.deepEqual(verifyState(complete), []);
 });
 
 test('报名事务游标、候补 FIFO 与队伍邀请查询使用显式复合索引', () => {
@@ -538,7 +575,7 @@ test('CloudBase schema 文档列出 notification_outbox 和活动时间线索引
   assert.match(schema, /notification_outbox \| status ASC, attempts ASC, next_retry_at ASC/);
   assert.match(schema, /activities \| status ASC, event_start ASC, _id ASC, event_end ASC/);
   assert.match(schema, /activities \| status ASC, event_end DESC, _id DESC, event_start DESC/);
-  assert.match(schema, /全拒绝规则与 36 索引/);
+  assert.match(schema, /全拒绝规则与 41 索引/);
 });
 
 test('profile_media 使用 owner/status 与过期清理索引并保持客户端全拒绝', () => {
@@ -578,8 +615,8 @@ test('profile_media 使用 owner/status 与过期清理索引并保持客户端�
     ['status', 1],
     ['retry_at', 1],
   ]);
-  assert.equal(COLLECTIONS.length, 14);
-  assert.equal(INDEXES.length, 36);
+  assert.equal(COLLECTIONS.length, 20);
+  assert.equal(INDEXES.length, 41);
   assert.deepEqual(DENY_RULE, { read: false, write: false });
 });
 
@@ -613,7 +650,7 @@ test('profile_media_imports 使用全拒绝 ACL 与完整 cleanup 扫描索引',
   assert.match(schema, /profile_media_imports \| status ASC, cleanup_after ASC/);
   assert.match(schema, /profile_media_imports \| status ASC, delete_lease_expires_at ASC/);
   assert.match(schema, /profile_media_imports \| status ASC, retry_at ASC/);
-  assert.match(schema, /14 集合、全拒绝规则与 36 索引/);
+  assert.match(schema, /20 集合、全拒绝规则与 41 索引/);
   assert.match(schema, /avatar_revision/);
   assert.match(schema, /origin: wechat\|custom/);
   assert.doesNotMatch(schema, /avatar_url_fingerprint|avatar_import_lease_expires_at/);

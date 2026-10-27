@@ -54,6 +54,37 @@ async function get(collection, id) {
   }
 }
 
+const FINAL_SECURITY_STATUSES = new Set(['pass', 'review', 'risky']);
+const ACTIVE_SECURITY_STATUSES = new Set(['submitting', 'pending', 'submission_unknown']);
+const NON_REVIEWABLE_MEDIA_STATUSES = new Set(['deleting', 'deleted', 'delete_failed_terminal']);
+
+function validDate(value) {
+  const time = new Date(value).getTime();
+  return Number.isFinite(time) ? time : undefined;
+}
+
+function mediaGeneration(record) {
+  return Number.isSafeInteger(record?.generation) && record.generation >= 1 ? record.generation : 1;
+}
+
+function sameMediaCheckBinding(expected, current) {
+  return Boolean(
+    expected &&
+    current &&
+    expected.media_id === current._id &&
+    expected.owner_openid === current.owner_openid &&
+    expected.category === current.category &&
+    expected.generation === mediaGeneration(current) &&
+    expected.canonical_file_id === current.canonical_file_id &&
+    expected.sha256 === current.sha256 &&
+    !NON_REVIEWABLE_MEDIA_STATUSES.has(current.status),
+  );
+}
+
+function mediaCheckError(code, message) {
+  return new ProfileError(code, message);
+}
+
 function createProfileStore(db) {
   return {
     getMedia: (id) => get(db.collection('profile_media'), id),
@@ -301,6 +332,277 @@ function createProfileStore(db) {
         await imports.doc(canonicalIntentId).update({ data: completed });
         return record;
       }),
+    reserveMediaCheck: (
+      openid,
+      binding,
+      operationId,
+      maxAttempts = 2,
+      now = new Date(),
+      submittingLeaseMs = 5 * 60 * 1000,
+    ) =>
+      db.runTransaction(async (tx) => {
+        const media = tx.collection('profile_media');
+        const operations = tx.collection('content_media_check_operations');
+        const current = await get(media, binding.media_id);
+        if (
+          current?.owner_openid !== openid ||
+          !sameMediaCheckBinding(binding, current) ||
+          FINAL_SECURITY_STATUSES.has(current.security_status)
+        )
+          throw mediaCheckError('MEDIA_CHECK_BINDING_STALE', '图片审核绑定已失效');
+        if (typeof operationId !== 'string' || !/^[A-Za-z0-9_-]{8,128}$/u.test(operationId))
+          throw mediaCheckError('MEDIA_CHECK_OPERATION_INVALID', '图片审核操作无效');
+        if (!Number.isSafeInteger(maxAttempts) || maxAttempts < 1 || maxAttempts > 5)
+          throw mediaCheckError('MEDIA_CHECK_BUDGET_INVALID', '图片审核预算无效');
+        if (
+          !Number.isSafeInteger(submittingLeaseMs) ||
+          submittingLeaseMs < 1000 ||
+          submittingLeaseMs > 60 * 60 * 1000
+        )
+          throw mediaCheckError('MEDIA_CHECK_LEASE_INVALID', '图片审核租约无效');
+
+        const existing = await get(operations, operationId);
+        if (existing) {
+          if (
+            existing.operation_id !== operationId ||
+            !sameMediaCheckBinding(existing, current) ||
+            current.security_operation_id !== operationId ||
+            current.security_attempts !== existing.attempt
+          )
+            throw mediaCheckError('MEDIA_CHECK_OPERATION_CONFLICT', '图片审核操作冲突');
+          if (
+            existing.status === 'pending' &&
+            current.security_status === 'pending' &&
+            existing.trace_id === current.security_trace_id
+          )
+            return { ...existing, completed: true };
+          if (
+            existing.status === 'submission_unknown' &&
+            current.security_status === 'submission_unknown'
+          )
+            return { ...existing, unknown: true };
+          if (
+            existing.status === 'submitted' &&
+            current.security_status === 'submitting' &&
+            typeof existing.trace_id === 'string' &&
+            existing.trace_id
+          )
+            return {
+              ...existing,
+              recoverable: true,
+              trace: {
+                _id: existing.trace_id,
+                trace_id: existing.trace_id,
+                ...binding,
+                submitted_at: existing.submitted_at,
+              },
+            };
+          if (existing.status === 'reserved' && current.security_status === 'submitting') {
+            const reservedAt = validDate(existing.reserved_at || existing.created_at);
+            if (
+              reservedAt !== undefined &&
+              new Date(now).getTime() - reservedAt < submittingLeaseMs
+            )
+              return { ...existing, replayed: true };
+            await operations.doc(operationId).update({
+              data: {
+                status: 'submission_unknown',
+                error_code: 'MEDIA_CHECK_SUBMISSION_UNKNOWN',
+                lease_expired_at: now,
+                updated_at: now,
+              },
+            });
+            await media.doc(binding.media_id).update({
+              data: {
+                security_status: 'submission_unknown',
+                security_error_code: 'MEDIA_CHECK_SUBMISSION_UNKNOWN',
+                security_failed_at: now,
+                updated_at: now,
+              },
+            });
+            return {
+              ...existing,
+              status: 'submission_unknown',
+              unknown: true,
+              error_code: 'MEDIA_CHECK_SUBMISSION_UNKNOWN',
+            };
+          }
+          throw mediaCheckError('MEDIA_CHECK_OPERATION_CONFLICT', '图片审核操作冲突');
+        }
+        if (ACTIVE_SECURITY_STATUSES.has(current.security_status))
+          throw mediaCheckError('MEDIA_CHECK_IN_PROGRESS', '图片审核正在处理中');
+
+        const attempt = Number.isSafeInteger(current.security_attempts)
+          ? current.security_attempts + 1
+          : 1;
+        if (attempt > maxAttempts)
+          throw mediaCheckError('MEDIA_CHECK_RETRY_EXHAUSTED', '图片审核重试次数已用尽');
+        const operation = {
+          _id: operationId,
+          operation_id: operationId,
+          ...binding,
+          attempt,
+          status: 'reserved',
+          reserved_at: now,
+          created_at: now,
+          updated_at: now,
+        };
+        const { _id, ...operationData } = operation;
+        await operations.doc(_id).set({ data: operationData });
+        await media.doc(binding.media_id).update({
+          data: {
+            security_status: 'submitting',
+            security_operation_id: operationId,
+            security_attempts: attempt,
+            security_error_code: '',
+            security_reserved_at: now,
+            updated_at: now,
+          },
+        });
+        return operation;
+      }),
+    recordMediaCheckSubmission: (openid, binding, operationId, attempt, trace, now = new Date()) =>
+      db.runTransaction(async (tx) => {
+        const media = tx.collection('profile_media');
+        const operations = tx.collection('content_media_check_operations');
+        const [current, operation] = await Promise.all([
+          get(media, binding.media_id),
+          get(operations, operationId),
+        ]);
+        const valid =
+          current?.owner_openid === openid &&
+          sameMediaCheckBinding(binding, current) &&
+          sameMediaCheckBinding(operation, current) &&
+          current.security_operation_id === operationId &&
+          current.security_status === 'submitting' &&
+          operation?.attempt === attempt &&
+          trace?.media_id === binding.media_id &&
+          trace?.owner_openid === binding.owner_openid &&
+          trace?.category === binding.category &&
+          trace?.generation === binding.generation &&
+          trace?.canonical_file_id === binding.canonical_file_id &&
+          trace?.sha256 === binding.sha256 &&
+          typeof trace?.trace_id === 'string' &&
+          trace.trace_id;
+        if (!valid) throw mediaCheckError('MEDIA_CHECK_BINDING_STALE', '图片审核绑定已失效');
+        if (operation.status === 'submitted') {
+          if (operation.trace_id !== trace.trace_id)
+            throw mediaCheckError('MEDIA_CHECK_OPERATION_CONFLICT', '图片审核操作冲突');
+          return { ...operation, trace };
+        }
+        if (operation.status !== 'reserved')
+          throw mediaCheckError('MEDIA_CHECK_OPERATION_CONFLICT', '图片审核操作冲突');
+        const submittedAt = trace.submitted_at || now;
+        await operations.doc(operationId).update({
+          data: {
+            status: 'submitted',
+            trace_id: trace.trace_id,
+            submitted_at: submittedAt,
+            updated_at: now,
+          },
+        });
+        return { ...operation, status: 'submitted', trace_id: trace.trace_id, submittedAt, trace };
+      }),
+    ackMediaCheckSubmission: (openid, binding, operationId, attempt, trace, now = new Date()) =>
+      db.runTransaction(async (tx) => {
+        const media = tx.collection('profile_media');
+        const operations = tx.collection('content_media_check_operations');
+        const traces = tx.collection('content_media_checks');
+        const [current, operation] = await Promise.all([
+          get(media, binding.media_id),
+          get(operations, operationId),
+        ]);
+        if (
+          operation?.status === 'pending' &&
+          current?.security_status === 'pending' &&
+          operation.trace_id === trace?.trace_id &&
+          current.security_trace_id === trace?.trace_id &&
+          sameMediaCheckBinding(binding, current) &&
+          sameMediaCheckBinding(operation, current)
+        )
+          return {
+            status: 'pending',
+            operationId,
+            traceId: trace.trace_id,
+            attempts: attempt,
+          };
+        if (
+          current?.owner_openid !== openid ||
+          !sameMediaCheckBinding(binding, current) ||
+          !sameMediaCheckBinding(operation, current) ||
+          !['reserved', 'submitted'].includes(operation?.status) ||
+          (operation.status === 'submitted' && operation.trace_id !== trace?.trace_id) ||
+          current.security_operation_id !== operationId ||
+          current.security_status !== 'submitting' ||
+          operation.attempt !== attempt ||
+          trace?.media_id !== binding.media_id ||
+          trace?.owner_openid !== binding.owner_openid ||
+          trace?.category !== binding.category ||
+          trace?.generation !== binding.generation ||
+          trace?.canonical_file_id !== binding.canonical_file_id ||
+          trace?.sha256 !== binding.sha256
+        )
+          throw mediaCheckError('MEDIA_CHECK_BINDING_STALE', '图片审核绑定已失效');
+
+        const document = {
+          ...trace,
+          operation_id: operationId,
+          attempts: attempt,
+          status: 'pending',
+          submitted_at: trace.submitted_at || now,
+          updated_at: now,
+        };
+        await traces.doc(document._id).set({ data: writableDocument(document) });
+        await operations.doc(operationId).update({
+          data: { status: 'pending', trace_id: document.trace_id, updated_at: now },
+        });
+        await media.doc(binding.media_id).update({
+          data: {
+            security_status: 'pending',
+            security_trace_id: document.trace_id,
+            security_operation_id: operationId,
+            security_submitted_at: document.submitted_at,
+            updated_at: now,
+          },
+        });
+        return {
+          status: 'pending',
+          operationId,
+          traceId: document.trace_id,
+          attempts: attempt,
+        };
+      }),
+    failMediaCheckOperation: (openid, binding, operationId, error, now = new Date()) =>
+      db.runTransaction(async (tx) => {
+        const media = tx.collection('profile_media');
+        const operations = tx.collection('content_media_check_operations');
+        const [current, operation] = await Promise.all([
+          get(media, binding.media_id),
+          get(operations, operationId),
+        ]);
+        if (
+          current?.owner_openid !== openid ||
+          !sameMediaCheckBinding(binding, current) ||
+          !sameMediaCheckBinding(operation, current) ||
+          operation?.status !== 'reserved' ||
+          current.security_operation_id !== operationId ||
+          current.security_status !== 'submitting'
+        )
+          return { status: 'ignored' };
+        const code = String(error?.code || 'MEDIA_CHECK_RETRY');
+        await operations.doc(operationId).update({
+          data: { status: 'retryable', error_code: code, failed_at: now, updated_at: now },
+        });
+        await media.doc(binding.media_id).update({
+          data: {
+            security_status: 'retryable',
+            security_error_code: code,
+            security_failed_at: now,
+            updated_at: now,
+          },
+        });
+        return { status: 'retryable', operationId, errorCode: code };
+      }),
     setAvatar: (openid, source, fileId, secretValue, now = new Date()) =>
       db.runTransaction(async (tx) => {
         const profiles = tx.collection('profiles');
@@ -407,4 +709,10 @@ function createProfileStore(db) {
   };
 }
 
-module.exports = { missing, get, profileReferencesMedia, createProfileStore };
+module.exports = {
+  missing,
+  get,
+  profileReferencesMedia,
+  sameMediaCheckBinding,
+  createProfileStore,
+};
