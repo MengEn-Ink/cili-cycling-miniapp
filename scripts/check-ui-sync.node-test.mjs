@@ -224,7 +224,46 @@ function preservationFixture() {
   const base = 'c0bd3b56ebe8ea44e8d5b3c7203d765e52b8b826';
   const fromDigest = `sha256:${'b'.repeat(64)}`;
   const toDigest = `sha256:${'d'.repeat(64)}`;
-  const pixelReport = Buffer.from('{"files":48,"exact":48}\n');
+  const routes = Array.from({ length: 16 }, (_, index) => `route-${index + 1}`);
+  const widths = [340, 375, 430];
+  const results = routes.flatMap((route) =>
+    widths.map((width) => ({
+      file: `${route}-${width}.png`,
+      route,
+      width,
+      pixelWidth: width * 2,
+      pixelHeight: 1560,
+      beforePngSha256: 'a'.repeat(64),
+      afterPngSha256: 'a'.repeat(64),
+      dimensionMismatch: false,
+      diffPixels: 0,
+      maxChannelDelta: 0,
+      meanAbsoluteChannelDelta: 0,
+    })),
+  );
+  const totalPixels = results.reduce(
+    (sum, result) => sum + result.pixelWidth * result.pixelHeight,
+    0,
+  );
+  const pixelReportData = {
+    schemaVersion: 1,
+    kind: 'theme-token-migration-pixel-comparison',
+    base: { gitSha: base, uiDigest: fromDigest, porcelain: '' },
+    head: { gitSha: 'a'.repeat(40), uiDigest: toDigest, porcelain: '' },
+    matrix: { routes, widths, files: 48 },
+    summary: {
+      exactPixelMatches: 48,
+      dimensionMismatches: 0,
+      totalPixels,
+      differentPixels: 0,
+      maxChannelDelta: 0,
+      meanAbsoluteChannelDelta: 0,
+      containerByteDifferences: 0,
+      containerByteDifferenceReason: 'none; fresh captures are byte-identical',
+    },
+    results,
+  };
+  const pixelReport = Buffer.from(`${JSON.stringify(pixelReportData)}\n`);
   const pixelEvidence = {
     ref: 'docs/verification/2026-10-27-ui-revamp-pr-b-pixels.json',
     sha256: `sha256:${createHash('sha256').update(pixelReport).digest('hex')}`,
@@ -256,6 +295,7 @@ function preservationFixture() {
     base,
     fromDigest,
     toDigest,
+    pixelReportData,
     pixelReport,
     pixelEvidence,
     themeMigration,
@@ -324,6 +364,31 @@ test('v2 保值谱系拒绝 digest、map、像素证据与分类器篡改', () =
     mutate(state);
     assert.throws(() => validateValuePreservationProvenance(state), /保值谱系/);
   }
+});
+
+test('v2 保值谱系即使更新 hash 也拒绝声明存在像素差异的报告', () => {
+  const fixture = preservationFixture();
+  const report = structuredClone(fixture.pixelReportData);
+  report.summary.exactPixelMatches = 47;
+  report.summary.differentPixels = 1;
+  report.summary.maxChannelDelta = 1;
+  report.results[0].diffPixels = 1;
+  report.results[0].maxChannelDelta = 1;
+  const pixelReport = Buffer.from(`${JSON.stringify(report)}\n`);
+  const current = structuredClone(fixture.current);
+  current.source.valuePreservation[0].pixelEvidence.sha256 = `sha256:${createHash('sha256').update(pixelReport).digest('hex')}`;
+
+  assert.throws(
+    () =>
+      validateValuePreservationProvenance({
+        manifest: current,
+        currentUiDigest: fixture.toDigest,
+        preservationBaseDigest: fixture.fromDigest,
+        themeMigration: fixture.themeMigration,
+        readEvidence: (path) => (path === fixture.pixelEvidence.ref ? pixelReport : png()),
+      }),
+    /像素证据.*零差异/,
+  );
 });
 
 test('v2 保值谱系单次自动失效且 prototype 漂移仍 fail-closed', () => {

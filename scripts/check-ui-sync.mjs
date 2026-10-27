@@ -39,6 +39,88 @@ function provenanceError(message) {
   throw new Error(`UI 保值谱系无效：${message}`);
 }
 
+function validatePixelEvidenceReport(pixelBytes, record) {
+  let report;
+  try {
+    report = JSON.parse(Buffer.from(pixelBytes).toString('utf8'));
+  } catch {
+    provenanceError('像素证据内容不是有效 JSON');
+  }
+  const routes = report.matrix?.routes;
+  const widths = report.matrix?.widths;
+  const results = report.results;
+  if (
+    report.schemaVersion !== 1 ||
+    report.kind !== 'theme-token-migration-pixel-comparison' ||
+    report.base?.gitSha !== record.base ||
+    report.base?.uiDigest !== record.fromDigest ||
+    report.head?.uiDigest !== record.toDigest ||
+    !/^[0-9a-f]{40}$/.test(report.head?.gitSha || '') ||
+    report.base?.porcelain !== '' ||
+    report.head?.porcelain !== '' ||
+    !Array.isArray(routes) ||
+    routes.length !== 16 ||
+    new Set(routes).size !== 16 ||
+    !Array.isArray(widths) ||
+    widths.join(',') !== '340,375,430' ||
+    report.matrix?.files !== 48 ||
+    !Array.isArray(results) ||
+    results.length !== 48
+  ) {
+    provenanceError('像素证据内容必须证明 16×3 零差异');
+  }
+
+  const combinations = new Set();
+  let totalPixels = 0;
+  let containerByteDifferences = 0;
+  for (const result of results) {
+    const combination = `${result.route}\0${result.width}`;
+    const expectedFile = `${result.route}-${result.width}.png`;
+    if (
+      !routes.includes(result.route) ||
+      !widths.includes(result.width) ||
+      combinations.has(combination) ||
+      result.file !== expectedFile ||
+      !Number.isInteger(result.pixelWidth) ||
+      result.pixelWidth <= 0 ||
+      !Number.isInteger(result.pixelHeight) ||
+      result.pixelHeight <= 0 ||
+      !/^[0-9a-f]{64}$/.test(result.beforePngSha256 || '') ||
+      !/^[0-9a-f]{64}$/.test(result.afterPngSha256 || '') ||
+      result.dimensionMismatch !== false ||
+      result.diffPixels !== 0 ||
+      result.maxChannelDelta !== 0 ||
+      result.meanAbsoluteChannelDelta !== 0
+    ) {
+      provenanceError('像素证据内容必须证明 16×3 零差异');
+    }
+    combinations.add(combination);
+    totalPixels += result.pixelWidth * result.pixelHeight;
+    if (result.beforePngSha256 !== result.afterPngSha256) {
+      containerByteDifferences += 1;
+    }
+  }
+
+  const expectedCombinations = routes.flatMap((route) =>
+    widths.map((width) => `${route}\0${width}`),
+  );
+  const summary = report.summary;
+  if (
+    expectedCombinations.some((combination) => !combinations.has(combination)) ||
+    summary?.exactPixelMatches !== 48 ||
+    summary?.dimensionMismatches !== 0 ||
+    summary?.totalPixels !== totalPixels ||
+    summary?.differentPixels !== 0 ||
+    summary?.maxChannelDelta !== 0 ||
+    summary?.meanAbsoluteChannelDelta !== 0 ||
+    summary?.containerByteDifferences !== containerByteDifferences ||
+    typeof summary?.containerByteDifferenceReason !== 'string' ||
+    summary.containerByteDifferenceReason.trim() === ''
+  ) {
+    provenanceError('像素证据内容必须证明 16×3 零差异');
+  }
+}
+
 export function validateValuePreservationProvenance({
   manifest,
   currentUiDigest,
@@ -103,6 +185,7 @@ export function validateValuePreservationProvenance({
   }
   const actualPixelSha256 = `sha256:${createHash('sha256').update(pixelBytes).digest('hex')}`;
   if (actualPixelSha256 !== pixelSha256) provenanceError('像素证据摘要不一致');
+  validatePixelEvidenceReport(pixelBytes, record);
 
   return {
     eligible: true,
