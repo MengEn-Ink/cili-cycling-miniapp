@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import * as releaseNotes from './check-release-notes.mjs';
+import * as themePreservation from './theme-preservation-policy.mjs';
 
 const { validateReleaseNotes } = releaseNotes;
 
@@ -54,9 +55,30 @@ page {
   const fontBase = `.title { font-family: 'Songti SC', STSong, serif; }\n`;
   const fontHead = `.title { font-family: var(--font-family-editorial); }\n`;
   const themeContractPath = 'miniprogram/config/theme-contract.json';
+  const mappingPath = 'docs/designs/2026-10-27-ui-revamp-v1/pr-b-literal-token-map.md';
   const appPath = 'miniprogram/app.wxss';
   const pagePath = 'miniprogram/pages/activities/index.wxss';
   const componentPath = 'miniprogram/components/activity-card/index.wxss';
+  const mappingRows = [];
+  for (let index = 1; index <= 49; index += 1) {
+    mappingRows.push(
+      `| ${index} | \`${pagePath}:${index}\` | \`${literal}\` | \`direct\` | \`--pr-b-direct-${index}\` | \`${literal}\` |`,
+    );
+  }
+  for (let index = 1; index <= 3; index += 1) {
+    mappingRows.push(
+      `| ${49 + index} | \`${pagePath}:${49 + index}\` | \`rgba(192, 50, 31, 0.08)\` | \`fallback-only\` | \`--color-status-warning-soft\` | \`#fff2c7\` |`,
+    );
+  }
+  mappingRows.push(
+    `| 53 | \`${pagePath}:53\` | \`#fff\` | \`fallback-only\` | \`--color-on-media\` | \`#ffffff\` |`,
+  );
+  const mappingMarkdown = `${mappingRows.join('\n')}
+
+| Source | Literal | Token | Token current value |
+| --- | --- | --- | --- |
+| \`${componentPath}:1\` | \`'Songti SC', STSong, serif\` | \`--font-family-editorial\` | \`'Songti SC', STSong, serif\` |
+`;
 
   return {
     base: 'c0bd3b56ebe8ea44e8d5b3c7203d765e52b8b826',
@@ -71,6 +93,7 @@ page {
       [pagePath]: headPage,
       [componentPath]: fontHead,
       [themeContractPath]: '{"schemaVersion":2}\n',
+      [mappingPath]: mappingMarkdown,
     },
     runtimeThemeContractReferences: [],
   };
@@ -164,7 +187,8 @@ test('设置页必须将当前版本作为唯一 App 更新展示', () => {
 });
 
 test('PR B 形态的 49 direct + 4 fallback + 1 font 保值迁移可显式豁免', () => {
-  const classification = releaseNotes.classifyValuePreservingThemeMigration(themeMigrationFixture);
+  const classification =
+    themePreservation.classifyValuePreservingThemeMigration(themeMigrationFixture);
   const evidence = {
     eligible: true,
     base: themeMigrationFixture.base,
@@ -190,6 +214,19 @@ test('PR B 形态的 49 direct + 4 fallback + 1 font 保值迁移可显式豁免
   );
 });
 
+test('映射位置绑定 base 字面量，head 等价声明被格式化为多行仍可迁移', () => {
+  const fixture = structuredClone(themeMigrationFixture);
+  const pagePath = 'miniprogram/pages/activities/index.wxss';
+  fixture.headFiles[pagePath] = fixture.headFiles[pagePath].replace(
+    '.direct-1 { color: var(--pr-b-direct-1); }',
+    `.direct-1 {
+  color: var(--pr-b-direct-1);
+}`,
+  );
+
+  assert.equal(themePreservation.classifyValuePreservingThemeMigration(fixture).eligible, true);
+});
+
 test('alpha 偷改、token 不等值和 V1 新叠层值都不能伪装成保值迁移', () => {
   const alphaDrift = structuredClone(themeMigrationFixture);
   alphaDrift.headFiles['miniprogram/app.wxss'] = alphaDrift.headFiles[
@@ -208,7 +245,7 @@ test('alpha 偷改、token 不等值和 V1 新叠层值都不能伪装成保值�
   );
 
   for (const fixture of [alphaDrift, tokenMismatch, v1Value]) {
-    assert.equal(releaseNotes.classifyValuePreservingThemeMigration(fixture).eligible, false);
+    assert.equal(themePreservation.classifyValuePreservingThemeMigration(fixture).eligible, false);
   }
 });
 
@@ -222,7 +259,7 @@ test('夹带 wxml ts 页面 json 或无关新功能文件时回退原发布说�
     const fixture = structuredClone(themeMigrationFixture);
     fixture.changedFiles.push(path);
     fixture.headFiles[path] = '<view>new feature</view>\n';
-    assert.equal(releaseNotes.classifyValuePreservingThemeMigration(fixture).eligible, false);
+    assert.equal(themePreservation.classifyValuePreservingThemeMigration(fixture).eligible, false);
   }
 });
 
@@ -237,11 +274,39 @@ test('选择器或属性变化与缺失全局 fallback token 都不能豁免', (
     'miniprogram/app.wxss'
   ].replace('  --color-status-warning-soft: #fff2c7;\n', '');
 
-  assert.equal(releaseNotes.classifyValuePreservingThemeMigration(selectorChange).eligible, false);
   assert.equal(
-    releaseNotes.classifyValuePreservingThemeMigration(missingFallbackToken).eligible,
+    themePreservation.classifyValuePreservingThemeMigration(selectorChange).eligible,
     false,
   );
+  assert.equal(
+    themePreservation.classifyValuePreservingThemeMigration(missingFallbackToken).eligible,
+    false,
+  );
+});
+
+test('映射表行数、位置或内容篡改不能伪装成保值迁移', () => {
+  const mappingPath = 'docs/designs/2026-10-27-ui-revamp-v1/pr-b-literal-token-map.md';
+  const missingRow = structuredClone(themeMigrationFixture);
+  missingRow.headFiles[mappingPath] = missingRow.headFiles[mappingPath].replace(
+    /^\| 49 \|.*\n/m,
+    '',
+  );
+
+  const movedLocation = structuredClone(themeMigrationFixture);
+  movedLocation.headFiles[mappingPath] = movedLocation.headFiles[mappingPath].replace(
+    'pages/activities/index.wxss:1`',
+    'pages/activities/index.wxss:2`',
+  );
+
+  const changedLiteral = structuredClone(themeMigrationFixture);
+  changedLiteral.headFiles[mappingPath] = changedLiteral.headFiles[mappingPath].replace(
+    '`rgba(12, 10, 7, 0.68)` | `direct`',
+    '`rgba(12, 10, 7, 0.72)` | `direct`',
+  );
+
+  for (const fixture of [missingRow, movedLocation, changedLiteral]) {
+    assert.equal(themePreservation.classifyValuePreservingThemeMigration(fixture).eligible, false);
+  }
 });
 
 test('正常特性发布仍必须更新 App 更新', () => {
@@ -251,11 +316,11 @@ test('正常特性发布仍必须更新 App 更新', () => {
   fixture.headFiles = {
     'miniprogram/pages/profile/index.ts': 'Page({ data: { feature: true } });\n',
   };
-  assert.equal(releaseNotes.classifyValuePreservingThemeMigration(fixture).eligible, false);
+  assert.equal(themePreservation.classifyValuePreservingThemeMigration(fixture).eligible, false);
   assert.throws(
     () =>
       validateReleaseNotes(fixture.changedFiles, validSource, {
-        themeMigration: releaseNotes.classifyValuePreservingThemeMigration(fixture),
+        themeMigration: themePreservation.classifyValuePreservingThemeMigration(fixture),
       }),
     /未更新 miniprogram\/pages\/settings\/index\.ts/,
   );

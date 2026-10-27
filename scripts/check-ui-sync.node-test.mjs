@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -6,7 +7,11 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
-import { assessUiSyncState, shouldSkipUiSync } from './check-ui-sync.mjs';
+import {
+  assessUiSyncState,
+  shouldSkipUiSync,
+  validateValuePreservationProvenance,
+} from './check-ui-sync.mjs';
 import { digestFiles } from './ui-sync-policy.mjs';
 
 function png() {
@@ -204,6 +209,168 @@ test('v2 按截图对应的内容摘要校验，提交重写不失效，内容�
     /截图.*摘要/,
   );
   assert.throws(() => assessUiSyncState({ ...state, currentUiDigest: undefined }), /截图.*摘要/);
+});
+
+function preservationFixture() {
+  const current = manifest();
+  current.schemaVersion = 2;
+  current.evidence.viewport = { width: 390, height: 790 };
+  Object.assign(current.evidence.routes[0], {
+    state: 'loaded',
+    data: 'sanitized-runtime',
+    review: 'differences',
+    note: '数据样本不同',
+  });
+  const base = 'c0bd3b56ebe8ea44e8d5b3c7203d765e52b8b826';
+  const fromDigest = `sha256:${'b'.repeat(64)}`;
+  const toDigest = `sha256:${'d'.repeat(64)}`;
+  const pixelReport = Buffer.from('{"files":48,"exact":48}\n');
+  const pixelEvidence = {
+    ref: 'docs/verification/2026-10-27-ui-revamp-pr-b-pixels.json',
+    sha256: `sha256:${createHash('sha256').update(pixelReport).digest('hex')}`,
+  };
+  current.source.digest = fromDigest;
+  current.source.valuePreservation = [
+    {
+      kind: 'theme-token-migration',
+      base,
+      fromDigest,
+      toDigest,
+      map: 'docs/designs/2026-10-27-ui-revamp-v1/pr-b-literal-token-map.md',
+      pixelEvidence,
+      sunset: 'PR C Task 0 replaces the digest and removes this provenance',
+    },
+  ];
+  const themeMigration = {
+    eligible: true,
+    base,
+    mappingPath: current.source.valuePreservation[0].map,
+    migratedColorCount: 53,
+    directCount: 49,
+    fallbackCount: 4,
+    fontCount: 1,
+  };
+  const readEvidence = (path) => (path === pixelEvidence.ref ? pixelReport : png());
+  return {
+    current,
+    base,
+    fromDigest,
+    toDigest,
+    pixelReport,
+    pixelEvidence,
+    themeMigration,
+    readEvidence,
+  };
+}
+
+test('v2 单条主题保值谱系在 base diff 与像素证据均自证时通过 strict', () => {
+  const fixture = preservationFixture();
+  const state = {
+    ...baseState,
+    manifest: fixture.current,
+    baselineUiDigest: fixture.fromDigest,
+    preservationBaseDigest: fixture.fromDigest,
+    currentUiDigest: fixture.toDigest,
+    currentPrototypeDigest: fixture.current.prototype.digest,
+    themeMigration: fixture.themeMigration,
+    readEvidence: fixture.readEvidence,
+    uiCommitShas: ['theme-migration'],
+    changedFiles: ['miniprogram/app.wxss'],
+    strict: true,
+  };
+  assert.equal(validateValuePreservationProvenance(state).eligible, true);
+  const result = assessUiSyncState(state);
+  assert.equal(result.ok, true);
+  assert.equal(result.valuePreservation.kind, 'theme-token-migration');
+});
+
+test('v2 保值谱系拒绝 digest、map、像素证据与分类器篡改', () => {
+  const fixture = preservationFixture();
+  const baseStateWithPreservation = {
+    manifest: fixture.current,
+    currentUiDigest: fixture.toDigest,
+    currentPrototypeDigest: fixture.current.prototype.digest,
+    preservationBaseDigest: fixture.fromDigest,
+    themeMigration: fixture.themeMigration,
+    readEvidence: fixture.readEvidence,
+  };
+  const mutations = [
+    (state) => {
+      state.manifest.source.valuePreservation[0].fromDigest = `sha256:${'e'.repeat(64)}`;
+    },
+    (state) => {
+      state.manifest.source.valuePreservation[0].toDigest = `sha256:${'e'.repeat(64)}`;
+    },
+    (state) => {
+      state.manifest.source.valuePreservation[0].map = 'docs/designs/tampered.md';
+    },
+    (state) => {
+      state.manifest.source.valuePreservation[0].pixelEvidence.sha256 = `sha256:${'e'.repeat(64)}`;
+    },
+    (state) => {
+      state.themeMigration.eligible = false;
+    },
+    (state) => {
+      state.themeMigration.migratedColorCount = 52;
+    },
+  ];
+  for (const mutate of mutations) {
+    const state = {
+      ...baseStateWithPreservation,
+      manifest: structuredClone(baseStateWithPreservation.manifest),
+      themeMigration: structuredClone(baseStateWithPreservation.themeMigration),
+      readEvidence: fixture.readEvidence,
+    };
+    mutate(state);
+    assert.throws(() => validateValuePreservationProvenance(state), /保值谱系/);
+  }
+});
+
+test('v2 保值谱系单次自动失效且 prototype 漂移仍 fail-closed', () => {
+  const fixture = preservationFixture();
+  const valid = {
+    ...baseState,
+    manifest: fixture.current,
+    currentUiDigest: fixture.toDigest,
+    currentPrototypeDigest: fixture.current.prototype.digest,
+    preservationBaseDigest: fixture.fromDigest,
+    themeMigration: fixture.themeMigration,
+    readEvidence: fixture.readEvidence,
+    uiCommitShas: [],
+    changedFiles: [],
+    strict: true,
+  };
+
+  assert.throws(
+    () =>
+      assessUiSyncState({
+        ...valid,
+        currentUiDigest: `sha256:${'e'.repeat(64)}`,
+      }),
+    /保值谱系/,
+  );
+
+  const twoEntries = structuredClone(fixture.current);
+  twoEntries.source.valuePreservation.push(structuredClone(twoEntries.source.valuePreservation[0]));
+  assert.throws(() => assessUiSyncState({ ...valid, manifest: twoEntries }), /保值谱系/);
+
+  assert.throws(
+    () =>
+      assessUiSyncState({
+        ...valid,
+        currentUiDigest: fixture.fromDigest,
+      }),
+    /保值谱系/,
+  );
+
+  assert.throws(
+    () =>
+      assessUiSyncState({
+        ...valid,
+        currentPrototypeDigest: `sha256:${'e'.repeat(64)}`,
+      }),
+    /Pages 原型摘要不匹配/,
+  );
 });
 
 function gitFixture(t, { binary = false } = {}) {
