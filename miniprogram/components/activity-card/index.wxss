@@ -55,7 +55,7 @@
   overflow: hidden;
   margin-top: 12rpx;
   color: var(--color-on-media);
-  font-family: 'Songti SC', STSong, serif;
+  font-family: var(--font-family-editorial);
   font-size: 48rpx;
   line-height: 64rpx;
   font-weight: 600;

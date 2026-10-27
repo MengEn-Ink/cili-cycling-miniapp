@@ -288,7 +288,7 @@ page {
   padding: 4rpx 12rpx;
   border: 0;
   border-radius: var(--radius-xs);
-  background: rgba(12, 10, 7, 0.78);
+  background: var(--surface-media-index);
   color: var(--color-on-media);
   font-size: 22rpx;
   line-height: 36rpx;
@@ -316,14 +316,14 @@ page {
   padding: 8rpx;
   border: 0;
   border-radius: 0 !important;
-  background: rgba(12, 10, 7, 0.82) !important;
+  background: var(--surface-media-action) !important;
   color: var(--color-on-media) !important;
   font-size: 24rpx;
   line-height: 36rpx;
   text-decoration: none;
 }
 .image-action--danger {
-  background: rgba(165, 42, 28, 0.92) !important;
+  background: var(--surface-media-danger) !important;
 }
 .upload-tile,
 .upload-tile--wide {

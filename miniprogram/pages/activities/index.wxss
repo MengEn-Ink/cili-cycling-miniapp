@@ -307,9 +307,9 @@
   left: 0;
   background: linear-gradient(
     to bottom,
-    rgba(12, 10, 7, 0) 0%,
-    rgba(12, 10, 7, 0) 48%,
-    rgba(12, 10, 7, 0.68) 100%
+    var(--scrim-activity-cover-clear) 0%,
+    var(--scrim-activity-cover-clear) 48%,
+    var(--scrim-activity-cover-strong) 100%
   );
   pointer-events: none;
 }
@@ -331,7 +331,7 @@
   letter-spacing: 1rpx;
 }
 .tag.dark {
-  background: rgba(12, 10, 7, 0.72);
+  background: var(--surface-media-tag);
   color: var(--color-on-media);
 }
 .caption {

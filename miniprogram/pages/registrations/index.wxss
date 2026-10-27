@@ -211,7 +211,7 @@
   justify-content: center;
   gap: 6rpx;
   background: var(--color-status-warning);
-  color: #fff;
+  color: var(--color-on-action);
   font-size: 22rpx;
   letter-spacing: 2rpx;
 }
@@ -259,7 +259,11 @@
   right: 0;
   bottom: 0;
   height: 50%;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.35) 100%);
+  background: linear-gradient(
+    180deg,
+    var(--scrim-registration-cover-clear) 0%,
+    var(--scrim-registration-cover-strong) 100%
+  );
   pointer-events: none;
 }
 .photo.ticketphoto generated-activity-cover,
