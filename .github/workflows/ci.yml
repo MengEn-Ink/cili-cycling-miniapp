@@ -111,7 +111,7 @@ jobs:
           retention-days: 14
       - name: Upload Harness report
         if: always() && steps.evidence.outputs.reuse != 'true'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: harness-report-${{ github.event.pull_request.number }}
           path: artifacts/harness/harness-report.json
