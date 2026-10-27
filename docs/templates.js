@@ -865,9 +865,9 @@
           <p class="release-title">${title}</p>
           <p class="release-summary">${summary}</p>
           <ul class="release-features">
-            <li><span class="feature-arrow" aria-hidden="true">→</span><span>资料更新和账号切换后不再短暂显示旧名片</span></li>
-            <li><span class="feature-arrow" aria-hidden="true">→</span><span>失效前启动的离线请求不会恢复已清理的数据</span></li>
-            <li><span class="feature-arrow" aria-hidden="true">→</span><span>迟到保存的头像与背景文件会自动回收</span></li>
+            <li><span class="feature-arrow" aria-hidden="true">→</span><span>品牌标识更新为更简洁醒目的 CILI 粗体字标</span></li>
+            <li><span class="feature-arrow" aria-hidden="true">→</span><span>黑底白字与奶白底墨字保持统一识别</span></li>
+            <li><span class="feature-arrow" aria-hidden="true">→</span><span>头像、分享图和加载动画同步升级</span></li>
           </ul>
         </div>
       </section>
