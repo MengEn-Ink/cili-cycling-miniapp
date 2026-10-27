@@ -1,27 +1,13 @@
 {
   "schemaVersion": 2,
-  "syncedThrough": "a1b335c5d2df0709fc9beb7ba35f75d51a8d2130",
-  "syncedAt": "2026-10-26T09:57:03.781Z",
+  "syncedThrough": "707950eb42c21dea4f8d70bd3bc845535aa40fe4",
+  "syncedAt": "2026-10-27T14:08:16.969Z",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:f67ae16f6629d8701016a22cd4beae1ecb190ba3d5eebfa74065a90b2b84aae8",
-    "valuePreservation": [
-      {
-        "kind": "theme-token-migration",
-        "base": "c0bd3b56ebe8ea44e8d5b3c7203d765e52b8b826",
-        "fromDigest": "sha256:f67ae16f6629d8701016a22cd4beae1ecb190ba3d5eebfa74065a90b2b84aae8",
-        "toDigest": "sha256:f34403aaa3235d36799e95476d38afaca8856ae770ead916e69a9191c2ea650a",
-        "map": "docs/designs/2026-10-27-ui-revamp-v1/pr-b-literal-token-map.md",
-        "pixelEvidence": {
-          "ref": "docs/verification/2026-10-27-ui-revamp-pr-b-pixels.json",
-          "sha256": "sha256:f64c916ad176d9dbb2df6f38f8179de2a9d4f63d7238ffc853cefff993f249ab"
-        },
-        "sunset": "PR C Task 0 replaces source.digest with a freshly calibrated digest and removes this provenance"
-      }
-    ]
+    "digest": "sha256:f34403aaa3235d36799e95476d38afaca8856ae770ead916e69a9191c2ea650a"
   },
   "prototype": {
     "digest": "sha256:e5f0c10871963e1d7eada3fa9dfb189aa14c5c36f59ee233995510ebbe7136ca"
