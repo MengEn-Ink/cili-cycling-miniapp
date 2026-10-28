@@ -58,32 +58,32 @@
 }
 .profile-label {
   position: absolute;
-  top: 48rpx;
-  left: 48rpx;
-  padding: 12rpx 20rpx;
+  top: 28rpx;
+  left: 32rpx;
+  padding: 6rpx 12rpx;
   border: 2rpx solid var(--color-border-strong);
-  border-radius: var(--radius-xs);
+  border-radius: 6rpx;
   background: var(--color-media-card-bg);
   color: var(--color-on-media);
   font-family: var(--font-mono);
-  font-size: 22rpx;
+  font-size: 18rpx;
   letter-spacing: 0;
 }
 .profile-identity {
   position: absolute;
-  left: 48rpx;
-  right: 48rpx;
-  bottom: 56rpx;
+  left: 32rpx;
+  right: 32rpx;
+  bottom: 28rpx;
   display: flex;
   align-items: flex-end;
-  gap: 32rpx;
+  gap: 18rpx;
   color: var(--color-on-media);
 }
 .avatar-trigger {
   flex: none;
   display: inline-flex;
-  width: 152rpx;
-  height: 152rpx;
+  width: 96rpx;
+  height: 96rpx;
   padding: 0;
   border: 0;
   border-radius: 50%;
@@ -101,8 +101,8 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 8rpx;
-  padding-bottom: 8rpx;
+  gap: 2rpx;
+  padding-bottom: 0;
 }
 .profile-identity-copy .eyebrow {
   display: inline-flex;
@@ -110,7 +110,7 @@
   gap: 12rpx;
   color: var(--color-profile-eyebrow);
   font-family: var(--font-mono);
-  font-size: 22rpx;
+  font-size: 18rpx;
   letter-spacing: 2rpx;
   text-transform: uppercase;
   white-space: nowrap;
@@ -124,18 +124,18 @@
 .profile-name {
   max-width: 100%;
   overflow: hidden;
-  font-family: var(--font-family-editorial);
-  font-size: 72rpx;
-  line-height: 80rpx;
-  font-weight: 600;
-  letter-spacing: -2rpx;
+  font-family: var(--font-family-body);
+  font-size: 34rpx;
+  line-height: 44rpx;
+  font-weight: 900;
+  letter-spacing: 0;
   color: var(--color-on-media);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .profile-gender {
-  font-size: 28rpx;
-  line-height: 40rpx;
+  font-size: 21rpx;
+  line-height: 30rpx;
   color: var(--color-profile-meta);
 }
 .refresh-note {
@@ -154,21 +154,21 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: 24rpx;
-  padding: 32rpx var(--page-gutter) 0;
+  gap: 12rpx;
+  padding: 20rpx var(--page-gutter) 0;
 }
 .profile-status {
   display: inline-flex;
   align-items: center;
   gap: 16rpx;
-  min-height: 56rpx;
-  margin-bottom: 20rpx;
+  min-height: 44rpx;
+  margin-bottom: 0;
   padding: 0;
   border: 0;
   border-radius: 0;
   background: transparent;
   color: var(--color-muted);
-  font-size: 24rpx;
+  font-size: 21rpx;
   line-height: 36rpx;
   align-self: flex-start;
   max-width: 100%;
@@ -216,17 +216,17 @@
 .profile-progress {
   display: flex;
   flex-direction: column;
-  gap: 16rpx;
-  padding: 24rpx;
+  gap: 10rpx;
+  padding: 16rpx 18rpx;
   border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: 20rpx;
+  border-radius: 10rpx;
   background: var(--color-surface);
 }
 .profile-progress-head {
   display: flex;
   justify-content: space-between;
   color: var(--color-text);
-  font-size: 28rpx;
+  font-size: 25rpx;
   line-height: 40rpx;
   font-weight: 800;
 }
@@ -247,13 +247,13 @@
 }
 .profile-progress-action {
   margin: 4rpx 0 0;
-  padding: 12rpx 24rpx;
-  min-height: 72rpx;
+  padding: 0 18rpx;
+  min-height: 64rpx;
   border: 2rpx solid var(--color-text);
-  border-radius: 999rpx;
+  border-radius: 8rpx;
   background: var(--color-text);
   color: var(--color-on-action);
-  font-size: 26rpx;
+  font-size: 23rpx;
   line-height: 36rpx;
   font-weight: 800;
   align-self: flex-start;
@@ -268,7 +268,7 @@
 }
 .section-admin {
   gap: 0;
-  margin-top: 40rpx;
+  margin-top: 20rpx;
 }
 .chapterhead {
   display: flex;
@@ -279,9 +279,9 @@
 .chapterhead-title {
   flex: none;
   color: var(--color-text);
-  font-family: var(--font-family-editorial);
-  font-size: 36rpx;
-  line-height: 48rpx;
+  font-family: var(--font-family-body);
+  font-size: 30rpx;
+  line-height: 40rpx;
   font-weight: 900;
   letter-spacing: -0.5rpx;
 }
@@ -298,11 +298,11 @@
 .row.rowlink.rowbutton {
   display: flex;
   align-items: center;
-  gap: 24rpx;
+  gap: 16rpx;
   width: 100%;
-  min-height: 104rpx;
+  min-height: 88rpx;
   margin: 0;
-  padding: 20rpx 0;
+  padding: 14rpx 0;
   border: 0;
   border-bottom: 2rpx solid var(--color-border);
   border-radius: 0;
@@ -327,14 +327,14 @@
   flex: 1;
   min-width: 0;
   align-items: center;
-  gap: 24rpx;
+  gap: 16rpx;
 }
 .rowicon {
   flex: none;
   position: relative;
   display: inline-block;
-  width: 40rpx;
-  height: 40rpx;
+  width: 36rpx;
+  height: 36rpx;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -366,16 +366,16 @@
   min-width: 0;
 }
 .rowtext-title {
-  font-size: 30rpx;
-  line-height: 42rpx;
+  font-size: 26rpx;
+  line-height: 36rpx;
   font-weight: 900;
   color: var(--color-text);
 }
 .rowtext-sub {
   margin-top: 4rpx;
   color: var(--color-muted);
-  font-size: 24rpx;
-  line-height: 34rpx;
+  font-size: 21rpx;
+  line-height: 30rpx;
 }
 .chev {
   flex: none;
@@ -389,13 +389,13 @@
   display: flex;
   align-items: flex-start;
   gap: 16rpx;
-  margin-top: 16rpx;
-  padding: 16rpx 0;
+  margin-top: 8rpx;
+  padding: 12rpx 0;
   border: 0;
   border-radius: 0;
   background: transparent;
   color: var(--color-text);
-  font-size: 28rpx;
+  font-size: 22rpx;
   line-height: 36rpx;
 }
 .notice-dot {
@@ -452,7 +452,7 @@
   color: var(--color-text);
 }
 .profile-footer {
-  margin-top: 48rpx;
+  margin-top: 32rpx;
   color: var(--color-muted);
   font-size: 22rpx;
   line-height: 32rpx;
@@ -490,10 +490,10 @@
   display: block;
   width: 100%;
   min-height: 88rpx;
-  margin: 0 0 20rpx;
-  padding: 24rpx 28rpx;
+  margin: 0;
+  padding: 16rpx 18rpx;
   border: 1rpx solid var(--color-border);
-  border-radius: var(--radius-card);
+  border-radius: 10rpx;
   background: var(--color-surface);
   color: var(--color-text);
   text-align: left;
@@ -521,7 +521,7 @@
   white-space: nowrap;
 }
 .profile-permission-title {
-  font-size: var(--font-size-body);
+  font-size: 25rpx;
   font-weight: var(--font-weight-strong);
   line-height: var(--line-height-body);
 }
@@ -548,16 +548,17 @@
   padding-top: 16rpx;
   border-top: 1rpx solid var(--color-border);
   color: var(--color-muted);
-  font-size: var(--font-size-label);
+  font-size: 21rpx;
   line-height: var(--line-height-label);
 }
 .profile-permission-action {
   min-height: 56rpx;
   margin-top: 8rpx;
   color: var(--color-action);
-  font-size: var(--font-size-label);
+  font-size: 21rpx;
   line-height: 56rpx;
 }
+
 .rowtext-title,
 .rowtext-sub,
 .profile-name,

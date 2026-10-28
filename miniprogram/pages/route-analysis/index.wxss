@@ -661,3 +661,135 @@
     line-height: 52rpx;
   }
 }
+
+/* Scheme B v6: dense analysis notebook ---------------------------------- */
+.route-analysis-page .pageheading {
+  padding: 24rpx 0 18rpx;
+}
+.route-analysis-page .pageheading .eyebrow {
+  font-size: 20rpx;
+}
+.route-analysis-page .pageheading-title {
+  margin-top: 10rpx;
+  font-size: 52rpx;
+  line-height: 60rpx;
+  letter-spacing: -1rpx;
+}
+.route-analysis-page .pageheading-sub {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  line-height: 34rpx;
+}
+.route-analysis-page .pageheading-meta {
+  margin-top: 4rpx;
+  color: var(--color-muted);
+  font-family: var(--font-family-mono);
+  font-size: 20rpx;
+}
+.route-analysis-page .ink {
+  padding: 18rpx;
+  border-radius: 12rpx;
+}
+.route-analysis-page .metrics {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8rpx;
+}
+.route-analysis-page .metrics .em {
+  gap: 2rpx;
+  font-family: var(--font-family-body);
+  font-size: 30rpx;
+  line-height: 40rpx;
+  letter-spacing: 0;
+}
+.route-analysis-page .metrics .em .unit,
+.route-analysis-page .metrics text {
+  font-size: 18rpx;
+  line-height: 28rpx;
+}
+.route-analysis-page .conclusion-panel {
+  margin-top: 16rpx;
+  padding: 20rpx;
+  border-radius: 12rpx;
+}
+.route-analysis-page .conclusion-copy {
+  margin-top: 8rpx;
+  font-family: var(--font-family-body);
+  font-size: 28rpx;
+  line-height: 40rpx;
+}
+.route-analysis-page .conclusion-copy--secondary {
+  font-size: 24rpx;
+  line-height: 34rpx;
+}
+.route-analysis-page .strategy-tags {
+  margin-top: 12rpx;
+}
+.route-analysis-page .strategy-tags text {
+  padding: 4rpx 10rpx;
+  font-size: 18rpx;
+}
+.route-analysis-page .map.large {
+  gap: 10rpx;
+  margin-top: 16rpx;
+  padding: 16rpx;
+  border-radius: 12rpx;
+}
+.route-analysis-page .map-head {
+  flex-wrap: wrap;
+}
+.route-analysis-page .map-head .chapterhead-title {
+  font-family: var(--font-family-body);
+  font-size: 28rpx;
+  line-height: 38rpx;
+}
+.route-analysis-page .map-direction {
+  font-size: 21rpx;
+  line-height: 30rpx;
+}
+.route-analysis-page .map-reset {
+  min-height: 56rpx;
+  padding: 0 14rpx;
+}
+.route-analysis-page .route-map {
+  height: 440rpx;
+  border-radius: 8rpx;
+}
+.route-analysis-page .map-detail,
+.route-analysis-page .map-detail--start {
+  padding: 14rpx;
+  border-radius: 8rpx;
+}
+.route-analysis-page .content {
+  gap: 32rpx;
+  margin-top: 28rpx;
+}
+.route-analysis-page .section {
+  gap: 12rpx;
+}
+.route-analysis-page .chapterhead .chapterhead-title {
+  font-family: var(--font-family-body);
+  font-size: 30rpx;
+  line-height: 40rpx;
+}
+.route-analysis-page .elevation,
+.route-analysis-page .paper {
+  padding: 16rpx;
+  border-radius: 12rpx;
+}
+.route-analysis-page .elevation-chart {
+  height: 260rpx;
+}
+.route-analysis-page .anchor-item,
+.route-analysis-page .segment-item,
+.route-analysis-page .point {
+  min-height: 88rpx;
+  border-radius: 10rpx;
+  box-sizing: border-box;
+}
+.route-analysis-page .segment-item,
+.route-analysis-page .point {
+  padding: 16rpx;
+}
+.route-analysis-page .actionbar .btn {
+  border-radius: 10rpx;
+}

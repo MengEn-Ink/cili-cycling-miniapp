@@ -528,49 +528,233 @@
   }
 }
 
-/* UI Revamp V1 · compact content-first home. */
-.activities-page > .pageheading {
-  padding-bottom: 16rpx;
+/* 方案 B v6：高密度影像志列表。 */
+.activities-page {
+  padding-right: var(--page-gutter);
+  padding-left: var(--page-gutter);
+  background: var(--color-bg);
 }
 .activities-page > .pageheading .pageheading-title {
-  margin-top: 12rpx;
-  font-size: 56rpx;
-  line-height: 64rpx;
-  font-weight: 600;
+  max-width: 480rpx;
 }
-.segment {
-  position: relative;
-  top: auto;
-  padding: 0;
+.activities-page .day-chip-shell {
+  margin: 8rpx calc(0rpx - var(--page-gutter)) 20rpx;
 }
-.segment-end {
-  width: 88rpx;
-  min-width: 88rpx;
-  height: 88rpx;
+.activities-page .day-chip-bar__inner {
+  gap: 16rpx;
+  padding: 4rpx var(--page-gutter);
 }
-.story-list {
-  gap: 32rpx;
+.activities-page .day-chip {
+  align-items: flex-start;
+  min-width: 108rpx;
+  min-height: var(--control-height);
+  padding: 12rpx 20rpx;
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-raised);
+  color: var(--color-muted);
 }
-.photo {
-  padding-top: 75%;
+.activities-page .day-chip.is-active {
+  border-color: var(--color-text);
+  background: var(--color-text);
+  color: var(--color-bg);
 }
-.story {
-  border-radius: 24rpx;
+.activities-page .day-chip__relative {
+  font-size: 22rpx;
+  line-height: 32rpx;
+  font-weight: 700;
 }
-.story-title {
-  display: -webkit-box;
-  overflow: hidden;
-  font-weight: 600;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+.activities-page .day-chip__date {
+  color: inherit;
+  font-family: var(--font-family-mono);
+  font-size: 20rpx;
+  line-height: 28rpx;
 }
-.storymeta-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 88rpx;
-  padding: 0 20rpx;
-  border: 2rpx solid var(--color-border);
+.activities-page .story-list {
+  gap: 28rpx;
+}
+.activities-page .photo {
+  height: auto;
+  min-height: 0;
+  padding-top: 62.5%;
+  border-radius: 0;
+  background: var(--color-media-card-bg);
+}
+.activities-page .photo--history {
+  padding-top: 50%;
+}
+.activities-page .photo .shade {
+  background: linear-gradient(
+    180deg,
+    var(--scrim-activity-cover-clear) 44%,
+    var(--scrim-activity-cover-strong) 100%
+  );
+}
+.activities-page .photo .corner {
+  top: 20rpx;
+  left: 20rpx;
+}
+.activities-page .photo .caption {
+  right: 28rpx;
+  bottom: 20rpx;
+  left: 28rpx;
+}
+.activities-page .photo .caption .eyebrow {
+  margin-bottom: 4rpx;
+  color: var(--color-media-muted);
+  font-size: 20rpx;
+  line-height: 28rpx;
+}
+.activities-page .story-title {
+  font-size: 36rpx;
+  line-height: 48rpx;
+  font-weight: 700;
+}
+.activities-page .story-sub {
+  margin-top: 4rpx;
+  color: var(--color-on-action-muted);
+  font-size: 22rpx;
+  line-height: 32rpx;
+}
+.activities-page .cover-count {
+  position: absolute;
+  right: 24rpx;
+  bottom: 20rpx;
+  padding: 4rpx 14rpx;
   border-radius: 999rpx;
-  background: var(--color-surface);
+  background: var(--surface-media-tag);
+  color: var(--color-on-media);
+  font-family: var(--font-family-mono);
+  font-size: 20rpx;
+  line-height: 28rpx;
+}
+.activities-page .storyfacts {
+  display: flex;
+  gap: 28rpx;
+  padding: 20rpx 28rpx 12rpx;
+  border: 0;
+}
+.activities-page .storyfacts .em {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6rpx;
+  color: var(--color-text);
+  font-family: var(--font-family-mono);
+  font-size: 26rpx;
+  line-height: 36rpx;
+  font-weight: 700;
+}
+.activities-page .storyfacts .em text {
+  color: var(--color-muted);
+  font-family: var(--font-family-body);
+  font-size: 20rpx;
+  line-height: 28rpx;
+  font-weight: 400;
+  letter-spacing: 2rpx;
+}
+.activities-page .storymeta {
+  align-items: center;
+  gap: 12rpx;
+  padding: 8rpx 28rpx 28rpx;
+  border: 0;
+  color: var(--color-muted);
+  font-size: 22rpx;
+  line-height: 32rpx;
+}
+.activities-page .storymeta-main {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+}
+.activities-page .storymeta-link {
+  display: block;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text);
+  font-weight: 700;
+}
+.activities-page .storymeta-copy {
+  overflow: hidden;
+  color: var(--color-muted);
+  font-size: 20rpx;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.activities-page .storymeta-fee {
+  color: var(--color-text);
+  font-family: var(--font-family-mono);
+  font-size: 24rpx;
+  font-weight: 700;
+}
+.activities-page .compact-list {
+  border-color: var(--color-border);
+  background: transparent;
+}
+.activities-page .compact-item {
+  grid-template-columns: 112rpx minmax(0, 1fr) auto;
+  gap: 20rpx;
+  min-height: 112rpx;
+  padding: 20rpx 4rpx;
+  border-color: var(--color-border);
+  background: transparent;
+  text-align: left;
+}
+.activities-page .compact-item__date {
+  color: var(--color-muted);
+  font-family: var(--font-family-mono);
+  font-size: 20rpx;
+  line-height: 28rpx;
+}
+.activities-page .compact-item__date text:first-child {
+  color: var(--color-text);
+  font-size: 22rpx;
+  font-weight: 700;
+}
+.activities-page .compact-item__title {
+  color: var(--color-text);
+  font-family: var(--font-family-editorial);
+  font-size: 26rpx;
+  line-height: 36rpx;
+  font-weight: 700;
+}
+.activities-page .compact-item__route,
+.activities-page .compact-item__metrics,
+.activities-page .compact-item__status {
+  color: var(--color-muted);
+  font-size: 20rpx;
+  line-height: 30rpx;
+}
+.activities-page .compact-item__status {
+  align-items: flex-end;
+  justify-content: center;
+}
+.activities-page .tag {
+  padding: 4rpx 16rpx;
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-xs);
+  font-family: var(--font-family-mono);
+  font-size: 20rpx;
+  line-height: 28rpx;
+  letter-spacing: 1rpx;
+}
+.activities-page .tag--published,
+.activities-page .tag--finished {
+  border-color: var(--color-status-success);
+  background: var(--color-status-success-soft);
+  color: var(--color-status-success);
+}
+.activities-page .tag--pending_review,
+.activities-page .tag--rejected {
+  border-color: var(--color-brand);
+  background: var(--color-brand-soft);
+  color: var(--color-brand-active);
+}
+.activities-page .tag--draft,
+.activities-page .tag--cancelled {
+  background: var(--color-raised);
+  color: var(--color-muted);
 }

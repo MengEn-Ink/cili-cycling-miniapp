@@ -923,3 +923,174 @@
   min-width: 88rpx;
   min-height: 88rpx;
 }
+
+/* 方案 B v6：详情从上浮大白卡收敛为连续影像志阅读。 */
+.detail-page {
+  padding: 0 0 calc(var(--action-bar-height) + 64rpx + env(safe-area-inset-bottom));
+  background: var(--color-bg);
+}
+.detail-page .photo.hero.detail {
+  min-height: 0;
+  padding-top: 68.75%;
+  border-radius: 0;
+}
+.detail-page .shade {
+  background: linear-gradient(
+    180deg,
+    var(--scrim-activity-detail-cover-clear) 40%,
+    var(--scrim-activity-detail-cover-strong) 100%
+  );
+}
+.detail-page .caption {
+  right: 32rpx;
+  bottom: 28rpx;
+  left: 32rpx;
+}
+.detail-page .hero-title {
+  font-size: 44rpx;
+  line-height: 56rpx;
+  font-weight: 700;
+}
+.detail-page .hero-sub {
+  margin-top: 6rpx;
+  color: var(--color-on-action-muted);
+  font-size: 22rpx;
+  line-height: 32rpx;
+}
+.detail-page [data-v6-summary] {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  padding: 28rpx 32rpx 24rpx;
+  border: 0;
+  border-bottom: var(--border-width-hairline) solid var(--color-border);
+  border-radius: 0;
+  background: var(--color-bg);
+  box-shadow: none;
+}
+.detail-page .metrics {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16rpx;
+}
+.detail-page .metrics .em {
+  overflow: visible;
+  color: var(--color-text);
+  font-size: 32rpx;
+  line-height: 42rpx;
+  text-overflow: clip;
+}
+.detail-page .metrics .unit,
+.detail-page .metrics > view > text:last-child {
+  color: var(--color-muted);
+  font-size: 20rpx;
+  line-height: 28rpx;
+}
+.detail-page .ink-row {
+  margin-top: 20rpx;
+  padding: 20rpx 0 0;
+  border-top: var(--border-width-hairline) solid var(--color-border);
+}
+.detail-page .content {
+  gap: 0;
+  padding: 0 var(--page-gutter);
+}
+.detail-page .section {
+  gap: 0;
+  padding: 20rpx 0;
+}
+.detail-page .chapterhead {
+  display: flex;
+  align-items: baseline;
+  gap: 20rpx;
+  margin: 24rpx 0 20rpx;
+  padding: 0;
+  border: 0;
+}
+.detail-page .chapterhead-title {
+  flex: none;
+  font-size: 30rpx;
+  line-height: 44rpx;
+  font-weight: 700;
+}
+.detail-page .chapterhead-rule {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  height: var(--border-width-hairline);
+  background: var(--color-border);
+}
+.detail-page .chapterhead-aside {
+  flex: none;
+  color: var(--color-muted);
+  font-family: var(--font-family-mono);
+  font-size: 20rpx;
+  line-height: 28rpx;
+  letter-spacing: 2rpx;
+}
+.detail-page .section-prose {
+  padding: 8rpx 0;
+  color: var(--color-text);
+  font-size: 24rpx;
+  line-height: 42rpx;
+}
+.detail-page .paper,
+.detail-page .notes-paper,
+.detail-page .route-paper,
+.detail-page .schedule-list {
+  padding: 24rpx 28rpx;
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+.detail-page .detailrow {
+  grid-template-columns: 140rpx minmax(0, 1fr);
+  gap: 20rpx;
+  padding: 16rpx 0;
+  border-bottom: var(--border-width-hairline) dashed var(--color-border);
+}
+.detail-page .detailrow-term,
+.detail-page .detailrow-desc {
+  font-size: 22rpx;
+  line-height: 34rpx;
+}
+.detail-page .route-actions {
+  flex-direction: row;
+  gap: 12rpx;
+}
+.detail-page .route-actions .btn {
+  flex: 1;
+  min-width: 0;
+}
+.detail-page .riderlist {
+  margin-right: calc(0rpx - var(--page-gutter));
+  margin-left: calc(0rpx - var(--page-gutter));
+  padding: 4rpx var(--page-gutter) 12rpx;
+}
+.detail-page .gear-chip,
+.detail-page .notice-chip {
+  min-height: 60rpx;
+  padding: 10rpx 18rpx;
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: 999rpx;
+  background: var(--color-raised);
+  font-size: 22rpx;
+  line-height: 34rpx;
+}
+.detail-page .decision {
+  margin: 20rpx var(--page-gutter) 0;
+  padding: 24rpx 28rpx;
+  border-radius: var(--radius-md);
+  background: var(--color-text);
+  color: var(--color-bg);
+}
+.detail-page .actionbar {
+  border-top-color: var(--color-border);
+  background: var(--color-fixed-bar);
+}
+.detail-page .actionbar .btn {
+  border-color: var(--color-text);
+  border-radius: var(--radius-md);
+  background: var(--color-text);
+  color: var(--color-bg);
+}

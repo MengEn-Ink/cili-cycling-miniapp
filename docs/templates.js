@@ -824,9 +824,9 @@
           <p class="release-title">${title}</p>
           <p class="release-summary">${summary}</p>
           <ul class="release-features">
-            <li><span class="feature-arrow" aria-hidden="true">→</span><span>修复部分样式在微信编译阶段不兼容的问题</span></li>
-            <li><span class="feature-arrow" aria-hidden="true">→</span><span>开启减少动态效果后，页面动效仍会自动降级</span></li>
-            <li><span class="feature-arrow" aria-hidden="true">→</span><span>页面布局、配色和日常操作保持不变</span></li>
+            <li><span class="feature-arrow" aria-hidden="true">→</span><span>活动、行程、个人与管理页面统一暖纸背景、砖红动作色和紧凑编辑排版</span></li>
+            <li><span class="feature-arrow" aria-hidden="true">→</span><span>活动标题、胶囊筛选、审核详情与连续章节按设计稿重新对齐</span></li>
+            <li><span class="feature-arrow" aria-hidden="true">→</span><span>保留 44px 触控范围、真实数据、隐私规则与现有业务操作</span></li>
           </ul>
         </div>
       </section>

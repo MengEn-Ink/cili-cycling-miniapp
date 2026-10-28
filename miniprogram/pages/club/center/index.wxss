@@ -463,3 +463,98 @@
     line-height: 48rpx;
   }
 }
+
+/* Scheme B v6: compact club masthead and activity ledger ---------------- */
+.club-center-page .photo.hero.club {
+  aspect-ratio: 16 / 10;
+}
+.club-center-page .club-cover-location {
+  top: 28rpx;
+  right: 32rpx;
+  padding: 6rpx 12rpx;
+  border-radius: 6rpx;
+  font-size: 18rpx;
+}
+.club-center-page .caption {
+  left: 32rpx;
+  right: 32rpx;
+  bottom: 28rpx;
+}
+.club-center-page .club-identity {
+  gap: 16rpx;
+  padding: 14rpx 16rpx;
+  border-radius: 10rpx;
+}
+.club-center-page .club-avatar {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 12rpx;
+}
+.club-center-page .club-name {
+  font-family: var(--font-family-body);
+  font-size: 34rpx;
+  line-height: 44rpx;
+  letter-spacing: 0;
+}
+.club-center-page .club-intro {
+  font-size: 21rpx;
+  line-height: 30rpx;
+}
+.club-center-page .content {
+  gap: 28rpx;
+  padding-top: 24rpx;
+}
+.club-center-page .tag {
+  padding: 6rpx 12rpx;
+  font-size: 21rpx;
+}
+.club-center-page .section {
+  gap: 12rpx;
+}
+.club-center-page .chapterhead-title {
+  font-family: var(--font-family-body);
+  font-size: 30rpx;
+  line-height: 40rpx;
+}
+.club-center-page .club-intro-body {
+  font-size: 25rpx;
+  line-height: 38rpx;
+}
+.club-center-page .detailrows {
+  border-radius: 10rpx;
+}
+.club-center-page .detailrow {
+  padding: 14rpx 16rpx;
+}
+.club-center-page .activity-list {
+  gap: 12rpx;
+}
+.club-center-page .story.activity-row {
+  gap: 10rpx;
+  padding: 16rpx 18rpx;
+  border-radius: 10rpx;
+}
+.club-center-page .story-date {
+  font-size: 20rpx;
+}
+.club-center-page .story-title {
+  font-family: var(--font-family-body);
+  font-size: 30rpx;
+  line-height: 40rpx;
+  letter-spacing: 0;
+}
+.club-center-page .storyfacts {
+  padding-top: 12rpx;
+}
+.club-center-page .storyfacts-value {
+  font-size: 24rpx;
+}
+.club-center-page .storymeta {
+  padding-top: 8rpx;
+  font-size: 21rpx;
+  line-height: 30rpx;
+}
+.club-center-page .btn {
+  border-radius: 10rpx;
+  font-size: 26rpx;
+}

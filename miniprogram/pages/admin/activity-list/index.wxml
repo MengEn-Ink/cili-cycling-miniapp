@@ -27,8 +27,8 @@
     <view class="pageheading">
       <view class="eyebrow">此里 · 组织一场出发</view>
       <view class="pageheading-title editorial">
-        <text class="pageheading-line">山路上的事，</text>
-        <text class="pageheading-line">安排得明明白白。</text>
+        <text class="pageheading-line">创建、编辑并</text>
+        <text class="pageheading-line">上下架你的活动。</text>
       </view>
       <view class="pageheading-sub">{{isAdmin ? '创建活动、维护信息、处理报名。' : '创建、编辑并上下架你的活动。'}}</view>
     </view>

@@ -11,8 +11,7 @@
   <view class="pageheading">
     <view class="eyebrow">此里 · 骑行日历</view>
     <view class="pageheading-title editorial">
-      <text class="pageheading-line">每次出发，</text>
-      <text class="pageheading-line">都有一张记忆。</text>
+      <text class="pageheading-line">我的行程</text>
     </view>
     <view class="pageheading-sub">在这里确认报名状态与集合安排。</view>
     <view class="pageheading-meta" wx:if="{{loading && !items.length}}" role="status">同步中</view>
@@ -50,10 +49,6 @@
               <text>{{deletingId === item.id ? '删除中' : '删除记录'}}</text>
             </view>
             <view class="ticket status-{{item.status}}" style="transform: translateX({{item.swipeX}}px)" data-id="{{item.id}}" bindtap="open" bindtouchstart="onRowTouchStart" bindtouchmove="onRowTouchMove" bindtouchend="onRowTouchEnd" bindtouchcancel="onRowTouchCancel" hover-class="ticket--pressed" role="button" aria-label="{{item.activity.title}}，票据状态{{item.displayStatusText}}，{{item.destinationLabel}}">
-              <view class="photo ticketphoto">
-                <generated-activity-cover item="{{item.activity}}" variant="card" />
-                <view class="shade" aria-hidden="true"></view>
-              </view>
               <view class="ticketbody">
                 <view class="ticket-row-top">
                   <text class="tag ticket-tag status-{{item.status}}">{{item.displayStatusText}}</text>

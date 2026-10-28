@@ -74,9 +74,9 @@ describe('沸点首批六页尺寸契约', () => {
     expect(template).toContain('aria-label="打开设置"');
     expect(template).not.toContain('<text>设置</text>');
     expect(styles).toMatch(/\.profile-hero\s*\{[^}]*aspect-ratio:\s*16 \/ 9/s);
-    // 紧凑设计：三条 52px 分隔行替代旧 .menu-list / .menu-card
+    // v6 紧凑设计：三条 44px 分隔行替代旧 .menu-list / .menu-card，仍满足触控基线。
     const row = effectiveBlock(styles, '.row.rowlink.rowbutton');
-    expect(declaration(row, 'min-height')).toBe('104rpx');
+    expect(declaration(row, 'min-height')).toBe('88rpx');
     expect(declaration(row, 'background')).toBe('transparent');
     expect(declaration(row, 'border-bottom')).toContain('var(--color-border)');
     expect(styles).not.toMatch(/\.menu-list\s*\{/);

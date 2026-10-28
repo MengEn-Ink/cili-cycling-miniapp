@@ -417,3 +417,79 @@
     line-height: 42rpx;
   }
 }
+
+/* Scheme B v6: compact approval queue ----------------------------------- */
+.review-page .pageheading {
+  padding-top: 24rpx;
+  padding-bottom: 16rpx;
+}
+.review-page .pageheading-title {
+  margin-top: 10rpx;
+  font-size: 52rpx;
+  line-height: 60rpx;
+  letter-spacing: -1rpx;
+}
+.review-page .pageheading-sub {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  line-height: 34rpx;
+}
+.review-page .content.tight {
+  gap: 22rpx;
+}
+.review-page .info-bar {
+  padding: 14rpx 16rpx;
+  border-radius: 10rpx;
+}
+.review-page .filters {
+  gap: 8rpx;
+  padding: 6rpx;
+  border-radius: 999rpx;
+  background: var(--color-raised);
+}
+.review-page .filter-tab {
+  min-height: 64rpx;
+  padding: 0 10rpx;
+  border: 0;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+}
+.review-page .reviewitem-list {
+  gap: 12rpx;
+}
+.review-page .reviewitem {
+  gap: 10rpx;
+  padding: 16rpx 18rpx;
+  border-radius: 10rpx;
+}
+.review-page .reviewitem-avatar {
+  width: 68rpx;
+  height: 68rpx;
+  font-size: 26rpx;
+}
+.review-page .reviewitem-title {
+  font-size: 27rpx;
+}
+.review-page .tag {
+  padding: 3rpx 10rpx;
+  border-radius: 6rpx;
+  font-size: 20rpx;
+}
+.review-page .reviewitem-activity {
+  font-family: var(--font-family-body);
+  font-size: 27rpx;
+  line-height: 38rpx;
+}
+.review-page .meta {
+  font-size: 21rpx;
+  line-height: 30rpx;
+}
+.review-page .paper,
+.review-page .notice {
+  padding: 16rpx 18rpx;
+  border-radius: 10rpx;
+}
+.review-page .btn {
+  border-radius: 8rpx;
+  font-size: 26rpx;
+}

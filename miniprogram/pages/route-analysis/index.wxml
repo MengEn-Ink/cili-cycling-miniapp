@@ -10,7 +10,8 @@
       <view class="pageheading-title editorial">
         <text class="pageheading-line">{{routeTitle || '一路向山。'}}</text>
       </view>
-      <view class="pageheading-sub">{{activityTitle}}</view>
+      <view class="pageheading-sub">先读懂这段爬升，再决定如何出发。</view>
+      <view class="pageheading-meta">{{activityTitle}}</view>
       <view class="pageheading-sub pageheading-sub--secondary" wx:if="{{routeSummary}}">{{routeSummary}}</view>
     </view>
 
