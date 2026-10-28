@@ -176,8 +176,9 @@
         },
         {
           id: 'prototype-entry',
-          title: '14 个交互原型',
-          summary: '与 app.json 路由一一对应，可键盘导航、带状态的 hash 深链；本中心保留此入口不改动。',
+          title: '17 个交互原型',
+          summary:
+            '与 app.json 的 17 条正式路由一一对应，采用内容先行的暖纸编辑式主题，可键盘导航并支持 hash 深链；活动详情吸收全幅影像，管理与表单保持高密度结构。',
           maturity: 'baseline',
           sources: [
             { label: '原型首页', href: '#prototype' },
@@ -714,7 +715,7 @@
     'module-map': () => `
       <div class="dc-grid-2">
         <article class="dc-sub"><h4>miniprogram/</h4>${ul([
-          'pages/ — 14 个 app.json 路由',
+          'pages/ — 17 个 app.json 路由',
           'components/ — 复用组件（活动卡、报名表单段、骑手卡）',
           'repositories/ — 封装对云函数的调用',
           'services/ — 领域服务（身份、报名、路线）',
@@ -885,7 +886,7 @@
           <p class="lead">把 README、需求、设计、数据契约、工作流、发布记录、运维约定收口到一个可维护目录，并明确每份文档是正式基线、事实索引还是模板待补。</p>
           <div class="dc-hero-actions">
             <a class="btn" href="#overview-ia">从 01 项目总览开始</a>
-            <a class="btn-secondary" href="#prototype">查看 14 个交互原型</a>
+            <a class="btn-secondary" href="#prototype">查看 17 个交互原型</a>
           </div>
         </div>
         <aside class="dc-hero-right">
