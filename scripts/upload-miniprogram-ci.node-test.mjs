@@ -12,6 +12,7 @@ import {
   validateDescription,
   validateVersion,
 } from './upload-miniprogram-ci.mjs';
+import { classifyUploadError, sanitizeErrorDetail } from './miniprogram-upload-supervisor.mjs';
 import * as uploadModule from './upload-miniprogram-ci.mjs';
 
 async function fixture() {
@@ -373,6 +374,82 @@ setInterval(() => process.send({ type: 'progress', phase: 'upload', status: 'doi
   assert.equal(failed.exitCode, 7);
 });
 
+test('20003 摘要按白名单区分 access_token、IP 与编译错误', () => {
+  assert.deepEqual(
+    classifyUploadError(
+      Object.assign(new Error('request failed with code 20003'), {
+        code: 20003,
+        errMsg: 'access_token is missing, errcode: 41001',
+      }),
+    ),
+    {
+      category: 'access-token-missing',
+      summary: 'access token missing',
+      wechatErrCode: 41001,
+    },
+  );
+  assert.deepEqual(
+    classifyUploadError({
+      code: 20003,
+      cause: { errMsg: 'invalid ip 203.0.113.8, not in whitelist' },
+    }),
+    {
+      category: 'invalid-ip',
+      summary: 'request IP rejected',
+      wechatErrCode: 20003,
+    },
+  );
+  assert.deepEqual(
+    classifyUploadError({
+      code: 20003,
+      response: { data: { errmsg: 'compile error at /workspace/private/page.wxml' } },
+    }),
+    {
+      category: 'compile-error',
+      summary: 'miniprogram compilation failed',
+      wechatErrCode: 20003,
+    },
+  );
+});
+
+test('错误摘要不保留恶意敏感串，未知错误仍输出固定有界分类', () => {
+  const secretText =
+    'token=private-value https://private.example/key 203.0.113.8 /workspace/private.key';
+  const detail = classifyUploadError({
+    code: 'NOT_A_NUMERIC_CODE',
+    message: secretText.repeat(1000),
+    errMsg: secretText,
+  });
+  assert.deepEqual(detail, {
+    category: 'unknown',
+    summary: 'unclassified SDK error',
+    wechatErrCode: null,
+  });
+  assert.doesNotMatch(JSON.stringify(detail), /private|https?:|203\.0\.113\.8|workspace|token=/);
+  assert.ok(JSON.stringify(detail).length < 128);
+});
+
+test('supervisor 边界只接受完整匹配的结构化错误白名单', () => {
+  assert.deepEqual(
+    sanitizeErrorDetail({
+      category: 'invalid-ip',
+      summary: 'request IP rejected',
+      wechatErrCode: 20003,
+      url: 'https://private.example/token=secret',
+      arbitrary: 'private path /workspace/private.key',
+    }),
+    {
+      category: 'invalid-ip',
+      summary: 'request IP rejected',
+      wechatErrCode: 20003,
+    },
+  );
+  assert.equal(
+    sanitizeErrorDetail({ category: 'invalid-ip', summary: 'token=secret', wechatErrCode: 20003 }),
+    undefined,
+  );
+});
+
 test('SDK 远端错误返回 UNKNOWN，原始 stdout 与错误正文不进入诊断', async (t) => {
   const workerPath = await workerFixture(
     t,
@@ -380,7 +457,17 @@ test('SDK 远端错误返回 UNKNOWN，原始 stdout 与错误正文不进入诊
 console.log('token=private-value');
 console.error('https://private.example/key');
 process.send({ type: 'progress', phase: 'upload', status: 'doing' });
-process.send({ type: 'failed', errorCode: 42, message: 'secret-error' });
+process.send({
+  type: 'failed',
+  errorCode: 42,
+  message: 'secret-error',
+  errorDetail: {
+    category: 'access-token-missing',
+    summary: 'access token missing',
+    wechatErrCode: 41001,
+    url: 'https://private.example/token=secret'
+  }
+});
 setInterval(() => {}, 1000);
 `,
   );
@@ -391,9 +478,15 @@ setInterval(() => {}, 1000);
   });
   assert.equal(result.outcome, 'UNKNOWN');
   assert.equal(result.errorCode, 42);
+  assert.deepEqual(result.errorDetail, {
+    category: 'access-token-missing',
+    summary: 'access token missing',
+    wechatErrCode: 41001,
+  });
   assert.equal(result.reason, 'sdk-error');
   assert.doesNotMatch(JSON.stringify({ messages, result }), /private|secret/);
   assert.equal(result.receipt, undefined);
+  assert.equal(result.sideEffectsStarted, undefined);
 });
 
 test('取消信号终止正在上传的子进程并保留 UNKNOWN', async (t) => {

@@ -82,6 +82,8 @@
 
 任何校验失败、Secret 缺失、微信接口拒绝或上传异常都会让步骤失败。工作流不吞错，也不会把失败伪装成部署成功。
 
+上传 SDK 在隔离 worker 中运行，原始 stdout/stderr 和异常正文不会进入日志或诊断文件。SDK 失败时，worker 只从 `message` / `errMsg` 等字段进行有界匹配，supervisor 再按固定白名单输出 `errorDetail`：`access-token-missing`、`invalid-ip`、`compile-error` 或 `unknown`，以及合法整数形式的微信 errcode；摘要均为仓库内固定安全短语。URL、IP、token、路径、密钥和任意原文均不持久化。该信息用于区分 `20003` 的内因，不改变已开始上传后的 `outcome=UNKNOWN`、`reason=sdk-error`，也不签发 receipt 或改写副作用语义。
+
 ## 7. 首次启用记录
 
 首次完整闭环于 2026-10-01 完成：

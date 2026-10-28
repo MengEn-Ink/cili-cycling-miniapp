@@ -3,7 +3,12 @@ import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { runUploadProcess, safeUploadProgress } from './miniprogram-upload-supervisor.mjs';
+import {
+  classifyUploadError,
+  runUploadProcess,
+  safeUploadErrorCode,
+  safeUploadProgress,
+} from './miniprogram-upload-supervisor.mjs';
 export { runUploadProcess } from './miniprogram-upload-supervisor.mjs';
 
 const uploadRequire = createRequire(
@@ -124,7 +129,14 @@ if (isEntryPoint) {
       });
       send({ type: 'completed', outcome: 'UPLOADED' }, 0);
     } catch (error) {
-      send({ type: 'failed', errorCode: Number.isSafeInteger(error?.code) ? error.code : null }, 1);
+      send(
+        {
+          type: 'failed',
+          errorCode: safeUploadErrorCode(error),
+          errorDetail: classifyUploadError(error),
+        },
+        1,
+      );
     }
   } else {
     let diagnostic;
