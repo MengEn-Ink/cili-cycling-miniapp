@@ -4,7 +4,7 @@
   - 真实业务保留：future/history 切换、day chips 日期筛选、沉浸/紧凑布局、分页 loadMore、refresh retry、无障碍 live region
   - WeChat 原生 brand-logo/系统胶囊，不渲染伪 statusbar / systemnav
 -->
-<view class="page activities-page" style="padding-top: {{navigationTopPx}}px">
+<view class="page activities-page" data-v1-layout="content" style="padding-top: {{navigationTopPx}}px">
   <view class="custom-nav-title" style="top: {{navigationTopPx - 44}}px">活动</view>
   <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{refreshing ? '正在刷新活动' : loadingMore ? '正在加载更多活动' : ''}}</view>
   <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{refreshError}}</view>
@@ -12,10 +12,8 @@
   <view class="pageheading">
     <view class="eyebrow">此里 · 一起出发</view>
     <view class="pageheading-title editorial">
-      <text class="pageheading-line">把周末，</text>
-      <text class="pageheading-line">交给山路。</text>
+      <blur-text text="把周末，交给山路。" animate-by="letters" direction="bottom" delay="45" step-duration="320" />
     </view>
-    <view class="pageheading-sub">每一次转弯，都有值得记住的风景。</view>
   </view>
 
   <view class="segment" role="tablist" aria-label="活动时间">
@@ -50,13 +48,13 @@
     </view>
   </view>
 
-  <state-view wx:else loading="{{loading}}" error="{{error}}" empty="{{!items.length}}" empty-title="{{emptyTitle}}" empty-copy="{{emptyCopy}}" retryable="{{true}}" bind:retry="load">
+  <state-view wx:else loading="{{loading}}" error="{{error}}" empty="{{!items.length}}" empty-title="{{emptyTitle}}" empty-copy="{{emptyCopy}}" data-history-empty-copy="每一次转弯，都有值得记住的风景。" retryable="{{true}}" bind:retry="load">
     <block wx:if="{{layoutMode === 'card'}}">
       <view class="story-list" id="activity-list-panel" role="tabpanel" aria-label="摄影活动列表">
         <view class="story-shell" id="activity-index-{{index}}" wx:for="{{items}}" wx:key="id">
           <view class="story" data-id="{{item.id}}" bindtap="open" hover-class="story--pressed" role="button" aria-label="查看活动：{{item.title}}">
             <view class="photo">
-              <image wx:if="{{item.coverImage}}" class="photo-image" src="{{item.coverImage}}" mode="aspectFill" lazy-load="{{true}}" aria-label="{{item.title}}活动封面"/>
+              <image wx:if="{{item.coverImage}}" class="photo-image" src="{{item.coverImage}}" mode="aspectFill" lazy-load="{{index !== 0}}" aria-label="{{item.title}}活动封面"/>
               <generated-activity-cover wx:else item="{{item}}" variant="card" />
               <view class="shade"></view>
               <view class="corner"><text class="tag dark">{{item.displayStatus}}</text></view>

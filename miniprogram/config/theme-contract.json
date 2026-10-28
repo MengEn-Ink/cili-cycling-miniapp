@@ -90,6 +90,14 @@
       "value": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
     }
   },
+  "v1ComponentTokens": [
+    "--scrim-cover-top",
+    "--scrim-cover-strong",
+    "--scrim-hero",
+    "--surface-glass",
+    "--surface-sheet",
+    "--shadow-sheet"
+  ],
   "contrastPairs": [
     {
       "name": "ink-on-paper",

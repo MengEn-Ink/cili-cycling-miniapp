@@ -1,4 +1,4 @@
-<view class="capability-page">
+<view class="capability-page" data-v1-layout="redirect">
   <state-view
     loading="{{!error}}"
     error="{{error}}"

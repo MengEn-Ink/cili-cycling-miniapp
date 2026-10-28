@@ -1,6 +1,7 @@
 Component({
   properties: {
     item: { type: Object, value: {} },
+    eager: { type: Boolean, value: false },
   },
   data: {
     coverFailed: false,

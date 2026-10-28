@@ -13,7 +13,7 @@
     group QR chooseGroupQrCode/pendingGroupQrCode/removeGroupQrCode、
     固定底部双按钮保存草稿/发布 + 发布禁用提示。
 -->
-<view class="page-shell activity-editor activity-form-page">
+<view class="page-shell activity-editor activity-form-page" data-v1-layout="admin-form">
   <view wx:if="{{loading}}" class="empty"><view class="empty-copy">正在加载活动…</view></view>
 
   <view wx:elif="{{!allowed}}" class="empty" role="alert">

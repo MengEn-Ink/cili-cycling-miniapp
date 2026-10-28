@@ -114,33 +114,12 @@
         snapshot.membershipStatus === 'left',
     );
   };
-  const activeMembershipIds = (membership) => {
-    if (!membership) return [];
-    if (Array.isArray(membership.memberships)) {
-      return membership.memberships
-        .filter((item) => item && item.status === 'active')
-        .map((item) => item.clubId);
-    }
-    return Array.isArray(membership.clubIds) ? membership.clubIds : [];
-  };
-  // 俱乐部头像组：单俱乐部收口后仅展示该唯一俱乐部头像；保留 overflow 容错以兼容历史数据。
-  const clubAvatarStack = (ids) => {
-    const list = ids.map((id) => clubById.get(id)).filter(Boolean);
-    const visible = list.slice(0, 4);
-    const overflow = Math.max(0, list.length - visible.length);
-    return `<span class="club-avatar-stack" role="img" aria-label="已加入 ${list.length} 个俱乐部">${visible
-      .map((club) => clubAvatar(club, 'sm'))
-      .join('')}${overflow ? `<span class="club-avatar club-avatar-sm club-avatar-overflow"><b>+${overflow}</b></span>` : ''}</span>`;
-  };
-
   /* ---------- 公共组件（与设计说明“公共规范”对应） ---------- */
   const brandLogo = (meta) =>
     `<div class="prototype-brand-logo"><span class="prototype-wordmark" aria-hidden="true"><span>此</span><span>里</span><i></i></span><span class="prototype-brand-meta">${meta}</span></div>`;
   const tag = (type, label) => `<span class="tag tag-${type}">${label}</span>`;
   const row = (k, v) => `<div class="row"><span class="k">${k}</span><span class="v">${v}</span></div>`;
   const rows = (list) => `<div class="rows">${list.map(([k, v]) => row(k, v)).join('')}</div>`;
-  const linkRow = (icon, title, sub, route, right = '') =>
-    `<button class="row is-link" data-route="${route}"><span class="k"><span class="menu-icon ${icon}"><i></i></span><span>${title}<small>${sub}</small></span></span><span class="v">${right}<span class="chev">›</span></span></button>`;
   // 影像志设计的三栏指标条：div > strong(含 .unit) + span，承载在 .ink（暗）或浅色卡片中。
   const metric = (value, label, extra = '') => {
     const match = String(value).match(/^(.+?)\s+(km|m|h|人|小时)$/);
@@ -156,20 +135,6 @@
   const btn = (label, attrs = '', kind = 'btn') => `<button class="${kind}" ${attrs}>${label}</button>`;
   const go = (route) => `data-route="${route}"`;
   const toast = (message) => `data-action="toast" data-message="${message}"`;
-  const steps = (current) => {
-    const stages = [
-      ['填写报名', '当前'],
-      ['组织审核', '提交后'],
-      ['获取凭证', '通过后'],
-    ];
-    return `<div class="steps" role="list" aria-label="报名流程，共三阶段">${stages
-      .map(([label, state], index) => {
-        const n = index + 1;
-        const cls = n === current ? 'is-current' : n < current ? 'is-done' : '';
-        return `<div class="step ${cls}" role="listitem" ${n === current ? 'aria-current="step"' : ''}><b>${n < current ? '✓' : n}</b><span><strong>${label}</strong><small>${state}</small></span></div>`;
-      })
-      .join('')}</div>`;
-  };
   const fixedBar = (hint, actions, neutral = false) =>
     `<div class="fixed-bar">${hint ? `<p class="bar-hint ${neutral ? 'is-neutral' : ''}">${hint}</p>` : ''}<div class="bar-actions ${actions.length === 1 ? 'single' : ''}">${actions.join('')}</div></div>`;
   const stateView = (mark, title, desc, action = '', error = false) =>
@@ -188,8 +153,6 @@
   const routePath = 'M14 118 C 48 112, 58 64, 96 70 S 140 122, 176 96 S 214 28, 252 40 S 296 86, 306 30';
   const routeSvg = (label) =>
     `<div class="route-canvas" role="img" aria-label="${label}"><svg viewBox="0 0 320 148" preserveAspectRatio="none"><path d="${routePath}" style="fill:none;stroke:var(--color-text);stroke-width:3;stroke-linecap:round"/><circle cx="14" cy="118" r="6" style="fill:var(--color-brand)"/><circle cx="306" cy="30" r="6" style="fill:var(--color-text)"/></svg><span class="tag tag-neutral cap">起点 · 终点</span></div>`;
-  const elevSvg = (label) =>
-    `<div class="route-canvas" role="img" aria-label="${label}"><svg viewBox="0 0 320 148" preserveAspectRatio="none"><path d="M0 132 L0 120 L30 112 L60 96 L84 70 L110 82 L140 40 L168 28 L196 58 L222 72 L250 46 L278 90 L300 110 L320 118 L320 132 Z" style="fill:var(--color-raised);stroke:var(--color-text);stroke-width:2"/></svg><span class="tag tag-neutral cap">${primary.elevationMinM}–${primary.elevationMaxM} m</span></div>`;
   const qr = (seed = 7) => {
     const size = 21;
     const cells = [];
@@ -213,10 +176,6 @@
     }
     return `<div class="qr" role="img" aria-label="二维码示意"><svg viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges">${cells.join('')}</svg></div>`;
   };
-  const emptyMediaInner = () =>
-    `<svg viewBox="0 0 360 168" preserveAspectRatio="none"><path d="M-10 140 C 60 120, 90 60, 150 72 S 240 150, 300 90 S 350 30, 380 40" style="fill:none;stroke:var(--color-muted);stroke-width:2"/><path d="M-10 160 C 70 140, 110 96, 170 104 S 250 160, 380 110" style="fill:none;stroke:var(--color-muted);stroke-width:1.5"/><path d="M20 128 C 80 112, 104 70, 150 78" style="fill:none;stroke:var(--color-brand);stroke-width:3;stroke-linecap:round"/></svg><span class="brand-word">CILI RIDER</span>`;
-  const emptyMedia = () => `<div class="rider-card-media is-empty">${emptyMediaInner()}</div>`;
-
   const templates = {
     'club/center': () => {
       const centerData = clubCenterPrototype || {};
@@ -865,9 +824,9 @@
           <p class="release-title">${title}</p>
           <p class="release-summary">${summary}</p>
           <ul class="release-features">
-            <li><span class="feature-arrow" aria-hidden="true">→</span><span>品牌标识更新为更简洁醒目的 CILI 粗体字标</span></li>
-            <li><span class="feature-arrow" aria-hidden="true">→</span><span>黑底白字与奶白底墨字保持统一识别</span></li>
-            <li><span class="feature-arrow" aria-hidden="true">→</span><span>头像、分享图和加载动画同步升级</span></li>
+            <li><span class="feature-arrow" aria-hidden="true">→</span><span>活动列表更快看到首张照片、标题与关键骑行数据</span></li>
+            <li><span class="feature-arrow" aria-hidden="true">→</span><span>活动详情采用全宽摄影封面与上浮摘要，路线和报名信息更易阅读</span></li>
+            <li><span class="feature-arrow" aria-hidden="true">→</span><span>表单、设置和管理页面统一单列结构与更可靠的触控范围</span></li>
           </ul>
         </div>
       </section>
@@ -942,7 +901,6 @@
       const create = is('create');
       const error = is('error');
       const uploading = is('uploading');
-      const resubmit = is('rejected-resubmit');
       const editOpen = is('edit-open');
       const modeLocked = is('mode-locked');
       const gpxMissing = is('gpx-missing');
@@ -969,7 +927,6 @@
           : stravaDisconnected
             ? { tone: 'muted', label: '未连接', note: '尚未同步 Strava 账号，粘贴链接前请先在设置中完成同步。' }
             : { tone: 'success', label: '已连接', note: '连接正常，可直接粘贴线路链接解析。' };
-      const linkInputDisabled = stravaExpired || stravaDisconnected;
       const linkValue = linkTyping
         ? 'https://www.strava.com/routes/12345'
         : linkInvalid

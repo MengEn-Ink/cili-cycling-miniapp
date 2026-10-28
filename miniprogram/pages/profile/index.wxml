@@ -1,4 +1,4 @@
-<view class="page profile-page" style="padding-top: {{navigationTopPx}}px">
+<view class="page profile-page" data-v1-layout="content" style="padding-top: {{navigationTopPx}}px">
 <view class="custom-nav-title" style="top: {{navigationTopPx - 44}}px">我的</view>
 <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{loading ? '正在同步个人资料' : (refreshing ? '正在刷新个人资料' : (!error ? '个人资料已就绪' : ''))}}</view>
 <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{error}}</view>

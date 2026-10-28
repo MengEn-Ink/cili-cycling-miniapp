@@ -5,7 +5,7 @@
     骨架/错误/空态、头像失败回退、活动提醒 sendReminders。
   - 不再使用旧的过渡 heading / filter-tabs / review-card / result-count 等 Oil UI 结构。
 -->
-<view class="page review-page">
+<view class="page review-page" data-v1-layout="admin">
   <view class="pageheading">
     <view class="eyebrow">此里 · 审核工作台</view>
     <view class="pageheading-title editorial">

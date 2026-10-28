@@ -3,7 +3,7 @@
   - 骨架：pageheading(宋体标题) → content.tight(section × 骑行票据 ticket + 空状态/刷新/骨架) → tabbar
   - 真实业务保留：状态计数 statsCounts、骨架、刷新错误、cancelled 左滑删除、open/confirmDelete、state-view loading/error/empty/retry、deletingId
 -->
-<view class="page registrations-page" style="padding-top: {{navigationTopPx}}px">
+<view class="page registrations-page" data-v1-layout="content" style="padding-top: {{navigationTopPx}}px">
   <view class="custom-nav-title" style="top: {{navigationTopPx - 44}}px">我的行程</view>
   <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{refreshing ? '正在刷新行程' : ''}}</view>
   <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{refreshError}}</view>
