@@ -362,6 +362,9 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(script).toContain('P0 真实报名旅程');
     expect(script).toContain("'delivery'");
     expect(script).toContain('deliveryCenter.extraOverviewAnchors');
+    expect(deliveryCenter).toContain('17 个交互原型');
+    expect(deliveryCenter).toContain('与 app.json 的 17 条正式路由一一对应');
+    expect(deliveryCenter).not.toContain('14 个交互原型');
     expect(deliveryCenter).toContain('路线分析数据平台与开源方案');
     expect(deliveryCenter).toContain('docs/route-analysis-data-platform-plan.md');
     expect(renderedDeliveryCenter).toContain(
