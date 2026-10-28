@@ -975,9 +975,38 @@ picker[disabled] {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  [data-v1-layout] *,
-  [data-v1-layout] *::before,
-  [data-v1-layout] *::after {
+  [data-v1-layout] view,
+  [data-v1-layout] text,
+  [data-v1-layout] button,
+  [data-v1-layout] input,
+  [data-v1-layout] textarea,
+  [data-v1-layout] image,
+  [data-v1-layout] navigator,
+  [data-v1-layout] scroll-view,
+  [data-v1-layout] swiper,
+  [data-v1-layout] swiper-item,
+  [data-v1-layout] picker,
+  [data-v1-layout] form,
+  [data-v1-layout] label,
+  [data-v1-layout] radio,
+  [data-v1-layout] checkbox,
+  [data-v1-layout] switch,
+  [data-v1-layout] slider,
+  [data-v1-layout] canvas,
+  [data-v1-layout] map,
+  [data-v1-layout] video,
+  [data-v1-layout] cover-view,
+  [data-v1-layout] cover-image,
+  [data-v1-layout] rich-text,
+  [data-v1-layout] progress,
+  [data-v1-layout] icon,
+  [data-v1-layout] .avatar,
+  [data-v1-layout] .brand-logo,
+  [data-v1-layout] .state-view,
+  [data-v1-layout] .status-pill,
+  [data-v1-layout] .generated-cover,
+  [data-v1-layout] .async-status-card,
+  [data-v1-layout] .blur-text {
     animation-duration: 1ms !important;
     transition-duration: 1ms !important;
   }
