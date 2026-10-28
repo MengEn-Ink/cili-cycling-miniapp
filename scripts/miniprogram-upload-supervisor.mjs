@@ -2,6 +2,130 @@ import { fork } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const STATUSES = new Set(['doing', 'done', 'fail', 'warn', 'info']);
+const ERROR_SUMMARIES = Object.freeze({
+  'access-token-missing': 'access token missing',
+  'invalid-ip': 'request IP rejected',
+  'compile-error': 'miniprogram compilation failed',
+  unknown: 'unclassified SDK error',
+});
+const ERROR_TEXT_LIMIT = 4096;
+const WECHAT_ERRCODE_MIN = -2147483648;
+const WECHAT_ERRCODE_MAX = 2147483647;
+
+function readErrorText(error) {
+  const values = [];
+  const append = (value) => {
+    if (typeof value === 'string' && values.join('\n').length < ERROR_TEXT_LIMIT) {
+      values.push(value.slice(0, ERROR_TEXT_LIMIT));
+    }
+  };
+  const read = (object, key) => {
+    try {
+      append(object?.[key]);
+    } catch {}
+  };
+  for (const key of ['message', 'errMsg', 'errmsg', 'errorMessage']) read(error, key);
+  for (const nestedKey of ['cause', 'response', 'data']) {
+    let nested;
+    try {
+      nested = error?.[nestedKey];
+    } catch {
+      continue;
+    }
+    if (!nested || typeof nested !== 'object') continue;
+    for (const key of ['message', 'errMsg', 'errmsg', 'errorMessage']) read(nested, key);
+    if (nestedKey === 'response') {
+      let data;
+      try {
+        data = nested.data;
+      } catch {
+        continue;
+      }
+      if (data && typeof data === 'object') {
+        for (const key of ['message', 'errMsg', 'errmsg', 'errorMessage']) read(data, key);
+      }
+    }
+  }
+  return values.join('\n').slice(0, ERROR_TEXT_LIMIT);
+}
+
+function safeWechatErrCode(value) {
+  return Number.isSafeInteger(value) && value >= WECHAT_ERRCODE_MIN && value <= WECHAT_ERRCODE_MAX
+    ? value
+    : null;
+}
+
+function readErrorInteger(error, keys) {
+  for (const key of keys) {
+    try {
+      const value = safeWechatErrCode(error?.[key]);
+      if (value !== null) return value;
+    } catch {}
+  }
+  return null;
+}
+
+function readWechatErrCode(error) {
+  const candidates = [error];
+  for (const key of ['cause', 'response', 'data']) {
+    try {
+      candidates.push(error?.[key]);
+    } catch {}
+  }
+  try {
+    candidates.push(error?.response?.data);
+  } catch {}
+  for (const candidate of candidates) {
+    const value = readErrorInteger(candidate, ['errCode', 'errcode']);
+    if (value !== null) return value;
+  }
+  return null;
+}
+
+export function safeUploadErrorCode(error) {
+  return readErrorInteger(error, ['code']);
+}
+
+export function classifyUploadError(error) {
+  const text = readErrorText(error);
+  let category = 'unknown';
+  if (
+    /access[_\s-]?token[^\r\n]{0,48}(?:missing|empty|required|not\s+(?:found|exist))/i.test(text) ||
+    /(?:missing|empty|required)[^\r\n]{0,32}access[_\s-]?token/i.test(text)
+  ) {
+    category = 'access-token-missing';
+  } else if (
+    /\binvalid\s+ip\b/i.test(text) ||
+    /\bip\b[^\r\n]{0,48}(?:not\s+in\s+(?:white|allow)list|forbidden|unauthori[sz]ed)/i.test(text)
+  ) {
+    category = 'invalid-ip';
+  } else if (
+    /\bcompil(?:e|er|ation)[^\r\n]{0,32}(?:error|fail(?:ed|ure)?)/i.test(text) ||
+    /编译[^\r\n]{0,16}(?:错误|失败)/.test(text)
+  ) {
+    category = 'compile-error';
+  }
+  const matchedErrCode = text.match(/\b(?:errcode|err_code|error\s+code)\s*[:=]\s*(-?\d{1,10})\b/i);
+  const textErrCode = matchedErrCode ? safeWechatErrCode(Number(matchedErrCode[1])) : null;
+  const objectErrCode = readWechatErrCode(error);
+  const outerCode = safeUploadErrorCode(error);
+  return {
+    category,
+    summary: ERROR_SUMMARIES[category],
+    wechatErrCode: textErrCode ?? objectErrCode ?? outerCode,
+  };
+}
+
+export function sanitizeErrorDetail(detail) {
+  if (!detail || typeof detail !== 'object' || Array.isArray(detail)) return undefined;
+  const summary = ERROR_SUMMARIES[detail.category];
+  if (!summary || detail.summary !== summary) return undefined;
+  return {
+    category: detail.category,
+    summary,
+    wechatErrCode: safeWechatErrCode(detail.wechatErrCode),
+  };
+}
 
 export function safeUploadProgress(progress) {
   const message = String(progress?.message || '')
@@ -133,10 +257,12 @@ export function runUploadProcess({
         terminate({ outcome: 'UPLOADED', reason: 'sdk-confirmed' });
       } else if (message.type === 'failed') {
         const errorCode = Number.isSafeInteger(message.errorCode) ? message.errorCode : null;
+        const errorDetail = sanitizeErrorDetail(message.errorDetail);
         terminate({
           outcome: uploadStartedAt ? 'UNKNOWN' : 'FAILED',
           reason: 'sdk-error',
           errorCode,
+          ...(errorDetail ? { errorDetail } : {}),
         });
       } else {
         terminate({
