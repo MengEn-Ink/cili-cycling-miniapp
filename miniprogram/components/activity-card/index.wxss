@@ -132,3 +132,28 @@
     transform: none;
   }
 }
+
+/* UI Revamp V1 · shared 4:3 editorial activity card. */
+.card-media {
+  height: auto;
+  aspect-ratio: 4 / 3;
+  border-radius: 24rpx;
+}
+.card-caption {
+  padding: 32rpx;
+  background: linear-gradient(to bottom, var(--scrim-cover-top), var(--scrim-cover-strong));
+}
+.activity-title {
+  font-size: 52rpx;
+  line-height: 64rpx;
+}
+.card-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 88rpx;
+  padding: 0 20rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: 999rpx;
+  background: var(--color-surface);
+}

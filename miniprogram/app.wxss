@@ -168,6 +168,13 @@ page {
   --color-profile-meta: rgba(255, 255, 255, 0.86);
   --scrim-registration-cover-clear: rgba(0, 0, 0, 0);
   --scrim-registration-cover-strong: rgba(0, 0, 0, 0.35);
+  /* UI Revamp V1 component surfaces: only route slices consume these names. */
+  --scrim-cover-top: rgba(17, 15, 12, 0.04);
+  --scrim-cover-strong: rgba(17, 15, 12, 0.88);
+  --scrim-hero: rgba(17, 15, 12, 0.72);
+  --surface-glass: rgba(255, 255, 255, 0.88);
+  --surface-sheet: var(--color-surface);
+  --shadow-sheet: 0 12rpx 32rpx var(--color-shadow);
   min-height: 100%;
   background: var(--color-bg);
   color: var(--color-text);
@@ -858,5 +865,120 @@ picker[disabled] {
   .filter-tabs .filter-tab,
   .experience-segment .segment {
     min-height: var(--segment-height);
+  }
+}
+
+/* UI Revamp V1 · shared content-first and steady single-column language. */
+[data-v1-layout] .pageheading {
+  padding: var(--space-5) 0 var(--space-4);
+}
+[data-v1-layout] .pageheading-title {
+  max-width: 18em;
+  margin-top: var(--space-3);
+  font-family: var(--font-family-editorial);
+  font-size: 56rpx;
+  line-height: 64rpx;
+  font-weight: 600;
+  letter-spacing: -1rpx;
+}
+[data-v1-layout] .pageheading-sub {
+  max-width: 32em;
+  margin-top: var(--space-3);
+  color: var(--color-muted);
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+  font-weight: 400;
+}
+[data-v1-layout] .chapterhead {
+  padding-bottom: var(--space-2);
+  border-bottom: var(--border-width-hairline) solid var(--color-border);
+}
+[data-v1-layout] .chapterhead-title {
+  font-family: var(--font-family-editorial);
+  font-size: var(--font-size-title);
+  line-height: 48rpx;
+  font-weight: 600;
+}
+[data-v1-layout] .chev {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 88rpx;
+  min-width: 88rpx;
+  height: 88rpx;
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+}
+[data-v1-layout] .rowbutton,
+[data-v1-layout] .rowlink,
+[data-v1-layout] .filter-tab,
+[data-v1-layout] .segment-item,
+[data-v1-layout] .choice,
+[data-v1-layout] .segment-choice {
+  min-height: 88rpx;
+}
+[data-v1-layout='form'] .section,
+[data-v1-layout='admin'] .section,
+[data-v1-layout='admin-form'] .section {
+  border-radius: 0;
+  box-shadow: none;
+}
+[data-v1-layout='form'] .form-card,
+[data-v1-layout='admin-form'] .form-card,
+[data-v1-layout='admin-form'] .club-profile-card {
+  padding: var(--space-5) 0;
+  border-width: 0 0 var(--border-width-hairline);
+  border-radius: 0;
+  background: transparent;
+}
+[data-v1-layout] .filters,
+[data-v1-layout] .segment {
+  border-width: 0 0 var(--border-width-hairline);
+  border-radius: 0;
+  background: transparent;
+}
+[data-v1-layout] .filter-tab,
+[data-v1-layout] .segment-item {
+  border: 0;
+  border-bottom: var(--border-width-strong) solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-muted);
+}
+[data-v1-layout] .filter-tab.is-active,
+[data-v1-layout] .segment-item.selected {
+  border-bottom-color: var(--color-action);
+  background: transparent !important;
+  color: var(--color-text) !important;
+}
+[data-v1-layout] .metric .em,
+[data-v1-layout] .metric-value,
+[data-v1-layout] .metric-number,
+[data-v1-layout] .storyfacts-value,
+[data-v1-layout] .trip-stat__value {
+  font-family: var(--font-family-mono);
+  font-variant-numeric: tabular-nums;
+}
+.profile-page[data-v1-layout] .profile-permission {
+  position: relative;
+  z-index: 2;
+  margin-top: -32rpx;
+  border-radius: var(--radius-display);
+  background: var(--surface-sheet);
+  box-shadow: var(--shadow-sheet);
+}
+@media (max-width: 340px) {
+  [data-v1-layout] .pageheading-title {
+    font-size: 48rpx;
+    line-height: 60rpx;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-v1-layout] *,
+  [data-v1-layout] *::before,
+  [data-v1-layout] *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
   }
 }

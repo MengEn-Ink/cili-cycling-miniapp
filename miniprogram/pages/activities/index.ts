@@ -26,7 +26,7 @@ const VIEW_COPY = {
   },
   history: {
     emptyTitle: '暂无历史活动',
-    emptyCopy: '完成的骑行活动会出现在这里',
+    emptyCopy: '每一次转弯，都有值得记住的风景。完成的骑行活动会出现在这里',
   },
 } as const;
 

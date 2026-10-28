@@ -88,10 +88,10 @@ describe('FORMAL GitHub Pages 骑行影像志', () => {
     runtime.prototypeState = 'default';
     const settings = runtime.pageTemplates?.settings?.() ?? '';
     expect(settings).toContain(`V${CLIENT_RELEASE_VERSION}`);
-    expect(settings).toContain('品牌标识升级为 CILI 粗体字标');
-    expect(settings).toContain('品牌标识更新为更简洁醒目的 CILI 粗体字标');
-    expect(settings).toContain('黑底白字与奶白底墨字保持统一识别');
-    expect(settings).toContain('头像、分享图和加载动画同步升级');
+    expect(settings).toContain('17 个页面焕新为内容先行界面');
+    expect(settings).toContain('活动列表更快看到首张照片、标题与关键骑行数据');
+    expect(settings).toContain('活动详情采用全宽摄影封面与上浮摘要，路线和报名信息更易阅读');
+    expect(settings).toContain('表单、设置和管理页面统一单列结构与更可靠的触控范围');
   });
 
   it('报名提交按审核中、公开通过和满员候补展示真实行程结果', () => {

@@ -893,3 +893,33 @@
   opacity: 0.18;
   content: '';
 }
+
+/* UI Revamp V1 · B+C edge-to-edge photography and floating summary sheet. */
+.photo.hero.detail {
+  aspect-ratio: 4 / 3;
+  border-radius: 0 0 40rpx 40rpx;
+}
+.shade {
+  background: linear-gradient(to bottom, var(--scrim-cover-top), var(--scrim-hero));
+}
+[data-v1-sheet] {
+  position: relative;
+  z-index: 4;
+  margin: -48rpx calc(24rpx - var(--page-gutter)) 0;
+  padding: 32rpx;
+  border-radius: 32rpx;
+  background: var(--surface-sheet);
+  box-shadow: var(--shadow-sheet);
+}
+.hero-title {
+  display: -webkit-box;
+  overflow: hidden;
+  font-weight: 600;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.dialog-close,
+.rider-authorize {
+  min-width: 88rpx;
+  min-height: 88rpx;
+}

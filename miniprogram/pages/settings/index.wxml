@@ -1,4 +1,4 @@
-<view class="page settings-page">
+<view class="page settings-page" data-v1-layout="form">
   <view class="pageheading">
     <view class="eyebrow">此里 · 安心同行</view>
     <view class="pageheading-title editorial">
