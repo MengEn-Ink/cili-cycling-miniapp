@@ -22,7 +22,6 @@ const tokenizedEditorialStyles = [
   'miniprogram/pages/activity-detail/index.wxss',
   'miniprogram/pages/route-analysis/index.wxss',
   'miniprogram/pages/registrations/index.wxss',
-  'miniprogram/pages/profile/index.wxss',
   'miniprogram/pages/club/center/index.wxss',
 ];
 
@@ -48,12 +47,18 @@ describe('骑行影像志逐页主题令牌', () => {
     }
   });
 
-  it('摄影首页、详情、路线、行程、名片与俱乐部标题不再硬编码字体栈', () => {
+  it('摄影首页、详情、路线、行程与俱乐部标题不再硬编码字体栈', () => {
     for (const path of tokenizedEditorialStyles) {
       const styles = read(path);
       expect(styles, path).toContain('font-family: var(--font-family-editorial);');
       expect(styles, path).not.toContain("font-family: 'Songti SC', STSong, serif;");
     }
+  });
+
+  it('v6 个人中心使用正文无衬线令牌且不硬编码字体栈', () => {
+    const styles = read('miniprogram/pages/profile/index.wxss');
+    expect(styles).toContain('font-family: var(--font-family-body);');
+    expect(styles).not.toContain("font-family: 'Songti SC', STSong, serif;");
   });
 
   it('活动编辑旧语义名映射到当前骑行影像志色板', () => {

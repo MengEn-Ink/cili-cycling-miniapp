@@ -81,21 +81,21 @@ describe('FORMAL GitHub Pages 骑行影像志', () => {
     expect(deliveryCenter).toContain('设计演进记录');
   });
 
-  it('设置页展示 2026.10.28.2，并保留 2026.10.28.1 历史项', () => {
+  it('设置页展示 2026.10.28.3，并保留 2026.10.28.2 历史项', () => {
     expect(schema).toContain(
       "['2026.10.22.3', '影像志排版与设计稿逐页对齐', '16 个核心页面统一使用设计稿的字体、颜色、间距与圆角规范。']",
     );
     expect(schema).toContain(
       "['2026.10.28.1', '17 个页面焕新为内容先行界面', '活动、行程、个人资料与管理页面统一为更紧凑的阅读层级，重点标题增加轻量动效，所有原有操作保持不变。']",
     );
-    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.28.2');
+    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.28.3');
     runtime.prototypeState = 'default';
     const settings = runtime.pageTemplates?.settings?.() ?? '';
     expect(settings).toContain(`V${CLIENT_RELEASE_VERSION}`);
-    expect(settings).toContain('小程序发布恢复正常');
-    expect(settings).toContain('修复部分样式在微信编译阶段不兼容的问题');
-    expect(settings).toContain('开启减少动态效果后，页面动效仍会自动降级');
-    expect(settings).toContain('页面布局、配色和日常操作保持不变');
+    expect(settings).toContain('方案 B v6 视觉对齐');
+    expect(settings).toContain('活动、行程、个人与管理页面统一暖纸背景、砖红动作色和紧凑编辑排版');
+    expect(settings).toContain('活动标题、胶囊筛选、审核详情与连续章节按设计稿重新对齐');
+    expect(settings).toContain('保留 44px 触控范围、真实数据、隐私规则与现有业务操作');
   });
 
   it('报名提交按审核中、公开通过和满员候补展示真实行程结果', () => {

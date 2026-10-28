@@ -10,7 +10,7 @@
       <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{refreshError}}</view>
 
       <!-- hero：首屏画面 -->
-      <view class="photo hero detail">
+      <view class="photo hero detail" data-v6-hero="true">
         <swiper wx:if="{{galleryImages.length > 1 && !coverFailed}}" class="hero-gallery" indicator-dots="{{true}}" indicator-color="{{colorMediaMuted}}" indicator-active-color="{{colorOnMedia}}" circular="{{true}}" bindchange="galleryChange">
           <swiper-item wx:for="{{galleryImages}}" wx:for-item="media" wx:key="*this"><image class="hero-media" src="{{media}}" mode="aspectFill" data-index="{{index}}" binderror="galleryImageError" aria-label="活动图片 {{index + 1}}" /></swiper-item>
         </swiper>
@@ -30,8 +30,8 @@
       <view class="refresh-note refresh-error" wx:if="{{refreshError}}" role="button" bindtap="retryLoad" aria-label="活动详情刷新失败，点击重试">{{refreshError}}，点此重试</view>
 
       <!-- ink：指标 + 集合概要行 -->
-      <view class="ink" data-v1-sheet="true">
-        <view class="metrics">
+      <view class="ink" data-v1-sheet="true" data-v6-summary="true">
+          <view class="metrics">
           <view><text class="em">{{item.route.distanceKm > 0 ? item.route.distanceKm : '—'}}<text class="unit">km</text></text><text>全程距离</text></view>
           <view><text class="em">{{item.route.elevationM > 0 ? item.route.elevationM : '—'}}<text class="unit">m</text></text><text>累计爬升</text></view>
           <view><text class="em">{{estimatedRideTime || '—'}}<text class="unit"></text></text><text>预计骑行</text></view>
@@ -51,7 +51,7 @@
       <view class="content">
         <!-- 这次一起骑：俱乐部与简介 -->
         <view class="section section-intro">
-          <view class="chapterhead"><view class="chapterhead-title">这次一起骑</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
+          <view class="chapterhead"><view class="chapterhead-title">活动简介</view><view class="chapterhead-rule" aria-hidden="true"></view><view class="chapterhead-aside">INTRO</view></view>
           <view class="section-prose" wx:if="{{item.description}}">{{item.description}}</view>
           <view class="row rowlink club-row" aria-label="活动归属：{{item.clubIdentity.name}}">
             <view class="lead">
@@ -66,7 +66,7 @@
 
         <!-- 集合与出发 -->
         <view class="section section-meeting">
-          <view class="chapterhead"><view class="chapterhead-title">集合与出发</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
+          <view class="chapterhead"><view class="chapterhead-title">集合信息</view><view class="chapterhead-rule" aria-hidden="true"></view><view class="chapterhead-aside">MEETING</view></view>
           <view class="paper">
             <view class="detailrows">
               <view class="detailrow"><text class="detailrow-term">集合时间</text><text class="detailrow-desc">{{startTime || '待公布'}}</text></view>
@@ -81,7 +81,7 @@
 
         <!-- 费用与名额前置，先回答用户是否能参加 -->
         <view class="section section-fee" wx:if="{{!item.registrationUnlimited && (item.fee || (item.feeIncluded && item.feeIncluded.length) || (item.feeExcluded && item.feeExcluded.length))}}">
-          <view class="chapterhead"><view class="chapterhead-title">费用说明</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
+          <view class="chapterhead"><view class="chapterhead-title">费用说明</view><view class="chapterhead-rule" aria-hidden="true"></view><view class="chapterhead-aside">{{item.fee || '费用见详情'}}</view></view>
           <view class="paper">
             <view class="section-prose" wx:if="{{item.fee}}">{{item.fee}}</view>
             <view class="fee-block" wx:if="{{item.feeIncluded && item.feeIncluded.length}}">
@@ -97,7 +97,7 @@
 
         <!-- 山路有迹可循：路线入口 -->
         <view class="section section-route" wx:if="{{canAnalyzeRoute || hasRouteDetails}}">
-          <view class="chapterhead"><view class="chapterhead-title">山路，有迹可循</view><view class="chapterhead-aside" wx:if="{{item.route.distanceKm > 0}}">{{item.route.distanceKm}} km / {{item.route.elevationM || 0}} m</view></view>
+          <view class="chapterhead"><view class="chapterhead-title">活动路线</view><view class="chapterhead-rule" aria-hidden="true"></view><view class="chapterhead-aside">GPX</view></view>
           <view class="paper route-paper" wx:if="{{hasRouteDetails}}">
             <view class="section-prose">{{hasGpxRoute ? '路线数据来自组织者上传的 GPX 文件。' : '路线数据来自免授权公开路线解析。'}}</view>
             <view class="detailrows">
@@ -120,7 +120,7 @@
 
         <!-- 一起出发的骑友 -->
         <view class="section section-attendees" wx:if="{{attendeesVisible}}">
-          <view class="chapterhead"><view class="chapterhead-title">一起出发的骑友</view><view class="chapterhead-aside">昵称与已同意的头像</view></view>
+          <view class="chapterhead"><view class="chapterhead-title">一起出发的骑友</view><view class="chapterhead-rule" aria-hidden="true"></view><view class="chapterhead-aside">昵称与头像</view></view>
           <scroll-view class="riderlist" scroll-x enhanced show-scrollbar="{{false}}" wx:if="{{attendees.length}}" aria-label="已报名人员头像与昵称">
             <view class="riderlist-inner">
               <view class="rider {{item.isSelf && (!item.avatarUrl || !item.backgroundUrl) ? 'rider--authorization' : ''}}" wx:for="{{attendees}}" wx:key="id" data-index="{{index}}" bindtap="openAttendeeCard" role="button" aria-label="查看 {{item.displayName}} 的公开骑行名片">
@@ -140,7 +140,7 @@
 
         <!-- 行前约定 -->
         <view class="section section-notes" wx:if="{{(item.equipment && item.equipment.length) || (item.notices && item.notices.length)}}">
-          <view class="chapterhead"><view class="chapterhead-title">行前约定</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
+          <view class="chapterhead"><view class="chapterhead-title">装备与须知</view><view class="chapterhead-rule" aria-hidden="true"></view><view class="chapterhead-aside">GEAR</view></view>
           <view class="paper notes-paper">
             <view class="chip-list" wx:if="{{item.equipment && item.equipment.length}}">
               <text class="chip-list-label">装备</text>
@@ -155,7 +155,7 @@
 
         <!-- 时间安排 -->
         <view class="section section-schedule" wx:if="{{item.schedule && item.schedule.length}}">
-          <view class="chapterhead"><view class="chapterhead-title">时间安排</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
+          <view class="chapterhead"><view class="chapterhead-title">行程安排</view><view class="chapterhead-rule" aria-hidden="true"></view><view class="chapterhead-aside">SCHEDULE</view></view>
           <view class="schedule-list">
             <view wx:for="{{item.schedule}}" wx:key="time" class="schedule-item"><view class="schedule-time">{{item.time}}</view><view class="schedule-track"><view class="schedule-dot"></view></view><view class="schedule-copy"><view>{{item.title}}</view><view class="muted" wx:if="{{item.location}}">{{item.location}}</view></view></view>
           </view>
@@ -175,7 +175,7 @@
 
         <!-- 活动群 -->
         <view class="section section-group">
-          <view class="chapterhead"><view class="chapterhead-title">活动群</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
+          <view class="chapterhead"><view class="chapterhead-title">活动群二维码</view><view class="chapterhead-rule" aria-hidden="true"></view><view class="chapterhead-aside">仅已通过可见</view></view>
           <block wx:if="{{groupQrVisible && item.groupQrCode}}">
             <view class="paper group-paper">
               <view class="section-prose">扫码加入活动群，出发前请留意群内通知。</view>

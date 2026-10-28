@@ -639,7 +639,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     }
     expect(css).toMatch(/\.screen-container \.profile-hero::after\s*\{[^}]*linear-gradient/s);
     expect(css).toContain('--color-text: #211f1c');
-    expect(css).toContain('--color-brand: #e13b2b');
+    expect(css).toContain('--color-brand: #c0321f');
     expect(css).toMatch(
       /\.credential-spotlight\s*\{[^}]*background:\s*var\(--color-media-card-bg\)/s,
     );
@@ -663,7 +663,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     for (const [name, value] of [
       ['--color-status-success', '#16633a'],
       ['--color-status-success-soft', '#e7f4eb'],
-      ['--color-status-warning', '#7a5c00'],
+      ['--color-status-warning', '#8f5410'],
       ['--color-status-warning-soft', '#fff2c7'],
     ]) {
       expect(css).toContain(`${name}: ${value}`);

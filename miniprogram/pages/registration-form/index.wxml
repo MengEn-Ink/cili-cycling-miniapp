@@ -55,7 +55,7 @@
 
           <!-- 怎么去集合点 -->
           <view class="section section-gathering">
-            <view class="chapterhead"><view class="chapterhead-title">怎么去集合点</view><view class="chapterhead-aside" wx:if="{{showGatheringChoice}}">名额分开计</view></view>
+            <view class="chapterhead"><view class="chapterhead-title">集合方式</view><view class="chapterhead-aside" wx:if="{{showGatheringChoice}}">怎么去集合点</view></view>
             <block wx:if="{{showGatheringChoice}}">
               <view class="paper">
                 <radio-group class="choice-group" data-key="gatheringMode" bindchange="set" role="radiogroup" aria-label="选择集合方式">
@@ -81,7 +81,7 @@
 
           <!-- 你的骑行经验 -->
           <view class="section section-experience">
-            <view class="chapterhead"><view class="chapterhead-title">你的骑行经验</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
+            <view class="chapterhead"><view class="chapterhead-title">骑行经验</view><view class="chapterhead-aside">你的骑行经验</view></view>
             <view class="paper">
               <view class="field">
                 <view class="field-label">骑行经验 · 必选</view>
@@ -105,7 +105,7 @@
 
           <!-- 还有什么想说 -->
           <view class="section section-remark">
-            <view class="chapterhead"><view class="chapterhead-title">还有什么想说</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
+            <view class="chapterhead"><view class="chapterhead-title">报名备注</view><view class="chapterhead-aside">选填 · 最多 500 字</view></view>
             <view class="paper">
               <view class="field">
                 <view class="field-label">报名备注 · 选填</view>

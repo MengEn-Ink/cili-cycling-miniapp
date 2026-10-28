@@ -6,8 +6,7 @@
     <view class="pageheading">
       <view class="eyebrow">此里 · 关于你</view>
       <view class="pageheading-title editorial">
-        <text class="pageheading-line">让同行的人，</text>
-        <text class="pageheading-line">认出你。</text>
+        <text class="pageheading-line">报名资料</text>
       </view>
       <view class="pageheading-sub">先选头像，再完善报名与联络资料。</view>
     </view>

@@ -1,5 +1,5 @@
 export const THEME_COLORS = {
-  brand: '#e13b2b',
+  brand: '#c0321f',
   background: '#fbf5ea',
   ink: '#211f1c',
   surface: '#ffffff',

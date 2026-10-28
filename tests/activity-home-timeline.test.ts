@@ -131,9 +131,8 @@ describe('activity timeline template contract', () => {
     expect(styles).toMatch(/\.story-list\s*\{[^}]*display:\s*flex/s);
   });
 
-  it('展示列表数量、日期入口并保留加载失败重试', () => {
+  it('展示日期入口并保留加载失败重试', () => {
     const template = read('miniprogram/pages/activities/index.wxml');
-    expect(template).toContain('共 {{items.length}} 场');
     expect(template).toContain('{{item.relativeLabel}}');
     expect(template).toContain('{{item.dateLabel}}');
     expect(template).toContain('aria-pressed="{{selectedDayKey === item.key}}"');

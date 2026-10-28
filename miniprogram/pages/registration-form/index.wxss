@@ -506,3 +506,89 @@
     gap: 8rpx;
   }
 }
+
+/* Scheme B v6: compact application sheet -------------------------------- */
+.form-page .content.tight {
+  gap: 28rpx;
+}
+.form-page .timeline {
+  gap: 4rpx;
+  padding: 8rpx;
+  border-radius: 14rpx;
+}
+.form-page .timeline > .step {
+  min-height: 64rpx;
+  gap: 6rpx;
+  padding: 0 4rpx;
+  font-size: 21rpx;
+  line-height: 28rpx;
+}
+.form-page .timeline .step-index {
+  width: 30rpx;
+  height: 30rpx;
+  font-size: 18rpx;
+}
+.form-page .section {
+  gap: 12rpx;
+}
+.form-page .chapterhead {
+  justify-content: space-between;
+}
+.form-page .paper {
+  gap: 14rpx;
+}
+.form-page .detailrows {
+  border: 0;
+  border-radius: 0;
+}
+.form-page .detailrow {
+  grid-template-columns: 148rpx minmax(0, 1fr);
+  padding: 14rpx 0;
+  background: transparent;
+}
+.form-page .detailrow + .detailrow {
+  border-top-style: dashed;
+}
+.form-page .row.rowlink.rowbutton {
+  min-height: 88rpx;
+  padding: 14rpx 16rpx;
+  border-radius: 12rpx;
+}
+.form-page .rowicon {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 10rpx;
+}
+.form-page .choice {
+  min-height: 88rpx;
+  padding: 14rpx 16rpx;
+  border-radius: 12rpx;
+  box-sizing: border-box;
+}
+.form-page .experience-segment {
+  padding: 6rpx;
+  gap: 6rpx;
+  border-radius: 999rpx;
+  background: var(--color-raised);
+}
+.form-page .segment-choice {
+  min-height: 68rpx;
+  padding: 0 10rpx;
+  border: 0;
+  font-size: 23rpx;
+}
+.form-page .field-textarea {
+  min-height: 112rpx;
+  border-radius: 10rpx;
+  background: var(--color-bg);
+}
+.form-page .check {
+  min-height: 88rpx;
+  padding: 14rpx 16rpx;
+  border-radius: 10rpx;
+  box-sizing: border-box;
+}
+.form-page .actionbar {
+  padding-top: 14rpx;
+  padding-bottom: calc(14rpx + env(safe-area-inset-bottom));
+}

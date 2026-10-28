@@ -433,6 +433,108 @@
   font-size: 26rpx;
   text-align: left;
 }
+
+/* Scheme B v6: compact profile editor ----------------------------------- */
+.profile-edit-page .pageheading {
+  padding: 24rpx 0 18rpx;
+}
+.profile-edit-page .pageheading .eyebrow {
+  font-size: 20rpx;
+  line-height: 30rpx;
+}
+.profile-edit-page .pageheading-title {
+  margin-top: 10rpx;
+  font-size: 52rpx;
+  line-height: 60rpx;
+  letter-spacing: -1rpx;
+}
+.profile-edit-page .pageheading-sub {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  line-height: 34rpx;
+}
+.profile-edit-page .content.tight {
+  gap: 28rpx;
+}
+.profile-edit-page .permission-card {
+  padding: 16rpx 18rpx;
+  border-radius: 10rpx;
+}
+.profile-edit-page .section,
+.profile-edit-page .profile-details {
+  gap: 14rpx;
+}
+.profile-edit-page .chapterhead-title {
+  font-family: var(--font-family-body);
+  font-size: 30rpx;
+  line-height: 40rpx;
+  letter-spacing: 0;
+}
+.profile-edit-page .upload {
+  grid-template-columns: 104rpx minmax(0, 1fr);
+  gap: 16rpx;
+  padding: 16rpx;
+  border-radius: 10rpx;
+}
+.profile-edit-page .upload-background {
+  grid-template-columns: 176rpx minmax(0, 1fr);
+}
+.profile-edit-page .upload-media-avatar {
+  width: 104rpx;
+  height: 104rpx;
+}
+.profile-edit-page .upload-title {
+  font-size: 26rpx;
+  line-height: 36rpx;
+}
+.profile-edit-page .upload-sub,
+.profile-edit-page .upload-status {
+  font-size: 21rpx;
+  line-height: 30rpx;
+}
+.profile-edit-page .avatar-action,
+.profile-edit-page .photo-action,
+.profile-edit-page .photo-remove {
+  min-height: 64rpx;
+  padding: 0 16rpx;
+  border-radius: 8rpx;
+  font-size: 22rpx;
+}
+.profile-edit-page .field {
+  gap: 6rpx;
+}
+.profile-edit-page .field-label {
+  font-size: 25rpx;
+  line-height: 36rpx;
+}
+.profile-edit-page .field-input {
+  min-height: 80rpx;
+  padding: 0 16rpx;
+  border-radius: 8rpx;
+  font-size: 25rpx;
+}
+.profile-edit-page .field-help {
+  font-size: 20rpx;
+  line-height: 28rpx;
+}
+.profile-edit-page .gender-options {
+  gap: 8rpx;
+  padding: 6rpx;
+  border-radius: 10rpx;
+  background: var(--color-raised);
+}
+.profile-edit-page .gender-option {
+  min-height: 68rpx;
+  border: 0;
+  border-radius: 8rpx;
+}
+.profile-edit-page .notice {
+  padding: 16rpx 18rpx;
+  border-radius: 10rpx;
+}
+.profile-edit-page .save-action {
+  border-radius: 10rpx;
+}
 .permission-card-action::after,
 .permission-reset::after {
   border: 0;

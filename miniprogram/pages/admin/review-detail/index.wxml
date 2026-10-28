@@ -41,7 +41,7 @@
       <view class="person">
         <view class="person-avatar" aria-label="骑友头像">
           <image wx:if="{{card.avatarUrl}}" class="person-avatar-img" src="{{card.avatarUrl}}" mode="aspectFill" />
-          <text wx:else>{{card.displayName ? card.displayName : '骑'}}</text>
+          <text wx:else>{{card.displayName ? card.displayName[0] : '骑'}}</text>
         </view>
         <view class="person-copy">
           <view class="person-title">{{card.displayName}}</view>
