@@ -12,10 +12,23 @@ const MAX_SUBSCRIPTION_TEMPLATES = 3;
 const RELEASE_NOTES = [
   {
     version: CLIENT_RELEASE_VERSION,
+    date: '2026-10-28',
+    title: '17 个页面焕新为内容先行界面',
+    summary:
+      '活动、行程、个人资料与管理页面统一为更紧凑的阅读层级，重点标题增加轻量动效，所有原有操作保持不变。',
+    latest: true,
+    features: [
+      '活动列表更快看到首张照片、标题与关键骑行数据',
+      '活动详情采用全宽摄影封面与上浮摘要，路线和报名信息更易阅读',
+      '表单、设置和管理页面统一单列结构与更可靠的触控范围',
+    ],
+  },
+  {
+    version: '2026.10.27.1',
     date: '2026-10-27',
     title: '品牌标识升级为 CILI 粗体字标',
     summary: '统一小程序内品牌组件、头像、分享图与加载动画，深浅背景下保持清晰一致。',
-    latest: true,
+    latest: false,
     features: [
       '品牌标识更新为更简洁醒目的 CILI 粗体字标',
       '黑底白字与奶白底墨字保持统一识别',

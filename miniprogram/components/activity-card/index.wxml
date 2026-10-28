@@ -1,6 +1,6 @@
 <view class="activity-card" bindtap="open" hover-class="activity-card--pressed" role="button" aria-label="查看活动：{{item.title}}">
   <view class="card-media">
-    <image wx:if="{{item.coverImage && !coverFailed}}" class="card-cover" src="{{item.coverImage}}" mode="aspectFill" lazy-load="{{true}}" binderror="coverImageError" aria-label="{{item.title}}活动封面" />
+    <image wx:if="{{item.coverImage && !coverFailed}}" class="card-cover" src="{{item.coverImage}}" mode="aspectFill" lazy-load="{{!eager}}" binderror="coverImageError" aria-label="{{item.title}}活动封面" />
     <generated-activity-cover wx:else item="{{item}}" variant="card" />
     <view class="media-status"><status-pill status="{{item.displayStatus}}" /></view>
     <view class="card-caption">

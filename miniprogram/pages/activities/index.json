@@ -9,6 +9,7 @@
   "backgroundColorBottom": "#fbf5ea",
   "backgroundTextStyle": "dark",
   "usingComponents": {
+    "blur-text": "/components/blur-text/index",
     "state-view": "/components/state-view/index",
     "generated-activity-cover": "/components/generated-activity-cover/index",
     "status-pill": "/components/status-pill/index"

@@ -8,7 +8,7 @@
     confirmDelete(左滑或主动删除)、cloneForm modal。
   - 本页已完成从旧过渡 heading 结构向设计稿 pageheading 的迁移。
 -->
-<view class="page activity-list-page">
+<view class="page activity-list-page" data-v1-layout="admin">
   <view class="skeleton" wx:if="{{loading}}"><view></view><view></view><view></view></view>
 
   <view class="empty" wx:elif="{{loadError}}" role="alert">

@@ -6,7 +6,7 @@
   - 真实业务保留：mode = loading / error / bootstrap / default；首次 bootstrap 分支显示“创建唯一俱乐部”入口；
     错误 retry；头像 fallback；data-club-admin-overview 保留供单元测试绑定。
 -->
-<view class="page club-admin-page">
+<view class="page club-admin-page" data-v1-layout="admin">
   <block wx:if="{{mode === 'loading'}}">
     <view class="pageheading">
       <view class="eyebrow">此里 · 唯一俱乐部</view>

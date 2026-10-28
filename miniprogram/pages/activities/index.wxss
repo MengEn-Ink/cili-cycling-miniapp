@@ -527,3 +527,50 @@
     line-height: 56rpx;
   }
 }
+
+/* UI Revamp V1 · compact content-first home. */
+.activities-page > .pageheading {
+  padding-bottom: 16rpx;
+}
+.activities-page > .pageheading .pageheading-title {
+  margin-top: 12rpx;
+  font-size: 56rpx;
+  line-height: 64rpx;
+  font-weight: 600;
+}
+.segment {
+  position: relative;
+  top: auto;
+  padding: 0;
+}
+.segment-end {
+  width: 88rpx;
+  min-width: 88rpx;
+  height: 88rpx;
+}
+.story-list {
+  gap: 32rpx;
+}
+.photo {
+  padding-top: 75%;
+}
+.story {
+  border-radius: 24rpx;
+}
+.story-title {
+  display: -webkit-box;
+  overflow: hidden;
+  font-weight: 600;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.storymeta-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 88rpx;
+  padding: 0 20rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: 999rpx;
+  background: var(--color-surface);
+}
