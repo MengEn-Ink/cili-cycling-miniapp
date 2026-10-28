@@ -81,17 +81,21 @@ describe('FORMAL GitHub Pages 骑行影像志', () => {
     expect(deliveryCenter).toContain('设计演进记录');
   });
 
-  it('设置页展示与客户端一致的当前版本并保留历史排版说明', () => {
+  it('设置页展示 2026.10.28.2，并保留 2026.10.28.1 历史项', () => {
     expect(schema).toContain(
       "['2026.10.22.3', '影像志排版与设计稿逐页对齐', '16 个核心页面统一使用设计稿的字体、颜色、间距与圆角规范。']",
     );
+    expect(schema).toContain(
+      "['2026.10.28.1', '17 个页面焕新为内容先行界面', '活动、行程、个人资料与管理页面统一为更紧凑的阅读层级，重点标题增加轻量动效，所有原有操作保持不变。']",
+    );
+    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.28.2');
     runtime.prototypeState = 'default';
     const settings = runtime.pageTemplates?.settings?.() ?? '';
     expect(settings).toContain(`V${CLIENT_RELEASE_VERSION}`);
-    expect(settings).toContain('17 个页面焕新为内容先行界面');
-    expect(settings).toContain('活动列表更快看到首张照片、标题与关键骑行数据');
-    expect(settings).toContain('活动详情采用全宽摄影封面与上浮摘要，路线和报名信息更易阅读');
-    expect(settings).toContain('表单、设置和管理页面统一单列结构与更可靠的触控范围');
+    expect(settings).toContain('小程序发布恢复正常');
+    expect(settings).toContain('修复部分样式在微信编译阶段不兼容的问题');
+    expect(settings).toContain('开启减少动态效果后，页面动效仍会自动降级');
+    expect(settings).toContain('页面布局、配色和日常操作保持不变');
   });
 
   it('报名提交按审核中、公开通过和满员候补展示真实行程结果', () => {
