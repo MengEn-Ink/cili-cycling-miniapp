@@ -61,7 +61,7 @@
 | `CI / validate` | 格式、静态检查、测试、覆盖率、微信上传工具运行时、CloudBase 只读校验和全部 npm 工作区安全审计 |
 | Dependabot 安全更新自动合并 | 仅对低风险更新开启 auto-merge；最终仍等待 Ruleset 与 `validate` 全绿 |
 | 微信开发版自动上传 | `main` CI 成功后按变更判定上传；串行执行并生成 90 天 receipt |
-| 微信体验版晋级证据门禁 | 使用 `wechat-experience` Environment，绑定候选、平台回读和不可变 manifest |
+| 微信体验版晋级证据门禁 | 开发版真实上传成功后从不可变 receipt 自动生成 candidate；原生平台人工选版或授权第三方真实生成体验版后，才允许用 candidate run ID 单次确认 verified；第三方托管提示必须 fail closed |
 | GitHub Pages | 由 GitHub Pages 的 `github-pages` Environment 记录部署 |
 | CodeQL | PR、`main` 和每周定时扫描 JavaScript/TypeScript |
 

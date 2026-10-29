@@ -298,26 +298,38 @@ test('长期体验版记录只允许新增同名 verified 清单', async () => {
   );
 });
 
-test('体验版工作流只生成证据，不自动上传或覆盖体验基线', async () => {
+test('开发版成功后自动准备体验版候选，verified 从候选反推不可变发布参数', async () => {
   const workflow = await readFile('.github/workflows/promote-miniprogram-experience.yml', 'utf8');
   const developmentWorkflow = await readFile('.github/workflows/deploy-miniprogram.yml', 'utf8');
   const rollbackGate = workflow.match(
     /- name: Verify rollback target is a recorded stable release[\s\S]*?(?=\n {6}- name:)/,
   )?.[0];
   assert.ok(rollbackGate);
+  assert.match(workflow, /workflow_run:\n\s+workflows: \[微信开发版自动上传\]/);
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /options: \[candidate, verified\]/);
   assert.match(workflow, /environment: wechat-experience/);
+  assert.match(workflow, /name: Resolve immutable release inputs/);
+  assert.match(workflow, /github\.event\.workflow_run\.id/);
+  assert.match(workflow, /miniprogram-release-receipt-/);
+  assert.match(workflow, /自动候选只接受开发版自动上传的真实 SUCCEEDED receipt/);
+  assert.match(workflow, /candidate_run_id；其余字段从 candidate artifact 反推/);
+  assert.match(workflow, /candidate_artifacts/);
+  assert.match(workflow, /candidate_manifest/);
+  assert.match(workflow, /candidate_digest="\$\(jq -r '\.digest'/);
+  assert.match(workflow, /开发权限已托管给第三方/);
+  assert.match(workflow, /须由授权第三方调用 commit 生成体验版/);
   assert.match(workflow, /git merge-base --is-ancestor/);
-  assert.match(workflow, /gh run download "\$\{CANDIDATE_RUN_ID\}"/);
+  assert.match(workflow, /gh run download "\$\{candidate_run_id\}"/);
   assert.match(
     workflow,
-    /name: Generate immutable experience manifest[\s\S]*GH_TOKEN: \$\{\{ github\.token \}\}[\s\S]*gh run download/,
+    /name: Resolve immutable release inputs[\s\S]*GH_TOKEN: \$\{\{ github\.token \}\}[\s\S]*gh run download/,
   );
   assert.match(workflow, /miniprogram-upload-receipt-\$\{TARGET_SHA\}/);
   assert.match(workflow, /verify-transition/);
   assert.match(workflow, /verify-rollback/);
-  assert.match(workflow, /if: github\.ref == 'refs\/heads\/main'/);
+  assert.match(workflow, /github\.event_name == 'workflow_run'/);
+  assert.match(workflow, /github\.event\.workflow_run\.conclusion == 'success'/);
   assert.match(workflow, /ref: main/);
   assert.doesNotMatch(workflow, /ref: \$\{\{ inputs\.main_sha \}\}/);
   assert.doesNotMatch(workflow, /deploy:miniprogram|WECHAT_MINIPROGRAM_PRIVATE_KEY/);
