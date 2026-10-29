@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="1754" viewBox="0 0 1240 1754" role="img" aria-label="CILI A4 信纸模板">
+  <title>CILI A4 信纸模板</title>
+  <rect width="1240" height="1754" fill="#f7f4f2"/>
+
+  <g transform="translate(92 84) scale(1.0833333333333333)" aria-label="CILI 路线环标志">
+    <rect width="96" height="96" rx="26" fill="#e13b2b"/>
+    <path d="M68 25 C56 20 44 23 42 33 C40 42 47 46 56 49 C65 52 68 58 66 66 C63 75 54 79 44 78 C35 77 29 72 25 65" fill="none" stroke="#ffffff" stroke-width="10.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g transform="translate(216.8 117.19333333333333) scale(0.6716666666666666)" fill="#211f1c" fill-rule="evenodd" aria-label="CILI">
+    <!-- CILI custom slab-mono wordmark; paths avoid platform font substitution. -->
+    <path d="M40 0H12C5.373 0 0 5.373 0 12v32c0 6.627 5.373 12 12 12h28V44H14V12h26V0Z"/>
+    <path d="M54 0h34v10H77v36h11v10H54V46h11V10H54V0Z"/>
+    <path d="M102 0h12v44h32v12h-44V0Z"/>
+    <path d="M160 0h34v10h-11v36h11v10h-34V46h11V10h-11V0Z"/>
+  </g>
+  <rect x="92" y="246" width="1056" height="4" fill="#e13b2b"/>
+  <rect x="92" y="1514" width="1056" height="2" fill="#211f1c" fill-opacity=".16"/>
+  <text x="92" y="1574" fill="#211f1c" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="23" font-weight="700" letter-spacing="4">CILI · RIDE TOGETHER</text>
+  <text x="92" y="1620" fill="#211f1c" fill-opacity=".56" font-family="-apple-system, BlinkMacSystemFont, PingFang SC, sans-serif" font-size="22">骑行活动与同行服务</text>
+  <g transform="translate(1076 1548) scale(0.75)" aria-label="CILI 路线环标志">
+    <rect width="96" height="96" rx="26" fill="#e13b2b"/>
+    <path d="M68 25 C56 20 44 23 42 33 C40 42 47 46 56 49 C65 52 68 58 66 66 C63 75 54 79 44 78 C35 77 29 72 25 65" fill="none" stroke="#ffffff" stroke-width="10.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

@@ -2,6 +2,7 @@
   "name": "cili-cycling-miniapp",
   "private": true,
   "scripts": {
+    "logo:generate": "node scripts/generate-logo-materials.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",

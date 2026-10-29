@@ -1,17 +1,466 @@
 {
+  "schemaVersion": 3,
   "brand": "CILI",
-  "version": 2,
+  "version": 3,
+  "direction": "路线环图标 + CILI slab-mono 字标",
   "colors": {
     "background": "#211F1C",
     "foreground": "#FFFFFF",
-    "accent": "#E13B2B"
+    "accent": "#E13B2B",
+    "warm": "#F7F4F2",
+    "muted": "#B8B3BA"
   },
+  "responsiveRule": "横向空间小于完整字标最小宽度时，只展示路线环图标。",
+  "sources": [
+    "docs/brand/logo-materials/source/logo-mark.svg",
+    "docs/brand/logo-materials/source/logo-square.svg",
+    "docs/brand/logo-materials/source/logo-circle.svg",
+    "docs/brand/logo-materials/source/logo-horizontal-dark.svg",
+    "docs/brand/logo-materials/source/logo-horizontal-light.svg",
+    "docs/brand/logo-materials/source/logo-horizontal-transparent-dark.svg",
+    "docs/brand/logo-materials/source/logo-horizontal-transparent-light.svg",
+    "docs/brand/logo-materials/source/logo-monochrome-black.svg",
+    "docs/brand/logo-materials/source/logo-monochrome-white.svg",
+    "docs/brand/logo-materials/source/logo-stacked-dark.svg",
+    "docs/brand/logo-materials/source/logo-wordmark-dark.svg",
+    "docs/brand/logo-materials/source/logo-wordmark-light.svg",
+    "docs/brand/logo-materials/source/logo-watermark.svg",
+    "docs/brand/logo-materials/source/logo-share.svg",
+    "docs/brand/logo-materials/source/applications/social-cover.svg",
+    "docs/brand/logo-materials/source/applications/presentation-cover.svg",
+    "docs/brand/logo-materials/source/applications/email-signature.svg",
+    "docs/brand/logo-materials/source/applications/business-card.svg",
+    "docs/brand/logo-materials/source/applications/letterhead-a4.svg",
+    "docs/brand/logo-materials/source/preview/brand-board.svg",
+    "docs/brand/logo-materials/source/loading-00.svg",
+    "docs/brand/logo-materials/source/loading-01.svg",
+    "docs/brand/logo-materials/source/loading-02.svg",
+    "docs/brand/logo-materials/source/loading-03.svg",
+    "docs/brand/logo-materials/source/loading-04.svg",
+    "docs/brand/logo-materials/source/loading-05.svg",
+    "docs/brand/logo-materials/source/loading-06.svg",
+    "docs/brand/logo-materials/source/loading-07.svg"
+  ],
   "assets": [
-    {"path": "docs/brand/logo-materials/generated/logo-wechat-144.png", "format": "png", "width": 144, "height": 144, "usage": "微信小程序平台头像与基础 Logo"},
-    {"path": "docs/brand/logo-materials/generated/logo-square-1024.png", "format": "png", "width": 1024, "height": 1024, "usage": "高清方形 Logo"},
-    {"path": "docs/brand/logo-materials/generated/logo-circle-144.png", "format": "png", "width": 144, "height": 144, "usage": "圆形头像与圆形裁切场景"},
-    {"path": "docs/brand/logo-materials/generated/logo-photo-watermark-360x144.png", "format": "png", "width": 360, "height": 144, "usage": "照片角标与水印"},
-    {"path": "docs/brand/logo-materials/generated/logo-share-500x400.png", "format": "png", "width": 500, "height": 400, "usage": "微信分享图与分享卡片"},
-    {"path": "docs/brand/logo-materials/generated/logo-loading-512.gif", "format": "gif", "width": 512, "height": 512, "usage": "循环加载动画", "frameCount": 8, "frameDurationMs": 110}
+    {
+      "path": "docs/brand/logo-materials/generated/applications/logo-business-card-1050x600.png",
+      "format": "png",
+      "width": 1050,
+      "height": 600,
+      "bytes": 14874,
+      "sha256": "54ff634f5758a2b7245df5158762d0f6fadf9f3b6f39962b03fb54574dedc755",
+      "group": "办公",
+      "usage": "名片模板"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/applications/logo-email-signature-1200x360.png",
+      "format": "png",
+      "width": 1200,
+      "height": 360,
+      "bytes": 16021,
+      "sha256": "14819c78937abfb437fe8a5fa9d91646279b03c12a4d81ccad2ea91df553e4a3",
+      "group": "办公",
+      "usage": "邮件签名模板"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/applications/logo-letterhead-a4-1240x1754.png",
+      "format": "png",
+      "width": 1240,
+      "height": 1754,
+      "bytes": 25484,
+      "sha256": "b207108eeb75541ad2e6ca88e489734fa58c21af2488963f30f953856c69f226",
+      "group": "办公",
+      "usage": "A4 信纸模板"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/applications/logo-presentation-cover-1920x1080.png",
+      "format": "png",
+      "width": 1920,
+      "height": 1080,
+      "bytes": 35425,
+      "sha256": "0607eb4b6c00124c91bb540b141cd399b67d935485c0dfe7ae9d4a20276bcbd7",
+      "group": "办公",
+      "usage": "演示文稿封面"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/applications/logo-social-cover-1500x500.png",
+      "format": "png",
+      "width": 1500,
+      "height": 500,
+      "bytes": 18848,
+      "sha256": "4ee4b0321be3466eb82f470c7f78ecd3c8eb9b267c0f92d94c4ddbf5c1d3b36b",
+      "group": "传播",
+      "usage": "社交媒体横幅"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/core/logo-horizontal-dark-1200x540.png",
+      "format": "png",
+      "width": 1200,
+      "height": 540,
+      "bytes": 15068,
+      "sha256": "5cc27e2fefb77f93c664e734031bc51214897921812a9a4ddd8dc7a650853be8",
+      "group": "核心",
+      "usage": "暗底横版主标"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/core/logo-horizontal-light-1200x540.png",
+      "format": "png",
+      "width": 1200,
+      "height": 540,
+      "bytes": 14945,
+      "sha256": "799f012de8dc465a8b9b58f8d82dd867b6875e45a334eaaca372039f8f27dc1d",
+      "group": "核心",
+      "usage": "浅底横版主标"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/core/logo-horizontal-transparent-dark-1200x540.png",
+      "format": "png",
+      "width": 1200,
+      "height": 540,
+      "bytes": 16690,
+      "sha256": "7650aae4122fad135dbefa0bb88b790ceb297275d5441bbb40124fc62da33276",
+      "group": "核心",
+      "usage": "透明底深色横版主标"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/core/logo-horizontal-transparent-light-1200x540.png",
+      "format": "png",
+      "width": 1200,
+      "height": 540,
+      "bytes": 16411,
+      "sha256": "712e1c814d69d21a10dabfa2747c479922b4d31699b735b9ddfefa2f0bcba3ea",
+      "group": "核心",
+      "usage": "透明底反白横版主标"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/core/logo-monochrome-black-1200x540.png",
+      "format": "png",
+      "width": 1200,
+      "height": 540,
+      "bytes": 17164,
+      "sha256": "25535efb74410ff4e10a218b524896da59c31db998bbc1109e8c4d7bf025c794",
+      "group": "核心",
+      "usage": "黑色单色标志"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/core/logo-monochrome-white-1200x540.png",
+      "format": "png",
+      "width": 1200,
+      "height": 540,
+      "bytes": 15585,
+      "sha256": "ce885802f88d5d50878fa6b2b292d750335137e1f4c0f65a91cd7de0df8262fd",
+      "group": "核心",
+      "usage": "白色单色标志"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/core/logo-stacked-dark-1024x1195.png",
+      "format": "png",
+      "width": 1024,
+      "height": 1195,
+      "bytes": 21921,
+      "sha256": "e7ab47faf4671e0af955016ed432c947b17ad64c7a4027f96f08a905816bccd2",
+      "group": "核心",
+      "usage": "暗底竖版组合标志"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/core/logo-wordmark-dark-1024x366.png",
+      "format": "png",
+      "width": 1024,
+      "height": 366,
+      "bytes": 4336,
+      "sha256": "d427982025af63c6d5fdbbcef9dce6bd8cbabf0483e2ecc42a9c22ea520a603b",
+      "group": "核心",
+      "usage": "深色独立字标"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/core/logo-wordmark-light-1024x366.png",
+      "format": "png",
+      "width": 1024,
+      "height": 366,
+      "bytes": 3835,
+      "sha256": "af50d988cc7730a24c13e7ada89d8b960d0ec1e9121681f586d7f8e462d8171d",
+      "group": "核心",
+      "usage": "反白独立字标"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/loading-frames/loading-00.png",
+      "format": "png",
+      "width": 512,
+      "height": 512,
+      "bytes": 8945,
+      "sha256": "8b0fc458e40175d55e9de5b0134457cb24d68c5e9fcbfb18c160c5ce3525a310",
+      "group": "动效",
+      "usage": "加载动画第 1 帧"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/loading-frames/loading-01.png",
+      "format": "png",
+      "width": 512,
+      "height": 512,
+      "bytes": 9007,
+      "sha256": "0583cd4be5cbc14ac255a7772fb3bdcca002606b7341f58f5cb71437fa9eb268",
+      "group": "动效",
+      "usage": "加载动画第 2 帧"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/loading-frames/loading-02.png",
+      "format": "png",
+      "width": 512,
+      "height": 512,
+      "bytes": 9001,
+      "sha256": "b8a2dbffeef4372173f01608fa02d665cd44c4192feac2bf392aefd1c44113fa",
+      "group": "动效",
+      "usage": "加载动画第 3 帧"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/loading-frames/loading-03.png",
+      "format": "png",
+      "width": 512,
+      "height": 512,
+      "bytes": 9014,
+      "sha256": "d152697e34d62f0f54fab679314793c7726e1c0ffe9cb1d6ba3f62c9c3f25f9a",
+      "group": "动效",
+      "usage": "加载动画第 4 帧"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/loading-frames/loading-04.png",
+      "format": "png",
+      "width": 512,
+      "height": 512,
+      "bytes": 8942,
+      "sha256": "ddd07380825d5ac260bd684203962ea914e1c10dc695f7f8f57ed321a22d45b3",
+      "group": "动效",
+      "usage": "加载动画第 5 帧"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/loading-frames/loading-05.png",
+      "format": "png",
+      "width": 512,
+      "height": 512,
+      "bytes": 8987,
+      "sha256": "a39e05a0668bd24a9cbf0fba2f28cc3ee2ffa5784034f0004fcb6cba24289c0c",
+      "group": "动效",
+      "usage": "加载动画第 6 帧"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/loading-frames/loading-06.png",
+      "format": "png",
+      "width": 512,
+      "height": 512,
+      "bytes": 8988,
+      "sha256": "2f4b793f35781f7256f9013aba7d614e4a01bc3f3b56e5985efd36c723468f29",
+      "group": "动效",
+      "usage": "加载动画第 7 帧"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/loading-frames/loading-07.png",
+      "format": "png",
+      "width": 512,
+      "height": 512,
+      "bytes": 8990,
+      "sha256": "3073a20ef53cc65bd12df4fd1363e7fb792195e0f13e5e705f8e454e8fcce491",
+      "group": "动效",
+      "usage": "加载动画第 8 帧"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/logo-circle-144.png",
+      "format": "png",
+      "width": 144,
+      "height": 144,
+      "bytes": 5461,
+      "sha256": "70167bdccb58c04f44b00b8ebb1c3749b1ae002b092518824a19541da507ed63",
+      "group": "平台",
+      "usage": "圆形头像与圆形裁切场景"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/logo-loading-512.gif",
+      "format": "gif",
+      "width": 512,
+      "height": 512,
+      "bytes": 14390,
+      "sha256": "0b0e4670a5252f8924a7b30a1484dc26a4b3cc23a30235a33c402e9971d14bf1",
+      "group": "动效",
+      "usage": "8 帧循环加载动画，110ms/帧"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/logo-photo-watermark-360x144.png",
+      "format": "png",
+      "width": 360,
+      "height": 144,
+      "bytes": 4772,
+      "sha256": "b38f23fe39d32db23c851be5f6d39fa83e09189c6e9cd702e154892659c4dc14",
+      "group": "传播",
+      "usage": "照片角标与水印"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/logo-share-500x400.png",
+      "format": "png",
+      "width": 500,
+      "height": 400,
+      "bytes": 6551,
+      "sha256": "7dd7674eb3dab9a19c6ea426b6c3cf65e70267d43ae474731bff0230d6c80a44",
+      "group": "传播",
+      "usage": "微信分享卡片"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/logo-square-1024.png",
+      "format": "png",
+      "width": 1024,
+      "height": 1024,
+      "bytes": 26501,
+      "sha256": "2297173d86db8f57440c21297ee1ad808766a9d7c279829ac2389b1035f6b042",
+      "group": "核心",
+      "usage": "高清方形 Logo"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/logo-wechat-144.png",
+      "format": "png",
+      "width": 144,
+      "height": 144,
+      "bytes": 3246,
+      "sha256": "3fdb11c51c2f415a49f62d5a4048a60d2272199cec5229a4f506be95264c198c",
+      "group": "平台",
+      "usage": "微信小程序平台头像"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/platform/favicon-16.png",
+      "format": "png",
+      "width": 16,
+      "height": 16,
+      "bytes": 432,
+      "sha256": "e50df77a9bc1e01467ac4c826a62d8690d730ffce1d8b1d8aaec3d104cdc9ed6",
+      "group": "平台",
+      "usage": "网站 Favicon 16"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/platform/favicon-32.png",
+      "format": "png",
+      "width": 32,
+      "height": 32,
+      "bytes": 776,
+      "sha256": "a03458f0e8fdc172f6a8e47421d417c0ceb63fa4e9de51065ad0e7a127cc56c6",
+      "group": "平台",
+      "usage": "网站 Favicon 32"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/platform/favicon-48.png",
+      "format": "png",
+      "width": 48,
+      "height": 48,
+      "bytes": 1157,
+      "sha256": "ed7abc8a3a22a6fad85c9c99c5bcc396543a02b11a814c6dd5a5a07a499a95c2",
+      "group": "平台",
+      "usage": "网站 Favicon 48"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/platform/favicon-64.png",
+      "format": "png",
+      "width": 64,
+      "height": 64,
+      "bytes": 1489,
+      "sha256": "6752bf6ad5fbc33350c9f7a514871240a2f5f3ce5542892833b9be81839da5c4",
+      "group": "平台",
+      "usage": "网站 Favicon 64"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/platform/favicon.ico",
+      "format": "ico",
+      "width": 64,
+      "height": 64,
+      "bytes": 12918,
+      "sha256": "884399ab361804410febc037165e532b234dc979b21be07ccfb869174fe53581",
+      "group": "平台",
+      "usage": "网站 ICO Favicon"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/platform/logo-android-192.png",
+      "format": "png",
+      "width": 192,
+      "height": 192,
+      "bytes": 4438,
+      "sha256": "a43f5aaeb2b452bba24c2a94da245f91f12837a49ff0c28d763d92a0aaaeb63d",
+      "group": "平台",
+      "usage": "Android 小图标"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/platform/logo-android-512.png",
+      "format": "png",
+      "width": 512,
+      "height": 512,
+      "bytes": 12066,
+      "sha256": "5c2d7f6374ea2bff44c5d6172b4c81cfdbcfa0c164697886b37507b589b01fc5",
+      "group": "平台",
+      "usage": "Android 高清图标"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/platform/logo-app-icon-1024.png",
+      "format": "png",
+      "width": 1024,
+      "height": 1024,
+      "bytes": 26501,
+      "sha256": "2297173d86db8f57440c21297ee1ad808766a9d7c279829ac2389b1035f6b042",
+      "group": "平台",
+      "usage": "应用商店与发布平台高清图标"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/platform/logo-apple-touch-180.png",
+      "format": "png",
+      "width": 180,
+      "height": 180,
+      "bytes": 4130,
+      "sha256": "401982c1254555fa3471e5c4582062a3f9dfd5af28997e294bed83d3f240447e",
+      "group": "平台",
+      "usage": "Apple Touch Icon"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/platform/logo-social-avatar-400.png",
+      "format": "png",
+      "width": 400,
+      "height": 400,
+      "bytes": 9424,
+      "sha256": "271cc1d6c84fbd50c45ba1fb5d43b7fe834837e234b6e983161b7b4f23badc36",
+      "group": "平台",
+      "usage": "社交媒体头像"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/preview/logo-brand-board-1600x1200.png",
+      "format": "png",
+      "width": 1600,
+      "height": 1200,
+      "bytes": 64136,
+      "sha256": "955ec4be30b61fe755857779aaa4abdf5b6a3c5e90c8252c6631ea8e7307fd2c",
+      "group": "总览",
+      "usage": "Logo 系统总览板"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/print/logo-brand-board.pdf",
+      "format": "pdf",
+      "width": 1600,
+      "height": 1200,
+      "bytes": 52487,
+      "sha256": "0a752534dc435dc4777b4e746097803c945f3671937e37f7b9b2aa07324e2bbf",
+      "group": "印刷",
+      "usage": "品牌总览矢量 PDF"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/print/logo-horizontal-dark.pdf",
+      "format": "pdf",
+      "width": 1200,
+      "height": 540,
+      "bytes": 3654,
+      "sha256": "7f77fd631b99b470c0d43f5685581c0cb2f8a1a9c910436ec515c89502e0db71",
+      "group": "印刷",
+      "usage": "暗底横版矢量 PDF"
+    },
+    {
+      "path": "docs/brand/logo-materials/generated/print/logo-horizontal-light.pdf",
+      "format": "pdf",
+      "width": 1200,
+      "height": 540,
+      "bytes": 3664,
+      "sha256": "181bdf2b2a1b60f7824c178b97ab90aed03566077a65c19e26403087d97f423a",
+      "group": "印刷",
+      "usage": "浅底横版矢量 PDF"
+    }
   ]
 }

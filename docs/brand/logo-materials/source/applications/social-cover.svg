@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="500" viewBox="0 0 1500 500" role="img" aria-label="CILI 社交媒体横幅">
+  <title>CILI 社交媒体横幅</title>
+  <rect width="1500" height="500" fill="#211f1c"/>
+
+  <path d="M-80 410 C250 250 430 460 690 280 S1120 40 1580 170" fill="none" stroke="#ffffff" stroke-opacity=".08" stroke-width="36" stroke-linecap="round"/>
+  <g transform="translate(120 130) scale(2.5)" aria-label="CILI 路线环标志">
+    <rect width="96" height="96" rx="26" fill="#e13b2b"/>
+    <path d="M68 25 C56 20 44 23 42 33 C40 42 47 46 56 49 C65 52 68 58 66 66 C63 75 54 79 44 78 C35 77 29 72 25 65" fill="none" stroke="#ffffff" stroke-width="10.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g transform="translate(408 206.6) scale(1.55)" fill="#ffffff" fill-rule="evenodd" aria-label="CILI">
+    <!-- CILI custom slab-mono wordmark; paths avoid platform font substitution. -->
+    <path d="M40 0H12C5.373 0 0 5.373 0 12v32c0 6.627 5.373 12 12 12h28V44H14V12h26V0Z"/>
+    <path d="M54 0h34v10H77v36h11v10H54V46h11V10H54V0Z"/>
+    <path d="M102 0h12v44h32v12h-44V0Z"/>
+    <path d="M160 0h34v10h-11v36h11v10h-34V46h11V10h-11V0Z"/>
+  </g>
+  <rect x="120" y="444" width="1260" height="6" rx="3" fill="#e13b2b"/>
+</svg>
