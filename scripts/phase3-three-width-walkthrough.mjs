@@ -138,25 +138,87 @@ try {
           }
           if (fixedOcclusions.length >= 5) break;
         }
-        // Interactive controls.
-        const buttons = document.querySelectorAll(
-          'button, [role="button"], a, select, input, textarea',
-        ).length;
-        const smallTouchTargets = Array.from(
-          document.querySelectorAll('button, [role="button"], a, select, input'),
-        )
-          .map((el) => ({ el, target: el.closest('label') || el }))
-          .filter(({ target }) => {
-            const r = target.getBoundingClientRect();
-            return r.height > 0 && (r.height < 32 || r.width < 32);
-          })
-          .map(({ el, target }) => ({
-            tag: el.tagName.toLowerCase(),
-            type: el instanceof HTMLInputElement ? el.type : '',
-            className: typeof el.className === 'string' ? el.className.slice(0, 80) : '',
-            effectiveTarget: target === el ? 'self' : 'label',
-          }));
-        const invalidSmallTouchTargets = smallTouchTargets;
+        // Interactive controls · 44 CSS px 有效命中门禁（替代旧 32px 视觉矩形阈值）。
+        // 有效尺寸 = 视觉盒 + 真实透明命中层（.hit-pad / .ra-mk-hit）包围盒；
+        // 真实命中用 elementFromPoint 中心 + 四边中点采样校验归属，禁用/加载态单独登记不计失败。
+        const MIN_HIT = 44;
+        const candidateSelector = 'button, [role="button"], a[href], select, input, textarea';
+        const allCandidates = Array.from(document.querySelectorAll(candidateSelector));
+        const disabledExcluded = [];
+        const invalidSmallTouchTargets = [];
+        const hitOwnershipFailures = [];
+        for (const el of allCandidates) {
+          const target = el.closest('label') || el;
+          const cs = getComputedStyle(el);
+          const isDisabled =
+            el.disabled === true ||
+            cs.pointerEvents === 'none' ||
+            el.getAttribute('aria-disabled') === 'true' ||
+            el.classList.contains('is-disabled') ||
+            el.classList.contains('is-loading');
+          if (isDisabled) {
+            disabledExcluded.push({
+              tag: el.tagName.toLowerCase(),
+              className: typeof el.className === 'string' ? el.className.slice(0, 80) : '',
+              reason: 'disabled/loading/pointer-events:none 锁定态，不计入 44px 门禁',
+            });
+            continue;
+          }
+          const r = target.getBoundingClientRect();
+          if (r.height <= 0 || r.width <= 0) continue;
+          let effW = r.width;
+          let effH = r.height;
+          for (const overlay of target.querySelectorAll('.hit-pad, .ra-mk-hit')) {
+            const o = overlay.getBoundingClientRect();
+            effW = Math.max(effW, o.right - r.left, r.right - o.left);
+            effH = Math.max(effH, o.bottom - r.top, r.bottom - o.top);
+          }
+          const samples = [
+            ['center', r.left + r.width / 2, r.top + r.height / 2],
+            ['edge-top', r.left + r.width / 2, r.top + 3],
+            ['edge-bottom', r.left + r.width / 2, r.bottom - 3],
+            ['edge-left', r.left + 3, r.top + r.height / 2],
+            ['edge-right', r.right - 3, r.top + r.height / 2],
+          ];
+          // 归属判定：命中点落在目标自身、目标子树内的交互后代，或包裹目标的交互祖先，均属本目标；
+          // 只有命中点落到与目标互不包含的独立兄弟控件上才算抢点。
+          const belongsToTarget = (owner) =>
+            owner === target ||
+            owner === el ||
+            (owner && target.contains(owner)) ||
+            (owner && owner.contains(target));
+          let ownershipOk = true;
+          for (const [name, x, y] of samples) {
+            const hit = document.elementFromPoint(x, y);
+            const owner = hit && hit.closest ? hit.closest(candidateSelector) : null;
+            // owner 为 null：命中点落在非交互后代（图标/文字 span 等），事件冒泡回本目标，不计抢点。
+            if (owner && !belongsToTarget(owner)) {
+              ownershipOk = false;
+              hitOwnershipFailures.push({
+                point: name,
+                className: typeof el.className === 'string' ? el.className.slice(0, 80) : '',
+                owner: owner
+                  ? typeof owner.className === 'string'
+                    ? owner.className.slice(0, 80)
+                    : owner.tagName
+                  : null,
+              });
+            }
+          }
+          const tooSmall = Math.min(effW, effH) < MIN_HIT - 0.5;
+          if (tooSmall || !ownershipOk) {
+            invalidSmallTouchTargets.push({
+              tag: el.tagName.toLowerCase(),
+              type: el instanceof HTMLInputElement ? el.type : '',
+              className: typeof el.className === 'string' ? el.className.slice(0, 80) : '',
+              effectiveTarget: target === el ? 'self' : 'label',
+              effectiveW: Math.round(effW),
+              effectiveH: Math.round(effH),
+              ownershipOk,
+              reason: tooSmall ? '有效命中盒 <44px' : '采样点归属到其他控件',
+            });
+          }
+        }
         return {
           docW,
           viewW,
@@ -165,9 +227,11 @@ try {
           offenders,
           fixedBars: fixedBars.slice(0, 10),
           fixedOcclusions,
-          buttons,
-          smallTouchTargets,
+          buttons: allCandidates.length,
+          smallTouchTargets: invalidSmallTouchTargets,
           invalidSmallTouchTargets,
+          disabledExcluded,
+          hitOwnershipFailures,
         };
       });
 
@@ -210,12 +274,22 @@ for (const r of report.results) {
       problems.push(`${r.slug}@${w}: ${m.fixedOcclusions.length} fixed/sticky occlusions`);
     }
     if (m.invalidSmallTouchTargets && m.invalidSmallTouchTargets.length) {
-      problems.push(`${r.slug}@${w}: ${m.invalidSmallTouchTargets.length} small touch targets`);
+      problems.push(
+        `${r.slug}@${w}: ${m.invalidSmallTouchTargets.length} 个有效命中盒 <44px 或归属错误的触控目标`,
+      );
     }
   }
 }
+const excludedTotal = report.results.reduce(
+  (sum, r) =>
+    sum + Object.values(r.widths).reduce((s, m) => s + (m.disabledExcluded?.length || 0), 0),
+  0,
+);
+console.log(`登记禁用/加载态排除控件 ${excludedTotal} 个（不计入 44px 失败清单）`);
 if (problems.length === 0) {
-  console.log('✅ 16 页 × 3 宽度 全部通过（无横向溢出、遮挡、无效小触控目标或 console 错误）');
+  console.log(
+    '✅ 16 页 × 3 宽度 全部通过（无横向溢出、遮挡、<44px 有效命中目标、归属错误或 console 错误）',
+  );
 } else {
   console.error('❌ 发现以下问题：');
   for (const p of problems) console.error('  - ' + p);

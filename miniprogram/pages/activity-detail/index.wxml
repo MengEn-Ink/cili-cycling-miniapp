@@ -128,7 +128,7 @@
                 <view wx:else class="avatar initialavatar" aria-label="{{item.displayName || '骑友'}}尚未公开头像">骑</view>
                 <text class="rider-name">{{item.displayName || '骑友'}}</text>
                 <text class="rider-meta">{{item.status === 'checked_in' ? '已签到' : '已报名'}}</text>
-                <button wx:if="{{item.isSelf && (!item.avatarUrl || !item.backgroundUrl)}}" class="rider-authorize" loading="{{attendeeAuthorizationState === 'loading'}}" disabled="{{attendeeAuthorizationState === 'loading'}}" catchtap="authorizeAttendeeMedia">{{attendeeAuthorizationState === 'loading' ? '正在打开…' : attendeeAuthorizationState === 'failed' ? '加载失败，重试' : attendeeAuthorizationState === 'declined' ? '重新授权' : '授权头像与背景'}}</button>
+                <button wx:if="{{item.isSelf && (!item.avatarUrl || !item.backgroundUrl)}}" class="rider-authorize" loading="{{attendeeAuthorizationState === 'loading'}}" disabled="{{attendeeAuthorizationState === 'loading'}}" catchtap="authorizeAttendeeMedia"><view class="hit-pad" aria-hidden="true"></view>{{attendeeAuthorizationState === 'loading' ? '正在打开…' : attendeeAuthorizationState === 'failed' ? '加载失败，重试' : attendeeAuthorizationState === 'declined' ? '重新授权' : '授权头像与背景'}}</button>
               </view>
             </view>
           </scroll-view>
@@ -208,7 +208,7 @@
   <!-- 骑手公开名片 modal -->
   <view wx:if="{{selectedAttendee}}" class="dialog-mask" bindtap="closeAttendeeCard" catchtouchmove="keepAttendeeCard">
     <view class="dialog rider-dialog" catchtap="keepAttendeeCard" role="dialog" aria-label="活动报名骑手公开名片">
-      <button class="dialog-close" bindtap="closeAttendeeCard" aria-label="关闭骑行名片">×</button>
+      <button class="dialog-close" bindtap="closeAttendeeCard" aria-label="关闭骑行名片"><view class="hit-pad" aria-hidden="true"></view>×</button>
       <swiper class="rider-dialog-swiper" current="{{selectedAttendeeIndex}}" circular="{{attendees.length > 1}}" previous-margin="{{attendees.length > 1 ? '28rpx' : '0'}}" next-margin="{{attendees.length > 1 ? '28rpx' : '0'}}" bindchange="attendeeCardChange">
         <swiper-item wx:for="{{attendees}}" wx:for-item="rider" wx:key="id">
           <view class="rider-dialog-photo {{rider.backgroundUrl ? '' : 'rider-dialog-photo--fallback'}}" aria-label="{{rider.displayName}} 的完整公开骑行名片">

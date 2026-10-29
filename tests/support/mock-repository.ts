@@ -17,7 +17,7 @@ import type {
   RouteGpxPreviewInput,
 } from '../../miniprogram/models';
 import { activities, profile, registrations } from './mock-fixtures';
-import { transition } from '../../miniprogram/utils/registration';
+import { transition } from './registration-transitions';
 import type {
   ActivityListFilter,
   ActivityInput,

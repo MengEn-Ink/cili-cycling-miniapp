@@ -148,12 +148,12 @@
                   <view class="buttonpair">
                     <button wx:if="{{item.canEdit}}" class="btn secondary" catchtap="edit" data-id="{{item.id}}">编辑活动</button>
                     <button wx:if="{{item.canReview}}" class="btn" catchtap="reviewActivity" data-id="{{item.id}}" data-decision="approve">通过</button>
-                    <button wx:if="{{item.canReview}}" class="text-button text-button--danger" catchtap="reviewActivity" data-id="{{item.id}}" data-decision="reject">驳回</button>
-                    <button wx:if="{{item.canToggleOnline}}" class="text-button text-button--danger" catchtap="toggleOnline" data-id="{{item.id}}">{{item.toggleLabel}}</button>
+                    <button wx:if="{{item.canReview}}" class="text-button text-button--danger" catchtap="reviewActivity" data-id="{{item.id}}" data-decision="reject"><view class="hit-pad" aria-hidden="true"></view>驳回</button>
+                    <button wx:if="{{item.canToggleOnline}}" class="text-button text-button--danger" catchtap="toggleOnline" data-id="{{item.id}}"><view class="hit-pad" aria-hidden="true"></view>{{item.toggleLabel}}</button>
                   </view>
 
                   <view class="low-actions">
-                    <button wx:if="{{item.canClone}}" catchtap="startClone" data-id="{{item.id}}" class="text-button">从此活动创建</button>
+                    <button wx:if="{{item.canClone}}" catchtap="startClone" data-id="{{item.id}}" class="text-button"><view class="hit-pad" aria-hidden="true"></view>从此活动创建</button>
                   </view>
                 </view>
               </view>

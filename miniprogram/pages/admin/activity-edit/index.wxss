@@ -322,6 +322,21 @@ page {
   line-height: 36rpx;
   text-decoration: none;
 }
+
+/* touch-hit-begin · 图片操作条纵向透明命中层（88rpx@340=39.9px；横向由 flex:1 占满）；真实 wxml 子节点 .hit-pad 承载 */
+.image-action {
+  position: relative;
+}
+.image-action .hit-pad {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  left: 0;
+  right: 0;
+  pointer-events: auto;
+}
+/* touch-hit-end */
+
 .image-action--danger {
   background: var(--surface-media-danger) !important;
 }

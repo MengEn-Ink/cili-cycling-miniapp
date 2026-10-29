@@ -5042,6 +5042,21 @@ body.capture-viewport .screen-notes {
   filter: drop-shadow(0 0.3px 0.4px rgba(214, 69, 32, 0.42));
 }
 
+/* touch-hit-begin · 关键点 44×44 透明命中矩形：只接收事件，不绘制视觉 */
+.ra-map-svg .ra-mk-hit {
+  fill: transparent;
+  pointer-events: all;
+}
+/* 字形/光环/文字不参与命中，避免压到邻近透明命中矩形；仅命中层接收事件 */
+.ra-map-svg .ra-mk text,
+.ra-map-svg .ra-mk circle,
+.ra-map-svg .ra-mk path,
+.ra-map-svg .ra-mk line,
+.ra-map-svg .ra-mk ellipse {
+  pointer-events: none;
+}
+/* touch-hit-end */
+
 /* 地图说明文字 + 图例栅格 */
 .ra-map-caption {
   font-size: 11px;

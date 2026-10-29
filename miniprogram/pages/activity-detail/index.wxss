@@ -490,6 +490,20 @@
   font-weight: 800;
 }
 
+/* touch-hit-begin · 授权小胶囊双向透明命中层（56rpx 三宽度均不足 44px）；真实 wxml 子节点 .hit-pad 承载 */
+.rider-authorize {
+  position: relative;
+}
+.rider-authorize .hit-pad {
+  position: absolute;
+  top: -10px;
+  bottom: -10px;
+  left: -10px;
+  right: -10px;
+  pointer-events: auto;
+}
+/* touch-hit-end */
+
 /* --- 行前约定 chip-list --------------------------------------------------- */
 .notes-paper {
   gap: 16rpx;
@@ -728,6 +742,21 @@
   font-size: 36rpx;
   line-height: 64rpx;
 }
+
+/* touch-hit-begin · 弹窗关闭钮双向透明命中层（64rpx 正方形三宽度均不足 44px）；真实 wxml 子节点 .hit-pad 承载 */
+.dialog-close {
+  position: relative;
+}
+.dialog-close .hit-pad {
+  position: absolute;
+  top: -10px;
+  bottom: -10px;
+  left: -10px;
+  right: -10px;
+  pointer-events: auto;
+}
+/* touch-hit-end */
+
 .rider-dialog-swiper {
   width: 100%;
   height: 820rpx;

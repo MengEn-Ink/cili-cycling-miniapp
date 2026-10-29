@@ -1125,3 +1125,151 @@ picker[disabled] {
     min-height: var(--segment-height);
   }
 }
+
+/* touch-hit-begin · 触控热区补齐（2026-10-29）
+   背景：rpx 随视口宽度缩放，340px 窄屏下 96/92/88rpx 控件高度低于 44 CSS px 命中下限。
+   方法：wxml 真实透明子节点 <view class="hit-pad"> 承载命中层（固定 CSS px 扩张，不随 rpx 缩放），
+   不绘制背景/边框/字号/字色，不占文档流、不改变视觉布局；命中事件冒泡回宿主控件。
+   分段类仅做纵向扩张，避免三列相邻控件横向互抢；无对应 wxml 节点的宿主不产生扩张。
+   验证边界：微信原生渲染层 tap 命中仍须真机门禁复核；本仓库无 IDE 授权，
+   浏览器证据只覆盖原型 HTML，不得外推为 native 通过；真机矩阵未取得前 native 结论保持 BLOCKED。 */
+
+/* 组件尺度令牌：触控命中下限固定 44 CSS px；视觉基线 --control-height（96rpx）原值不动，
+   仅作承载几何引用，不改颜色/字号/字重/背景/边框。 */
+page {
+  --touch-target-min: 44px;
+}
+
+button,
+.btn,
+.secondary,
+.button,
+.map-button,
+.photo-button,
+.photo-action,
+.route-action,
+.profile-alert-action,
+.meeting-location__action,
+.text-button,
+.image-action,
+.row.rowlink.rowbutton {
+  position: relative;
+}
+
+/* —— 真实节点承载（bearing）：宿主真实元素自身以 --touch-target-min 承载 min-height，
+   字形/字号/颜色不变；不使用伪元素。图标型小钮另补 min-width 下限。仅承载几何，不绘制背景/边框。
+   沸点契约锁定为 var(--control-height) 的主按钮不在此声明高度，由窄屏 media 兜底补齐。 —— */
+.load-more,
+.submit-button,
+.back-button,
+.cancel-button,
+.delete-button,
+.delete-record-button,
+.trip-action,
+.club-admin-action,
+.club-admin-retry,
+.club-manage-btn,
+.chapterhead-action,
+.consent-primary,
+.consent-later,
+.permission-card-action,
+.permission-reset,
+.save-action,
+.profile-progress-action,
+.profile-status-action,
+.profile-permission,
+.route-upload-button,
+.route-link-plus,
+.route-source-conn-link,
+.row.rowlink.rowbutton,
+.start-navigation-button,
+.refresh-error,
+.activity-retry,
+.club-profile-retry,
+.club-media-btn,
+.club-cover-remove,
+.club-profile-submit,
+.strava-cta,
+.ticket,
+.paper,
+.rider,
+.story,
+.activity-row,
+.background-placeholder {
+  min-height: var(--touch-target-min);
+}
+
+/* 图标型小钮横向最小命中 44px（容器已有相对定位，glyph 居中，不改字形）。 */
+.back-button,
+.photo-remove,
+.club-admin-retry,
+.activity-retry,
+.club-profile-retry,
+.refresh-error,
+.swipe-delete {
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
+}
+
+button .hit-pad,
+.btn .hit-pad,
+.secondary .hit-pad,
+.button .hit-pad,
+.map-button .hit-pad,
+.photo-button .hit-pad,
+.photo-action .hit-pad,
+.route-action .hit-pad,
+.profile-alert-action .hit-pad,
+.meeting-location__action .hit-pad,
+.text-button .hit-pad,
+.image-action .hit-pad,
+.row.rowlink.rowbutton .hit-pad {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  left: 0;
+  right: 0;
+  pointer-events: auto;
+}
+
+.step,
+.segment,
+.timeline-tab,
+.status-filter,
+.filter-tab {
+  position: relative;
+  min-height: var(--touch-target-min);
+}
+
+.step .hit-pad,
+.segment .hit-pad,
+.timeline-tab .hit-pad,
+.status-filter .hit-pad,
+.filter-tab .hit-pad {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  left: 0;
+  right: 0;
+  pointer-events: auto;
+}
+
+/* —— 级联兜底（R-CASCADE-1）：页面 wxss 在 app.wxss 之后加载，同/高特异性
+   的页面 min-height（rpx 换算后 <44px）会覆盖上面的单类 bearing；这里只用
+   更高特异性引用 --touch-target-min，不改字号/字色/背景/边框/圆角，字形主题不变。 —— */
+.filter-tab.filter-tab.filter-tab {
+  min-height: var(--touch-target-min);
+}
+
+button.row.rowlink.rowbutton.rowlink {
+  min-height: var(--touch-target-min);
+}
+
+.chapterhead-action.chapterhead-action {
+  min-height: var(--touch-target-min);
+}
+
+/* 沸点契约锁定 var(--control-height) 的主按钮不在此改写声明高度；
+   窄屏 96rpx=43.52px 的不足由其真实 .hit-pad 纵向各扩张 4px（命中盒 51.52px）补齐，
+   视觉声明保持 var(--control-height)，不改字号/颜色。 */
+/* touch-hit-end */

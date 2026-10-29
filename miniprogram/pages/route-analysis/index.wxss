@@ -197,6 +197,21 @@
 .map-reset::after {
   display: none;
 }
+
+/* touch-hit-begin · 地图重置钮双向透明命中层（56rpx 三宽度均不足 44px）；真实 wxml 子节点 .hit-pad 承载 */
+.map-reset {
+  position: relative;
+}
+.map-reset .hit-pad {
+  position: absolute;
+  top: -10px;
+  bottom: -10px;
+  left: -10px;
+  right: -10px;
+  pointer-events: auto;
+}
+/* touch-hit-end */
+
 .route-map {
   width: 100%;
   height: 560rpx;
@@ -786,6 +801,25 @@
   border-radius: 10rpx;
   box-sizing: border-box;
 }
+
+/* touch-hit-begin · 锚点胶囊/坡段卡/停顿点行纵向透明命中层（88rpx@340=39.9px）；真实 wxml 子节点 .hit-pad 承载 */
+.route-analysis-page .anchor-item,
+.route-analysis-page .segment-item,
+.route-analysis-page .point {
+  position: relative;
+}
+.route-analysis-page .anchor-item .hit-pad,
+.route-analysis-page .segment-item .hit-pad,
+.route-analysis-page .point .hit-pad {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  left: 0;
+  right: 0;
+  pointer-events: auto;
+}
+/* touch-hit-end */
+
 .route-analysis-page .segment-item,
 .route-analysis-page .point {
   padding: 16rpx;

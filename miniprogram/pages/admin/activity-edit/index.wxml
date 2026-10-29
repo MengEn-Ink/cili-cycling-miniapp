@@ -56,16 +56,16 @@
                 <button wx:else class="stored-media-placeholder" data-file-id="{{item}}" bindtap="retryStoredMediaPreview">{{mediaPreviewLoading ? '图片加载中…' : '图片加载失败，点击重试'}}</button>
                 <view wx:if="{{index === 0}}" class="cover-badge">封面</view>
                 <view class="image-actions">
-                  <button wx:if="{{index > 0}}" class="image-action" bindtap="setCover" data-index="{{index}}">设为封面</button>
-                  <button class="image-action image-action--danger" bindtap="removeImage" data-index="{{index}}">删除</button>
+                  <button wx:if="{{index > 0}}" class="image-action" bindtap="setCover" data-index="{{index}}"><view class="hit-pad" aria-hidden="true"></view>设为封面</button>
+                  <button class="image-action image-action--danger" bindtap="removeImage" data-index="{{index}}"><view class="hit-pad" aria-hidden="true"></view>删除</button>
                 </view>
               </view>
               <view wx:for="{{pendingImages}}" wx:for-item="pendingImage" wx:key="id" class="image-item image-item--pending">
                 <image class="image-preview" src="{{pendingImage.previewPath}}" mode="aspectFill" />
                 <view class="upload-status upload-status--{{pendingImage.status}}">{{pendingImage.status === 'uploading' ? '上传中…' : pendingImage.status === 'uploaded' ? '已上传' : '上传失败'}}</view>
                 <view wx:if="{{pendingImage.status === 'failed'}}" class="image-actions">
-                  <button class="image-action" bindtap="retryImage" data-id="{{pendingImage.id}}">重试</button>
-                  <button class="image-action image-action--danger" bindtap="removePendingImage" data-id="{{pendingImage.id}}">删除</button>
+                  <button class="image-action" bindtap="retryImage" data-id="{{pendingImage.id}}"><view class="hit-pad" aria-hidden="true"></view>重试</button>
+                  <button class="image-action image-action--danger" bindtap="removePendingImage" data-id="{{pendingImage.id}}"><view class="hit-pad" aria-hidden="true"></view>删除</button>
                 </view>
               </view>
               <button wx:if="{{images.length + pendingImages.length < 3}}" class="upload-tile" loading="{{uploading}}" bindtap="chooseImages">
@@ -262,7 +262,7 @@
                 <view class="notice-dot" aria-hidden="true"></view>
                 <text>二维码可能已过期，请替换为最新图片。</text>
               </view>
-              <button class="image-action image-action--danger" bindtap="removeGroupQrCode">删除二维码</button>
+              <button class="image-action image-action--danger" bindtap="removeGroupQrCode"><view class="hit-pad" aria-hidden="true"></view>删除二维码</button>
             </view>
             <view wx:elif="{{pendingGroupQrCode}}" class="group-qr-card group-qr-card--pending">
               <view class="group-qr-media">

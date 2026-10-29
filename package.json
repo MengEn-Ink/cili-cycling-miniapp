@@ -37,6 +37,7 @@
     "verify:cloud-packages": "node scripts/verify-cloud-packages.mjs",
     "coverage": "vitest run --coverage && node --experimental-test-coverage --test scripts/bootstrap-cloudbase.node-test.mjs && node scripts/check-cloud-coverage.mjs",
     "test:wxss-contract": "node --test scripts/wxss-selector-contract.node-test.mjs",
+    "test:touch-hit-area": "node --test scripts/touch-hit-area/node-test.mjs",
     "test:deploy": "node --test scripts/release-baseline.node-test.mjs scripts/release-baseline-github.node-test.mjs scripts/release-baseline-cli.node-test.mjs scripts/miniprogram-upload-decision.node-test.mjs scripts/upload-miniprogram-ci.node-test.mjs scripts/miniprogram-experience-release.node-test.mjs scripts/audit-miniprogram-ci.node-test.mjs scripts/media-upload-governance.node-test.mjs",
     "check:experience-releases": "node scripts/miniprogram-experience-release.mjs verify-repository --directory docs/releases/experience --base \"${RELEASE_NOTES_BASE:-}\"",
     "check:release-notes": "node scripts/check-release-notes.mjs",
@@ -58,10 +59,11 @@
     "pr:preflight": "node scripts/pr-preflight.mjs",
     "pr:body": "node scripts/pr-body.mjs",
     "build": "node -e \"fs.rmSync('dist', { recursive: true, force: true })\" && tsc -p tsconfig.build.json && node scripts/validate.mjs",
-    "validate": "npm run tool:install && npm run format:check && npm run lint && npm run typecheck && npm test && npm run test:content-contract && npm run test:rights-contract && npm run test:strava-contract && npm run test:wxss-contract && npm run test:phase3-visual && npm run test:dark-resilience && npm run test:ci-contract && npm run test:journey-evidence && npm run test:bootstrap && npm run test:deploy && npm run check:experience-releases && npm run test:release-notes && npm run test:ui-sync && npm run test:design && npm run check:design && npm run check:release-notes && npm run check:main-package && npm run check:ui-sync && npm run check:governance && npm run test:cloud && npm run verify:cloud-packages && npm run build",
+    "validate": "npm run tool:install && npm run format:check && npm run lint && npm run typecheck && npm test && npm run test:content-contract && npm run test:rights-contract && npm run test:strava-contract && npm run test:wxss-contract && npm run test:touch-hit-area && npm run test:phase3-visual && npm run test:dark-resilience && npm run test:ci-contract && npm run test:journey-evidence && npm run test:bootstrap && npm run test:deploy && npm run check:experience-releases && npm run test:release-notes && npm run test:ui-sync && npm run test:design && npm run check:design && npm run check:release-notes && npm run check:main-package && npm run check:ui-sync && npm run check:governance && npm run test:cloud && npm run verify:cloud-packages && npm run build",
     "audit:all": "npm audit --audit-level=high && node scripts/audit-miniprogram-ci.mjs && npm --prefix cloudfunctions/shared audit --audit-level=high && npm --prefix cloudfunctions/auth audit --audit-level=high && npm --prefix cloudfunctions/activity-read audit --audit-level=high && npm --prefix cloudfunctions/activity-admin audit --audit-level=high && npm --prefix cloudfunctions/strava-bridge audit --audit-level=high && npm --prefix cloudfunctions/strava-callback audit --audit-level=high && npm --prefix cloudfunctions/registration audit --audit-level=high && npm --prefix cloudfunctions/admin-review audit --audit-level=high && npm --prefix cloudfunctions/club-application audit --audit-level=high && npm --prefix cloudfunctions/notification-send audit --audit-level=high && npm --prefix cloudfunctions/profile audit --audit-level=high && npm --prefix cloudfunctions/profile-media-cleanup audit --audit-level=high && npm --prefix cloudfunctions/route-maintenance audit --audit-level=high",
     "test:phase3-visual": "playwright install chromium && node scripts/run-phase3-three-width.mjs",
-    "test:dark-resilience": "playwright install chromium && node scripts/audit-dark-runtime.mjs"
+    "test:dark-resilience": "playwright install chromium && node scripts/audit-dark-runtime.mjs",
+    "test:touch-hit-browser": "TOUCH_EVIDENCE_DIR=artifacts/touch-package-delivery/runtime/touch-browser-evidence node scripts/touch-hit-area/browser.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

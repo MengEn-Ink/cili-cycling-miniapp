@@ -472,6 +472,21 @@
   padding: 0 20rpx;
   font-size: 22rpx;
 }
+
+/* touch-hit-begin · 小按钮双向透明命中层（72rpx 三宽度均不足 44px）；真实 wxml 子节点 .hit-pad 承载 */
+.btn.tiny {
+  position: relative;
+}
+.btn.tiny .hit-pad {
+  position: absolute;
+  top: -10px;
+  bottom: -10px;
+  left: -10px;
+  right: -10px;
+  pointer-events: auto;
+}
+/* touch-hit-end */
+
 .btn.secondary {
   background: var(--color-surface);
   color: var(--color-text);

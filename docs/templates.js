@@ -1333,6 +1333,13 @@
         'rest-2':   { x: 30, y: 60 },
         end:        { x: 36, y: 85 },
       };
+      /* touch-hit-begin · 地图关键点 44×44 透明命中矩形（viewBox 单位）。
+         最坏屏 340px：容器宽 312px、scale 3.12，44px ≈ 14.103 单位，取 14.2 留余量。
+         glyph 坐标不动；highest/descent 中心轴差 10×10 单位，热区中心沿 x 轴反向偏移分区，
+         保证两盒投影不相交、点击不串点。 */
+      const HIT_SIDE = 15.4;
+      const hitOffsets = { highest: { dx: 2.8, dy: 0 }, descent: { dx: -2.8, dy: 0 } };
+      /* touch-hit-end */
       // 路径顺序 + 对应 km 范围（用于分段上色、画条纹等）
       const routeSteps = [
         { from: 'start',    to: 'warm-end', color: '#5f8e59', kmA: 0,   kmB: 24,  stripe: '' },
@@ -1477,7 +1484,15 @@
           const labelY = c.y + anchor.dy;
           const nameLabel = p.label.length > 7 ? p.label.slice(0, 7) + '…' : p.label;
           const showLabel = (isMajor && (p.id === 'start' || p.id === 'end' || p.id === 'highest')) || isSel;
+          /* touch-hit-begin */
+          const hitOff = hitOffsets[p.id] || { dx: 0, dy: 0 };
+          const hitX = (c.x + hitOff.dx - HIT_SIDE / 2).toFixed(2);
+          const hitY = (c.y + hitOff.dy - HIT_SIDE / 2).toFixed(2);
+          /* touch-hit-end */
           return `<g class="ra-mk ${isSel ? 'is-active' : ''}" ${dim} data-route="route-analysis" data-state="${stateName}" aria-label="${p.label} km ${p.km}">
+            <!-- touch-hit-begin -->
+            <rect class="ra-mk-hit" x="${hitX}" y="${hitY}" width="${HIT_SIDE}" height="${HIT_SIDE}"/>
+            <!-- touch-hit-end -->
             ${haloRing}
             ${renderGlyph(g.kind, c.x, c.y, r, isSel)}
             ${showLabel ? `

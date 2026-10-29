@@ -11,20 +11,6 @@ function chinaDate(value: string): Date | null {
   return new Date(instant.getTime() + 8 * 60 * 60 * 1000);
 }
 
-export function formatChinaDate(value?: string): string {
-  if (!value) return '';
-  const date = chinaDate(value);
-  if (!date) return '';
-  return `${date.getUTCFullYear()}年${date.getUTCMonth() + 1}月${date.getUTCDate()}日`;
-}
-
-export function formatChinaDateOnly(value?: string): string {
-  if (!value) return '';
-  const date = chinaDate(value);
-  if (!date) return '';
-  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
-}
-
 export function formatChinaDateTime(value?: string): string {
   if (!value) return '';
   const text = value.trim();

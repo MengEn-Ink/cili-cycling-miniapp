@@ -87,8 +87,9 @@
                 <text class="muted" wx:if="{{item.status !== 'cancelled'}}">{{item.statusGuidance}}</text>
                 <text class="muted" wx:else>可左滑或点击删除记录</text>
                 <view class="ticket-actions">
-                  <button wx:if="{{item.status === 'cancelled'}}" class="btn tiny secondary delete-record-button" data-id="{{item.id}}" catchtap="confirmDelete" loading="{{deletingId === item.id}}" aria-label="删除行程记录：{{item.activity.title}}">删除记录</button>
+                  <button wx:if="{{item.status === 'cancelled'}}" class="btn tiny secondary delete-record-button" data-id="{{item.id}}" catchtap="confirmDelete" loading="{{deletingId === item.id}}" aria-label="删除行程记录：{{item.activity.title}}"><view class="hit-pad" aria-hidden="true"></view>删除记录</button>
                   <button class="btn tiny {{item.status === 'approved' || item.status === 'checked_in' ? '' : 'secondary'}} trip-action" data-id="{{item.id}}" catchtap="open" aria-label="{{item.destinationLabel}}：{{item.activity.title}}">
+                    <view class="hit-pad" aria-hidden="true"></view>
                     {{item.destinationLabel}}
                     <text class="chev" aria-hidden="true"></text>
                   </button>
