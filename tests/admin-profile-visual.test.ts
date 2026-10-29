@@ -30,12 +30,15 @@ describe('管理端与个人资料视觉契约', () => {
   it('地图选点和公开路线解析使用次按钮，图片操作热区不少于 88rpx', () => {
     const template = read('miniprogram/pages/admin/activity-edit/index.wxml');
     const styles = read('miniprogram/pages/admin/activity-edit/index.wxss');
+    const appStyles = read('miniprogram/app.wxss');
 
     expect(template).toMatch(/class="map-button map-button--secondary"[^>]*>地图选点<\/button>/);
     expect(template).toMatch(
       /class="map-button map-button--secondary"[^>]*bindtap="addOfficialRoute"/,
     );
     expect(styles).toMatch(/\.image-action\s*\{[^}]*min-height:\s*88rpx/s);
+    expect(appStyles).toContain('--surface-media-action:');
+    expect(appStyles).toContain('--surface-media-danger:');
     expect(styles).toMatch(
       /\.group-qr-card \.image-action--danger\s*\{[^}]*background:\s*var\(--color-danger-soft\)(?:\s*!important)?;[^}]*color:\s*var\(--color-danger-text\)/s,
     );

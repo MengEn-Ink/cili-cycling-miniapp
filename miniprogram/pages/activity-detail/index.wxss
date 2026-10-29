@@ -32,12 +32,7 @@
   right: 0;
   bottom: 0;
   left: 0;
-  background: linear-gradient(
-    to bottom,
-    var(--scrim-activity-detail-cover-clear) 0%,
-    var(--scrim-activity-detail-cover-clear) 48%,
-    var(--scrim-activity-detail-cover-strong) 100%
-  );
+  background: var(--gradient-cover);
   pointer-events: none;
 }
 .corner {
@@ -58,7 +53,7 @@
   letter-spacing: 1rpx;
 }
 .tag.dark {
-  background: var(--surface-media-tag);
+  background: var(--color-scrim-dark);
   color: var(--color-on-media);
 }
 .caption {
@@ -100,7 +95,7 @@
   right: 32rpx;
   padding: 4rpx 14rpx;
   border-radius: 999rpx;
-  background: var(--surface-countdown);
+  background: var(--color-media-scrim);
   color: var(--color-on-media);
   font-family: var(--font-family-mono);
   font-size: 22rpx;
@@ -711,7 +706,7 @@
   align-items: center;
   justify-content: center;
   padding: 32rpx;
-  background: var(--surface-dialog-backdrop);
+  background: var(--color-scrim-dark);
 }
 .dialog {
   position: relative;
@@ -731,7 +726,7 @@
   padding: 0;
   border: none;
   border-radius: 50%;
-  background: var(--surface-dialog-control);
+  background: var(--color-control-scrim);
   color: var(--color-on-media);
   font-size: 36rpx;
   line-height: 64rpx;
@@ -756,11 +751,7 @@
   right: 0;
   bottom: 0;
   left: 0;
-  background: linear-gradient(
-    to top,
-    var(--scrim-attendee-card-strong),
-    var(--scrim-attendee-card-clear) 60%
-  );
+  background: var(--gradient-dialog-cover);
 }
 .rider-dialog-photo__identity {
   position: absolute;
@@ -786,7 +777,7 @@
   font-size: 52rpx;
   font-weight: 600;
   color: var(--color-on-media);
-  background: var(--surface-attendee-avatar-glass);
+  background: var(--color-on-media-surface);
 }
 .rider-dialog-copy {
   flex: 1;
@@ -894,203 +885,352 @@
   content: '';
 }
 
-/* UI Revamp V1 · B+C edge-to-edge photography and floating summary sheet. */
-.photo.hero.detail {
-  aspect-ratio: 4 / 3;
-  border-radius: 0 0 40rpx 40rpx;
-}
-.shade {
-  background: linear-gradient(to bottom, var(--scrim-cover-top), var(--scrim-hero));
-}
-[data-v1-sheet] {
-  position: relative;
-  z-index: 4;
-  margin: -48rpx calc(24rpx - var(--page-gutter)) 0;
-  padding: 32rpx;
-  border-radius: 32rpx;
-  background: var(--surface-sheet);
-  box-shadow: var(--shadow-sheet);
-}
-.hero-title {
-  display: -webkit-box;
-  overflow: hidden;
-  font-weight: 600;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-}
-.dialog-close,
-.rider-authorize {
-  min-width: 88rpx;
-  min-height: 88rpx;
-}
-
-/* 方案 B v6：详情从上浮大白卡收敛为连续影像志阅读。 */
+/* 2026-10-28 · Direction A / 一镜到底 */
 .detail-page {
-  padding: 0 0 calc(var(--action-bar-height) + 64rpx + env(safe-area-inset-bottom));
-  background: var(--color-bg);
+  --color-bg: var(--color-cinema-bg);
+  --color-surface: var(--color-cinema-panel);
+  --color-raised: var(--color-cinema-panel-raised);
+  --color-text: var(--color-cinema-text);
+  --color-muted: var(--color-cinema-muted);
+  --color-border: var(--color-cinema-line);
+  --color-border-subtle: var(--color-cinema-line);
+  --color-card-border: var(--color-cinema-line);
+  padding-bottom: calc(var(--action-bar-height) + 96rpx + env(safe-area-inset-bottom));
+  background: var(--color-cinema-bg);
+  color: var(--color-cinema-text);
 }
 .detail-page .photo.hero.detail {
-  min-height: 0;
-  padding-top: 68.75%;
-  border-radius: 0;
+  aspect-ratio: 5 / 4;
+  border-bottom: 2rpx solid var(--color-cinema-line);
 }
 .detail-page .shade {
-  background: linear-gradient(
-    180deg,
-    var(--scrim-activity-detail-cover-clear) 40%,
-    var(--scrim-activity-detail-cover-strong) 100%
-  );
+  background: var(--gradient-cover-opening);
 }
 .detail-page .caption {
-  right: 32rpx;
-  bottom: 28rpx;
-  left: 32rpx;
+  right: 36rpx;
+  bottom: 36rpx;
+  left: 36rpx;
 }
 .detail-page .hero-title {
-  font-size: 44rpx;
-  line-height: 56rpx;
-  font-weight: 700;
+  color: var(--color-cinema-text);
+  font-size: 68rpx;
+  line-height: 78rpx;
 }
-.detail-page .hero-sub {
-  margin-top: 6rpx;
-  color: var(--color-on-action-muted);
-  font-size: 22rpx;
-  line-height: 32rpx;
+.detail-page .hero-sub,
+.detail-page .caption .eyebrow {
+  color: var(--color-cinema-text);
 }
-.detail-page [data-v6-summary] {
-  position: relative;
-  z-index: 1;
-  margin: 0;
-  padding: 28rpx 32rpx 24rpx;
+.detail-page .ink {
+  width: calc(100% + var(--page-gutter) * 2);
+  margin: 0 calc(0rpx - var(--page-gutter));
+  padding: 0;
   border: 0;
-  border-bottom: var(--border-width-hairline) solid var(--color-border);
+  border-bottom: 2rpx solid var(--color-cinema-line);
   border-radius: 0;
-  background: var(--color-bg);
+  background: var(--color-cinema-bg);
   box-shadow: none;
 }
 .detail-page .metrics {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16rpx;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+}
+.detail-page .metrics > view {
+  min-width: 0;
+  padding: 24rpx 16rpx;
+  border-right: 2rpx solid var(--color-cinema-line);
+}
+.detail-page .metrics > view:last-child {
+  border-right: 0;
 }
 .detail-page .metrics .em {
-  overflow: visible;
-  color: var(--color-text);
-  font-size: 32rpx;
-  line-height: 42rpx;
-  text-overflow: clip;
+  overflow: hidden;
+  color: var(--color-cinema-text);
+  font-family: var(--font-family-mono);
+  font-size: 40rpx;
+  line-height: 50rpx;
+  text-overflow: ellipsis;
 }
-.detail-page .metrics .unit,
-.detail-page .metrics > view > text:last-child {
-  color: var(--color-muted);
+.detail-page .metrics .em .unit,
+.detail-page .metrics text {
+  color: var(--color-cinema-muted);
   font-size: 20rpx;
-  line-height: 28rpx;
 }
 .detail-page .ink-row {
-  margin-top: 20rpx;
-  padding: 20rpx 0 0;
-  border-top: var(--border-width-hairline) solid var(--color-border);
+  margin: 0;
+  padding: 24rpx var(--page-gutter);
+  border-color: var(--color-cinema-line);
 }
-.detail-page .content {
-  gap: 0;
-  padding: 0 var(--page-gutter);
-}
-.detail-page .section {
-  gap: 0;
-  padding: 20rpx 0;
-}
-.detail-page .chapterhead {
-  display: flex;
-  align-items: baseline;
-  gap: 20rpx;
-  margin: 24rpx 0 20rpx;
-  padding: 0;
-  border: 0;
-}
-.detail-page .chapterhead-title {
+.detail-page .ink-capacity {
   flex: none;
-  font-size: 30rpx;
-  line-height: 44rpx;
-  font-weight: 700;
-}
-.detail-page .chapterhead-rule {
-  display: block;
-  flex: 1;
-  min-width: 0;
-  height: var(--border-width-hairline);
-  background: var(--color-border);
-}
-.detail-page .chapterhead-aside {
-  flex: none;
-  color: var(--color-muted);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  min-height: 64rpx;
+  margin-left: 20rpx;
+  padding-left: 20rpx;
+  border-left: 2rpx solid var(--color-cinema-line);
+  color: var(--color-cinema-muted);
   font-family: var(--font-family-mono);
   font-size: 20rpx;
   line-height: 28rpx;
-  letter-spacing: 2rpx;
 }
-.detail-page .section-prose {
-  padding: 8rpx 0;
-  color: var(--color-text);
-  font-size: 24rpx;
-  line-height: 42rpx;
+.detail-page .ink-capacity text:last-child {
+  color: var(--color-cinema-text);
+  font-size: 26rpx;
+  font-weight: 900;
+}
+.detail-page .rowicon,
+.detail-page .rowicon--clock::before {
+  border-color: var(--color-cinema-text);
+}
+.detail-page .rowicon {
+  background: var(--color-cinema-panel);
+}
+.detail-page .rowicon--clock::after {
+  background: var(--color-cinema-text);
+}
+.detail-page .rowtext .em,
+.detail-page .section-prose,
+.detail-page .chapterhead-title,
+.detail-page .detailrow-desc,
+.detail-page .schedule-time,
+.detail-page .schedule-copy,
+.detail-page .fee-item,
+.detail-page .rider,
+.detail-page .rider-name {
+  color: var(--color-cinema-text);
+}
+.detail-page .content {
+  gap: 48rpx;
+  margin-top: 56rpx;
+}
+.detail-page .chapterhead {
+  position: relative;
+  align-items: baseline;
+  padding-left: 20rpx;
+}
+.detail-page .chapterhead::before {
+  position: absolute;
+  top: 4rpx;
+  bottom: 4rpx;
+  left: 0;
+  width: 6rpx;
+  background: var(--color-cinema-red);
+  content: '';
+}
+.detail-page .chapterhead-rule {
+  background: var(--color-cinema-line);
+}
+.detail-page .chapterhead-aside {
+  max-width: 48%;
+  text-align: right;
+  white-space: normal;
 }
 .detail-page .paper,
-.detail-page .notes-paper,
-.detail-page .route-paper,
-.detail-page .schedule-list {
-  padding: 24rpx 28rpx;
-  border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-card);
+.detail-page .row,
+.detail-page .detailrow,
+.detail-page .schedule-list,
+.detail-page .rider {
+  border-color: var(--color-cinema-line);
+  background: var(--color-cinema-panel);
 }
-.detail-page .detailrow {
-  grid-template-columns: 140rpx minmax(0, 1fr);
-  gap: 20rpx;
-  padding: 16rpx 0;
-  border-bottom: var(--border-width-hairline) dashed var(--color-border);
+.detail-page .paper,
+.detail-page .row,
+.detail-page .schedule-list,
+.detail-page .rider {
+  border-radius: 16rpx;
 }
+.detail-page .route-difficulty {
+  border-color: var(--color-cinema-red);
+  background: var(--color-cinema-panel-raised);
+}
+.detail-page .route-difficulty__text,
+.detail-page .fee-block-title,
+.detail-page .chip-list-label,
 .detail-page .detailrow-term,
-.detail-page .detailrow-desc {
-  font-size: 22rpx;
-  line-height: 34rpx;
+.detail-page .rowtext .sub,
+.detail-page .rider-meta,
+.detail-page .muted {
+  color: var(--color-cinema-muted);
 }
-.detail-page .route-actions {
-  flex-direction: row;
-  gap: 12rpx;
-}
-.detail-page .route-actions .btn {
-  flex: 1;
-  min-width: 0;
-}
-.detail-page .riderlist {
-  margin-right: calc(0rpx - var(--page-gutter));
-  margin-left: calc(0rpx - var(--page-gutter));
-  padding: 4rpx var(--page-gutter) 12rpx;
+.detail-page .chev {
+  border-color: var(--color-cinema-text);
 }
 .detail-page .gear-chip,
 .detail-page .notice-chip {
-  min-height: 60rpx;
-  padding: 10rpx 18rpx;
-  border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: 999rpx;
-  background: var(--color-raised);
-  font-size: 22rpx;
-  line-height: 34rpx;
+  border-color: var(--color-cinema-line);
+  color: var(--color-cinema-text);
+}
+.detail-page .notice {
+  border-color: var(--color-cinema-line);
+  background: var(--color-cinema-panel);
+  color: var(--color-cinema-muted);
+}
+.detail-page .notice-dot,
+.detail-page .schedule-dot {
+  background: var(--color-cinema-red);
+}
+.detail-page .btn {
+  border-color: var(--color-cinema-red);
+  border-radius: 10rpx;
+  background: var(--color-cinema-red);
+  color: var(--color-on-action);
+}
+.detail-page .btn.secondary {
+  border-color: var(--color-border-strong);
+  background: var(--color-cinema-panel);
+  color: var(--color-cinema-text);
+}
+.detail-page .group-qr-frame {
+  border-color: var(--color-border-strong);
+  background: var(--color-input-bg);
 }
 .detail-page .decision {
-  margin: 20rpx var(--page-gutter) 0;
-  padding: 24rpx 28rpx;
-  border-radius: var(--radius-md);
-  background: var(--color-text);
-  color: var(--color-bg);
+  position: relative;
+  overflow: hidden;
+  border-color: var(--color-cinema-line);
+  border-radius: 16rpx;
+  background: var(--color-cinema-panel);
+  color: var(--color-cinema-text);
+}
+.detail-page .decision::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 8rpx;
+  background: var(--color-cinema-red);
+  content: '';
+}
+.detail-page .decision-title,
+.detail-page .decision-kicker,
+.detail-page .decision-hint,
+.detail-page .decision-capacity {
+  color: var(--color-cinema-text);
 }
 .detail-page .actionbar {
-  border-top-color: var(--color-border);
+  border-color: var(--color-cinema-line);
   background: var(--color-fixed-bar);
+  box-shadow: var(--shadow-actionbar);
 }
-.detail-page .actionbar .btn {
-  border-color: var(--color-text);
-  border-radius: var(--radius-md);
-  background: var(--color-text);
-  color: var(--color-bg);
+.detail-page .actionbar::before {
+  background: linear-gradient(to top, var(--color-cinema-bg), transparent);
+}
+
+/* React Bits 动效语言的小程序转译：一次性短时入场，不锁滚动、不循环。 */
+.detail-page .photo.hero.detail {
+  animation: detail-hero-enter 560ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+.detail-page .hero-media,
+.detail-page .hero-gallery,
+.detail-page generated-activity-cover {
+  animation: detail-media-settle 680ms 80ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+.detail-page .caption .eyebrow,
+.detail-page .hero-title,
+.detail-page .hero-sub {
+  animation: detail-copy-enter 420ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+.detail-page .hero-title {
+  animation-delay: 120ms;
+}
+.detail-page .hero-sub {
+  animation-delay: 200ms;
+}
+.detail-page .ink {
+  animation: detail-facts-enter 380ms 220ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+.detail-page .content > .section:nth-child(-n + 4) {
+  animation: detail-facts-enter 360ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+.detail-page .content > .section:nth-child(1) {
+  animation-delay: 260ms;
+}
+.detail-page .content > .section:nth-child(2) {
+  animation-delay: 300ms;
+}
+.detail-page .content > .section:nth-child(3) {
+  animation-delay: 340ms;
+}
+.detail-page .content > .section:nth-child(4) {
+  animation-delay: 380ms;
+}
+.detail-page .btn:active,
+.detail-page .rider:active,
+.detail-page .club-row:active {
+  opacity: 0.84;
+  transform: translateY(2rpx);
+}
+
+@keyframes detail-hero-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes detail-media-settle {
+  from {
+    opacity: 0.82;
+    transform: scale(1.025);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes detail-copy-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes detail-facts-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .detail-page .photo.hero.detail,
+  .detail-page .hero-media,
+  .detail-page .hero-gallery,
+  .detail-page generated-activity-cover,
+  .detail-page .caption .eyebrow,
+  .detail-page .hero-title,
+  .detail-page .hero-sub,
+  .detail-page .ink,
+  .detail-page .content > .section {
+    animation: none;
+  }
+}
+
+@media (max-width: 350px) {
+  .detail-page .hero-title {
+    font-size: 56rpx;
+    line-height: 68rpx;
+  }
+  .detail-page .metrics .em {
+    font-size: 34rpx;
+  }
+  .detail-page .ink-capacity {
+    margin-left: 12rpx;
+    padding-left: 12rpx;
+  }
 }

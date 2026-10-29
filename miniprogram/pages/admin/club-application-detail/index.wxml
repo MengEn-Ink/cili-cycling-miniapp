@@ -8,7 +8,7 @@
     删除背景；上传进度；文案字段校验；并发创建冲突/并发更新冲突；fieldError 展示；
     canvas 预处理节点保留供 chooseAndUploadClubMedia 使用。
 -->
-<view class="page club-profile-page" data-v1-layout="admin-form">
+<view class="page club-profile-page cinema-page cinema-page--dark" data-v1-layout="admin-form">
   <view wx:if="{{uploading}}" class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{uploadKind === 'avatar' ? '正在更新俱乐部头像…' : '正在更新俱乐部背景…'}}</view>
   <view class="empty" wx:if="{{pageState === 'loading'}}">
     <view class="empty-title">正在读取俱乐部资料</view>

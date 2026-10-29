@@ -126,7 +126,7 @@ describe('沸点首批六页尺寸契约', () => {
     }
     expectSemantic(
       declaration(effectiveBlock(styles, '.credential-page'), 'background'),
-      '--color-bg',
+      '--color-cinema-bg',
     );
     // 新结构：ticket.voucher 承载凭证主体
     expectSemantic(

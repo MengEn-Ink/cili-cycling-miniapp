@@ -121,7 +121,7 @@ export function drawRouteOutline(
   context.save();
   context.setTransform(ratio, 0, 0, ratio, 0, 0);
   context.clearRect(0, 0, width, height);
-  context.fillStyle = '#ffffff';
+  context.fillStyle = ROUTE_VISUAL_STYLE.canvasBackground;
   context.fillRect(0, 0, width, height);
 
   const projected = projectRouteOutline(points, width, height, ROUTE_VISUAL_STYLE.routePadding);
@@ -141,7 +141,8 @@ export function drawRouteOutline(
       progress < 1 ? [visible[visible.length - 1]] : [visible[0], visible[visible.length - 1]];
     endpoints.forEach((point, index) => {
       context.beginPath();
-      context.fillStyle = index === 0 ? '#e13b2b' : '#211f1c';
+      context.fillStyle =
+        index === 0 ? ROUTE_VISUAL_STYLE.accentColor : ROUTE_VISUAL_STYLE.selectedColor;
       context.arc(point.x, point.y, 8, 0, Math.PI * 2);
       context.fill();
     });

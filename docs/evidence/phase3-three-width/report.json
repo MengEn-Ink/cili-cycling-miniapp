@@ -1,12 +1,12 @@
 {
-  "base": "http://127.0.0.1:62886",
+  "base": "http://127.0.0.1:64879",
   "pages": 16,
   "widths": [
     340,
     375,
     430
   ],
-  "generatedAt": "2026-10-28T10:20:59.296Z",
+  "generatedAt": "2026-10-29T09:08:11.500Z",
   "results": [
     {
       "slug": "activities",
@@ -202,7 +202,7 @@
         "340": {
           "docW": 340,
           "viewW": 340,
-          "docH": 1395,
+          "docH": 1396,
           "horizontalOverflow": 0,
           "offenders": [],
           "fixedBars": [],
@@ -216,7 +216,7 @@
         "375": {
           "docW": 375,
           "viewW": 375,
-          "docH": 1395,
+          "docH": 1396,
           "horizontalOverflow": 0,
           "offenders": [],
           "fixedBars": [],
@@ -230,7 +230,7 @@
         "430": {
           "docW": 430,
           "viewW": 430,
-          "docH": 1395,
+          "docH": 1396,
           "horizontalOverflow": 0,
           "offenders": [],
           "fixedBars": [],
@@ -296,7 +296,7 @@
         "340": {
           "docW": 340,
           "viewW": 340,
-          "docH": 933,
+          "docH": 934,
           "horizontalOverflow": 0,
           "offenders": [],
           "fixedBars": [],
@@ -310,7 +310,7 @@
         "375": {
           "docW": 375,
           "viewW": 375,
-          "docH": 933,
+          "docH": 934,
           "horizontalOverflow": 0,
           "offenders": [],
           "fixedBars": [],
@@ -324,7 +324,7 @@
         "430": {
           "docW": 430,
           "viewW": 430,
-          "docH": 933,
+          "docH": 934,
           "horizontalOverflow": 0,
           "offenders": [],
           "fixedBars": [],
@@ -390,7 +390,7 @@
         "340": {
           "docW": 340,
           "viewW": 340,
-          "docH": 923,
+          "docH": 924,
           "horizontalOverflow": 0,
           "offenders": [],
           "fixedBars": [],
@@ -498,7 +498,7 @@
         "375": {
           "docW": 375,
           "viewW": 375,
-          "docH": 1150,
+          "docH": 1151,
           "horizontalOverflow": 0,
           "offenders": [],
           "fixedBars": [],
@@ -512,7 +512,7 @@
         "430": {
           "docW": 430,
           "viewW": 430,
-          "docH": 1150,
+          "docH": 1151,
           "horizontalOverflow": 0,
           "offenders": [],
           "fixedBars": [],
@@ -578,7 +578,7 @@
         "340": {
           "docW": 340,
           "viewW": 340,
-          "docH": 1111,
+          "docH": 1113,
           "horizontalOverflow": 0,
           "offenders": [],
           "fixedBars": [],
@@ -592,7 +592,7 @@
         "375": {
           "docW": 375,
           "viewW": 375,
-          "docH": 1088,
+          "docH": 1090,
           "horizontalOverflow": 0,
           "offenders": [],
           "fixedBars": [],
@@ -606,7 +606,7 @@
         "430": {
           "docW": 430,
           "viewW": 430,
-          "docH": 1065,
+          "docH": 1067,
           "horizontalOverflow": 0,
           "offenders": [],
           "fixedBars": [],

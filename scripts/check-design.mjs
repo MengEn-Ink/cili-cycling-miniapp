@@ -47,6 +47,19 @@ function tokenValue(tokens, name) {
   return tokens[name];
 }
 
+export function resolvedTokenValue(tokens, name, stack = []) {
+  if (stack.includes(name)) {
+    throw new Error(`CSS token cycle: ${[...stack, name].join(' -> ')}`);
+  }
+  const value = tokenValue(tokens, name);
+  if (value === undefined) return undefined;
+  const reference = String(value)
+    .trim()
+    .match(/^var\(\s*(--[\w-]+)\s*\)$/);
+  if (!reference) return normalizeValue(value);
+  return resolvedTokenValue(tokens, reference[1], [...stack, name]);
+}
+
 function assertEqual(errors, label, actual, expected) {
   if (normalizeValue(actual) !== normalizeValue(expected)) {
     errors.push(`${label}: expected ${expected}, got ${actual}`);
@@ -172,7 +185,11 @@ export function parseFontMigrationTable(markdown) {
   return rows;
 }
 
-export function validateMigrationRows(rows, tokens) {
+export function validateMigrationRows(
+  rows,
+  tokens,
+  { requireCurrentTokens = true, requireCurrentTokenValues = true } = {},
+) {
   const errors = [];
   const numbers = new Set(rows.map((row) => row.number));
   const directRows = rows.filter((row) => row.type === 'direct');
@@ -188,23 +205,26 @@ export function validateMigrationRows(rows, tokens) {
 
   for (const row of rows) {
     const currentTokenValue = tokenValue(tokens, row.token);
-    if (currentTokenValue === undefined) {
+    if (requireCurrentTokens && currentTokenValue === undefined) {
       errors.push(
         `${row.location}: ${row.type === 'fallback-only' ? 'fallback' : 'direct'} token ${row.token} 不存在`,
       );
-      continue;
     }
-    if (normalizeValue(currentTokenValue) !== normalizeValue(row.tokenCurrentValue)) {
+    if (
+      currentTokenValue !== undefined &&
+      requireCurrentTokenValues &&
+      normalizeValue(currentTokenValue) !== normalizeValue(row.tokenCurrentValue)
+    ) {
       errors.push(
         `${row.location}: token ${row.token} 保值失败，映射为 ${row.tokenCurrentValue}，实际为 ${currentTokenValue}`,
       );
     }
     if (
       row.type === 'direct' &&
-      normalizeValue(row.literal) !== normalizeValue(currentTokenValue)
+      normalizeValue(row.literal) !== normalizeValue(row.tokenCurrentValue)
     ) {
       errors.push(
-        `${row.location}: direct 字面量 ${row.literal} 与 ${row.token}=${currentTokenValue} 不保值`,
+        `${row.location}: 历史 direct 字面量 ${row.literal} 与账本值 ${row.tokenCurrentValue} 不一致`,
       );
     }
     if (!['direct', 'fallback-only'].includes(row.type)) {
@@ -249,7 +269,9 @@ export function validateFontContract(rows, fonts, tokens) {
 
 export function validateContractSnapshot({ contract, appJson, pageJsons, themeSource, tokens }) {
   const errors = [];
-  if (contract.schemaVersion !== 2) errors.push('contract: schemaVersion must be 2');
+  if (![2, 3].includes(contract.schemaVersion)) {
+    errors.push('contract: schemaVersion must be 2 or 3');
+  }
 
   for (const [key, expected] of Object.entries(contract.native.appWindow || {})) {
     assertEqual(errors, `app.json window.${key}`, appJson.window?.[key], expected);
@@ -276,15 +298,28 @@ export function validateContractSnapshot({ contract, appJson, pageJsons, themeSo
   }
   for (const binding of contract.equivalentRoles || []) {
     const themeValue = themeColors[binding.themeTs];
-    const wxssValue = tokenValue(tokens, binding.wxss);
+    let wxssValue;
+    try {
+      wxssValue = resolvedTokenValue(tokens, binding.wxss);
+    } catch (error) {
+      errors.push(error.message);
+      continue;
+    }
     assertEqual(errors, `theme.ts ${binding.role}`, themeValue, wxssValue);
   }
 
+  const appSelectedColor = contract.native.appTabBar?.selectedColor;
+  const runtimeSelectedColor = contract.native.runtimeTabBar?.selectedColor;
   const selectedDifference = (contract.sourceSpecificDifferences || []).find(
     (item) => item.role === 'selectedColor',
   );
-  if (!selectedDifference?.reason) {
+  const hasSelectedColorDifference =
+    normalizeValue(appSelectedColor) !== normalizeValue(runtimeSelectedColor);
+  if (hasSelectedColorDifference && !selectedDifference?.reason) {
     errors.push('contract: selectedColor source-specific difference requires a reason');
+  }
+  if (!hasSelectedColorDifference && selectedDifference) {
+    errors.push('contract: selectedColor source-specific difference is stale');
   }
   if (errors.length) throw new Error(errors.join('\n'));
 }
@@ -373,7 +408,14 @@ export function runRepositoryCheck(root = process.cwd()) {
       }
     }
   }
-  validateMigrationRows(rows, migrationTokens);
+  const migrationLedgerMode = contract.literalPolicy.migrationLedgerMode || 'frozen';
+  if (!['frozen', 'historical'].includes(migrationLedgerMode)) {
+    throw new Error(`unknown migration ledger mode: ${migrationLedgerMode}`);
+  }
+  validateMigrationRows(rows, migrationTokens, {
+    requireCurrentTokens: migrationLedgerMode === 'frozen',
+    requireCurrentTokenValues: migrationLedgerMode === 'frozen',
+  });
 
   const packageJson = readJson(join(root, 'package.json'));
   const documentedText = [
@@ -390,12 +432,16 @@ export function runRepositoryCheck(root = process.cwd()) {
 
   const contrastIssues = [];
   for (const pair of contract.contrastPairs || []) {
-    const foreground = tokenValue(snapshot.tokens, pair.foreground);
-    const background = tokenValue(snapshot.tokens, pair.background);
-    if (contrastRatio(foreground, background) < pair.minimum) {
-      contrastIssues.push(
-        `${pair.name}: contrast below ${pair.minimum} for ${pair.foreground}/${pair.background}`,
-      );
+    try {
+      const foreground = resolvedTokenValue(snapshot.tokens, pair.foreground);
+      const background = resolvedTokenValue(snapshot.tokens, pair.background);
+      if (contrastRatio(foreground, background) < pair.minimum) {
+        contrastIssues.push(
+          `${pair.name}: contrast below ${pair.minimum} for ${pair.foreground}/${pair.background}`,
+        );
+      }
+    } catch (error) {
+      contrastIssues.push(`${pair.name}: ${error.message}`);
     }
   }
 
@@ -428,7 +474,7 @@ function runCli() {
   try {
     const result = runRepositoryCheck();
     console.log(
-      `设计契约校验通过：${result.migrationRows} 条颜色迁移、${result.nativePageConfigs} 个页面原生配置、0 个页面颜色/字体字面量`,
+      `设计契约校验通过：${result.migrationRows} 条历史颜色迁移账本、${result.nativePageConfigs} 个页面原生配置、0 个页面颜色/字体字面量`,
     );
   } catch (error) {
     console.error(error.message);

@@ -507,88 +507,103 @@
   }
 }
 
-/* Scheme B v6: compact application sheet -------------------------------- */
-.form-page .content.tight {
-  gap: 28rpx;
+/* 2026-10-28 · Direction A / 暗场标题 + 高对比暗色表单 */
+.form-page {
+  padding-bottom: calc(248rpx + env(safe-area-inset-bottom));
+  background: var(--color-cinema-bg);
+  color: var(--color-cinema-text);
+}
+.form-page .pageheading {
+  padding: 40rpx 0 28rpx;
+}
+.form-page .pageheading .eyebrow {
+  color: var(--color-brand);
+}
+.form-page .pageheading-title,
+.form-page .chapterhead-title {
+  color: var(--color-cinema-text);
+}
+.form-page .pageheading-sub,
+.form-page .chapterhead-aside,
+.form-page form > .small.muted {
+  color: var(--color-cinema-muted);
 }
 .form-page .timeline {
   gap: 4rpx;
-  padding: 8rpx;
-  border-radius: 14rpx;
+  padding: 0;
+  overflow: hidden;
+  border-color: var(--color-cinema-line);
+  border-radius: 0;
+  background: var(--color-cinema-bg);
 }
 .form-page .timeline > .step {
-  min-height: 64rpx;
-  gap: 6rpx;
-  padding: 0 4rpx;
-  font-size: 21rpx;
-  line-height: 28rpx;
+  min-height: 72rpx;
+  padding: 12rpx 8rpx;
+  background: var(--color-cinema-panel-raised);
+  color: var(--color-cinema-muted);
 }
-.form-page .timeline .step-index {
-  width: 30rpx;
-  height: 30rpx;
-  font-size: 18rpx;
+.form-page .timeline > .step.active {
+  background: var(--color-cinema-red);
+  color: var(--color-on-action);
 }
-.form-page .section {
-  gap: 12rpx;
+.form-page .timeline .step-index,
+.form-page .timeline > .step.active .step-index {
+  background: transparent;
+  color: currentColor;
 }
-.form-page .chapterhead {
-  justify-content: space-between;
+.form-page .chapterhead-rule {
+  background: var(--color-cinema-line);
 }
 .form-page .paper {
-  gap: 14rpx;
+  border-color: var(--color-border-strong);
+  border-radius: 18rpx;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  box-shadow: var(--shadow-floating);
 }
-.form-page .detailrows {
-  border: 0;
-  border-radius: 0;
-}
-.form-page .detailrow {
-  grid-template-columns: 148rpx minmax(0, 1fr);
-  padding: 14rpx 0;
-  background: transparent;
-}
-.form-page .detailrow + .detailrow {
-  border-top-style: dashed;
-}
-.form-page .row.rowlink.rowbutton {
-  min-height: 88rpx;
-  padding: 14rpx 16rpx;
-  border-radius: 12rpx;
-}
-.form-page .rowicon {
-  width: 40rpx;
-  height: 40rpx;
-  border-radius: 10rpx;
-}
-.form-page .choice {
-  min-height: 88rpx;
-  padding: 14rpx 16rpx;
-  border-radius: 12rpx;
-  box-sizing: border-box;
-}
-.form-page .experience-segment {
-  padding: 6rpx;
-  gap: 6rpx;
-  border-radius: 999rpx;
-  background: var(--color-raised);
-}
-.form-page .segment-choice {
-  min-height: 68rpx;
-  padding: 0 10rpx;
-  border: 0;
-  font-size: 23rpx;
-}
-.form-page .field-textarea {
-  min-height: 112rpx;
-  border-radius: 10rpx;
+.form-page .paper .notice {
   background: var(--color-bg);
 }
-.form-page .check {
-  min-height: 88rpx;
-  padding: 14rpx 16rpx;
-  border-radius: 10rpx;
-  box-sizing: border-box;
+.form-page form > .check,
+.form-page form > .notice {
+  border-color: var(--color-cinema-line);
+  background: var(--color-cinema-panel);
+  color: var(--color-cinema-text);
+}
+.form-page form > .notice .notice-title,
+.form-page form > .notice .notice-item {
+  color: var(--color-cinema-text);
+}
+.form-page form > .notice .notice-dot {
+  background: var(--color-cinema-red);
+}
+.form-page .segment-choice.selected,
+.form-page .choice.selected {
+  border-color: var(--color-cinema-red);
+  background: var(--color-brand-soft);
+  color: var(--color-text);
 }
 .form-page .actionbar {
-  padding-top: 14rpx;
-  padding-bottom: calc(14rpx + env(safe-area-inset-bottom));
+  border-color: var(--color-cinema-line);
+  background: var(--color-fixed-bar);
+  box-shadow: var(--shadow-actionbar);
+}
+.form-page .btn {
+  border-color: var(--color-cinema-red);
+  border-radius: 10rpx;
+  background: var(--color-cinema-red);
+  color: var(--color-on-action);
+}
+.form-page .btn.secondary {
+  border-color: var(--color-border-strong);
+  background: var(--color-cinema-panel);
+  color: var(--color-cinema-text);
+}
+
+@media (max-width: 350px) {
+  .form-page .timeline > .step {
+    flex-direction: column;
+    gap: 2rpx;
+    font-size: 22rpx;
+  }
 }

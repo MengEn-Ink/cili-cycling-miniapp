@@ -1,0 +1,133 @@
+{
+  "schemaVersion": 1,
+  "releaseVersion": "2026.10.29.6",
+  "sourceUiDigest": "sha256:5a2543494c43581983ae74315ba5dc7b5806117d43d340e88aabf4efba75ebf2",
+  "prototypeDigest": "sha256:879d43a9eeeff1af3d49d47b7654e6b248f53dfe6c88069b8b43d3997155b07a",
+  "devtoolsCapturedAt": "2026-10-29T08:46:07.691Z",
+  "pagesCapturedAt": "2026-10-29T08:43:02.837Z",
+  "mode": "real-cloud-readonly",
+  "devtoolsOutcome": {
+    "productVerdict": "PASS",
+    "passed": 30,
+    "failed": 0,
+    "exceptions": 0,
+    "registeredRoutes": 17
+  },
+  "policy": "真实媒体与个人资料使用不透明矩形遮挡；每张 DevTools 截图还遮挡 8px 左右边界、顶部 8px 与底部 24px，避免圆角边缘残留；Pages 仅含合成资料。",
+  "notCovered": [
+    "ordinary-member-write-journey",
+    "ios-physical-device",
+    "android-physical-device",
+    "experience-version-readback"
+  ],
+  "commonOpaqueRectangles": [
+    [0, 0, 780, 8],
+    [0, 1664, 780, 1688],
+    [0, 8, 8, 1664],
+    [772, 8, 780, 1664]
+  ],
+  "routes": [
+    {
+      "id": "activities",
+      "opaqueRectangles": [[0, 584, 780, 1054]],
+      "devtoolsSha256": "73661a50cd81638277a4942ae16a231766224625ac0664dbdf1cec7fee1fe05e",
+      "pagesSha256": "d781b1de052c4946a59d41cf6478396ffac23377b4c29a025b49d234eb035379"
+    },
+    {
+      "id": "activity-detail",
+      "opaqueRectangles": [[0, 182, 780, 804]],
+      "devtoolsSha256": "aea0470f9d312e628f9c430c78a549e3f894ee0a8a5d6f7b55f786bfc0984b53",
+      "pagesSha256": "b0a3a0d80bb199de36918e0d5a9a30bc9fb4dbaf697c42e84c98d6c9e66cf04c"
+    },
+    {
+      "id": "route-analysis",
+      "opaqueRectangles": [],
+      "devtoolsSha256": "778ccfb0df5558ae594403be722601bc1e9686bf44c0351eedeed6022f173c93",
+      "pagesSha256": "877e2b97c12879c31575ef2687a5414133f32bee325b21cca387dfa459c9c5fb"
+    },
+    {
+      "id": "registration-form",
+      "opaqueRectangles": [[54, 782, 726, 1178]],
+      "devtoolsSha256": "bd55588457dae0930603ae51fd86a19b00bef108895098ecf01d92afe118cf50",
+      "pagesSha256": "41d48a8e15d7f638308db2895308a37a8fea3fa2b57fe08a63db24ad327f6933"
+    },
+    {
+      "id": "registrations",
+      "opaqueRectangles": [],
+      "devtoolsSha256": "07599b7125b52483b2c127b41ee1c5de7ea4638aabf5bdd8553b8a0eba0174fa",
+      "pagesSha256": "0285b870cb26074e30d31ce6ab2b555fc59e31519cfe103ccd74c6685ad1ecff"
+    },
+    {
+      "id": "credential",
+      "opaqueRectangles": [[28, 548, 752, 1664]],
+      "devtoolsSha256": "5a629833c491dc5f3ba61a9a88d30c66c81a868ea2a11bdd67c57002697d7e04",
+      "pagesSha256": "f7da4f0afc79cc812e49def0999aba6a84b3960df4d9d4619603fb49427d6798"
+    },
+    {
+      "id": "profile",
+      "opaqueRectangles": [[0, 182, 780, 622]],
+      "devtoolsSha256": "c5bc09b2f6dedbeab6a3a6e5930831dd95d4f2d3a5459541f07c9432e90c1657",
+      "pagesSha256": "9a5e16d53ed24e43318d1b8fead55166247f558e219de19f4fd8053463ef2cc5"
+    },
+    {
+      "id": "settings",
+      "opaqueRectangles": [[28, 1270, 752, 1390]],
+      "devtoolsSha256": "455931a8018bced7727761c49477315d70a0d4bb2959690dd2051c737522431e",
+      "pagesSha256": "3c511ed1042e3162bfe4f20b66839866ab60a291287c329ad4d9edc083fa2ee9"
+    },
+    {
+      "id": "capability-card",
+      "opaqueRectangles": [[0, 182, 780, 622]],
+      "devtoolsSha256": "c5bc09b2f6dedbeab6a3a6e5930831dd95d4f2d3a5459541f07c9432e90c1657",
+      "pagesSha256": "75b4e1f1f2b92e4f6a915d2aedbf0bddc9b76528e05f0aef6be382138522f2d2"
+    },
+    {
+      "id": "profile-edit",
+      "opaqueRectangles": [[28, 755, 752, 930]],
+      "devtoolsSha256": "873d46c40be280c4eb705f1d41b8181bd71451eabc9a8a609128ece6a48e2df3",
+      "pagesSha256": "73c7c1db72e5ad5bb131270b93a18f132bc292f405808aae0d759eb9f973ea25"
+    },
+    {
+      "id": "admin-activity-list",
+      "opaqueRectangles": [],
+      "devtoolsSha256": "9bc783b501c912c7779677c887edd21702f7ff47c3be4ea5764203891e340093",
+      "pagesSha256": "97f92912319b5ae5f8084d7286ab2ace15af5428f9dae5d34a9ca9719a760ea3"
+    },
+    {
+      "id": "admin-activity-edit",
+      "opaqueRectangles": [[28, 738, 382, 938]],
+      "devtoolsSha256": "3a80d4241e384452293397dfd8f0b02cc02e884dfc15b294d698e85661e7142a",
+      "pagesSha256": "61a7357ee8d8384deb6843ffbca08ca850a6ab1a25dd1e2c310272faf9693b2b"
+    },
+    {
+      "id": "admin-reviews",
+      "opaqueRectangles": [],
+      "devtoolsSha256": "95c186379e5f7478c535d93b7e3fe3fa6bce1a1d38209009b5b691d420ff63ba",
+      "pagesSha256": "37213b59fc4e3e7b40dd0ae84f84ddeb5476b28218c0b21c979a3f702dfdaa07"
+    },
+    {
+      "id": "admin-review-detail",
+      "opaqueRectangles": [[0, 206, 780, 930]],
+      "devtoolsSha256": "f4d99a4e93fd756353ee24f0a9d86f6f813ec58fb3b365aa2db559840e4b5b3d",
+      "pagesSha256": "a9e68d4e427735add4e65d018d35275e8b542ead7e119123ed67c3ed6f671e3e"
+    },
+    {
+      "id": "club/center",
+      "opaqueRectangles": [[0, 182, 780, 670]],
+      "devtoolsSha256": "b3eb5b586dde98c6e8d78e598725d05430ecc5908f59daf46ca9b37bdb876eb7",
+      "pagesSha256": "750ce3634eadbe9073f2d0cf7083a5e6bf01fb492e56c9d620a6afb50d63f449"
+    },
+    {
+      "id": "admin-club-applications",
+      "opaqueRectangles": [[28, 559, 752, 967]],
+      "devtoolsSha256": "972940ea07ed4036445352e4e590698db7a73a9eb189f1b0d5945da31fc8f337",
+      "pagesSha256": "41fe71ef4d7389840901b7f2ec93b4f571f969d54229899e3fb33061c9141de2"
+    },
+    {
+      "id": "admin-club-application-detail",
+      "opaqueRectangles": [[28, 713, 752, 1494]],
+      "devtoolsSha256": "9fdcd9782396f9400dc6299c6dc8a5113f8465e0309a97a9fbb0f48a018b3468",
+      "pagesSha256": "de92627ea84de3271f1bd1b68f2bbd57932e00fece377d67d833c585eac9ba0c"
+    }
+  ]
+}

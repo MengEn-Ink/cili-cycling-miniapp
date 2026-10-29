@@ -42,7 +42,9 @@ export function drawRouteAnalysisElevation(
     const selected = point.id === selection.point?.id;
     context.beginPath();
     context.arc(x(point.km), y(point.elevation), selected ? 5 : 3, 0, Math.PI * 2);
-    context.fillStyle = selected ? '#211f1c' : '#e13b2b';
+    context.fillStyle = selected
+      ? ROUTE_VISUAL_STYLE.selectedColor
+      : ROUTE_VISUAL_STYLE.accentColor;
     context.fill();
   }
   return true;

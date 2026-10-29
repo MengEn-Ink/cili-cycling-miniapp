@@ -1,7 +1,7 @@
 /*
  * 此里 · 骑行影像志全套 UI 原型
  * 颜色变量与 miniprogram/app.wxss 一一对应（同名、同值）；1rpx = 0.5px。
- * 只有明亮主题：暖米白画布、墨黑信息块、深行动红承载主行动；暖黄短标签搭配墨黑字。
+ * 全局电影暗色：深黑画布、炭黑分层、暖白正文与深行动红主行动。
  * --color-status-* 两端共用，只用于状态小标签、行内提示和图标。
  */
 :root {
@@ -39,45 +39,94 @@
   --font-family-body: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
   --font-family-editorial: 'Songti SC', STSong, serif;
   --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --motion-duration-fast: 120ms;
-  --motion-duration-base: 180ms;
+  /* Primitive palette: only this layer owns raw theme values. */
+  --palette-ink-950: #0b0a0c;
+  --palette-ink-900: #121116;
+  --palette-ink-800: #1a1820;
+  --palette-ink-700: #24212b;
+  --palette-red-500: #e54242;
+  --palette-red-600: #d93636;
+  --palette-red-700: #b72c2c;
+  --palette-warm-50: #f7f4f2;
+  --palette-white: #ffffff;
+  --palette-neutral-300: #b8b3ba;
+  --palette-neutral-500: #8c858f;
+  --palette-line-500: #4b454f;
+  --palette-line-700: #766f7a;
+
+  /* Primitive motion: brief feedback, readable reveal, no continuous loops. */
+  --motion-duration-instant: 100ms;
+  --motion-duration-fast: 150ms;
+  --motion-duration-base: 220ms;
+  --motion-duration-reveal: 420ms;
+  --motion-duration-emphasis: 560ms;
+  --motion-duration-hero: 680ms;
+  --motion-delay-none: 0ms;
+  --motion-delay-short: 80ms;
+  --motion-delay-title: 120ms;
+  --motion-delay-story: 180ms;
+  --motion-delay-content: 220ms;
+  --motion-delay-section: 280ms;
+  --motion-delay-title-second: 340ms;
+  --motion-delay-caption: 400ms;
+  --motion-delay-story-second: 300ms;
+  --motion-delay-story-third: 420ms;
+  --motion-delay-story-fourth: 540ms;
+  --motion-stagger-step: 40ms;
+  --motion-distance-press: 1px;
+  --motion-distance-reveal: 8px;
   --motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --motion-easing-out: cubic-bezier(0.25, 1, 0.5, 1);
+  --motion-easing-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 
   /* Semantic tokens: established names stay stable across both clients. */
-  --color-bg: #fbf5ea;
-  --color-surface: #ffffff;
-  --color-raised: #f5ecd9;
-  --color-text: #211f1c;
-  --color-muted: #6f675d;
-  --color-placeholder: #6f675d;
-  --color-disabled-text: #6f675d;
-  --color-on-media: #ffffff;
-  --color-media-muted: #d4d4d4;
-  --color-media-card-bg: #211f1c;
-  --color-border: #ece0c6;
-  --color-card-border: #ece0c6;
-  --color-border-strong: #8a8375;
-  --color-input-bg: #fbf5ea;
-  --color-fixed-bar: rgba(255, 255, 255, 0.98);
+  --color-bg: var(--palette-ink-950);
+  --color-surface: var(--palette-ink-900);
+  --color-raised: var(--palette-ink-800);
+  --color-floating: var(--palette-ink-700);
+  --color-text: var(--palette-warm-50);
+  --color-muted: var(--palette-neutral-300);
+  --color-placeholder: var(--palette-neutral-500);
+  --color-disabled-text: var(--palette-neutral-500);
+  --color-on-media: var(--palette-warm-50);
+  --color-media-muted: var(--palette-neutral-300);
+  --color-media-card-bg: var(--palette-ink-900);
+  --color-border: var(--palette-line-500);
+  --color-card-border: var(--palette-line-700);
+  --color-border-strong: var(--palette-line-700);
+  --color-input-bg: var(--palette-ink-800);
+  --color-fixed-bar: rgba(11, 10, 12, 0.98);
   --color-overlay: rgba(0, 0, 0, 0.72);
-  --color-shadow: rgba(33, 31, 28, 0.06);
-  --color-brand: #c0321f;
+  --color-shadow: rgba(0, 0, 0, 0.34);
+  --color-cinema-bg: var(--color-bg);
+  --color-cinema-panel: var(--color-surface);
+  --color-cinema-panel-raised: var(--color-raised);
+  --color-cinema-line: var(--color-border-strong);
+  --color-cinema-text: var(--color-text);
+  --color-cinema-muted: var(--color-muted);
+  --color-cinema-red: var(--color-action);
+  --color-brand: var(--palette-red-500);
+  --color-brand-fill: var(--palette-red-600);
   --color-brand-strava: #fc4c02;
-  --color-brand-active: #8f2314;
-  --color-brand-soft: #fcebea;
+  --color-brand-active: var(--palette-red-700);
+  --color-brand-soft: rgba(229, 66, 66, 0.14);
+  --color-brand-glow: rgba(229, 66, 66, 0.28);
+  /* Logo asset contract stays independent from the UI theme palette. */
   --color-logo-background: #211f1c;
-  --color-on-brand: #ffffff;
-  --color-action: #c0321f;
-  --color-action-active: #8f2314;
-  --color-on-action: #ffffff;
-  --color-status-success: #16633a;
-  --color-status-success-soft: #e7f4eb;
-  --color-status-warning: #8f5410;
-  --color-status-warning-soft: #fff2c7;
+  --color-logo-foreground: #ffffff;
+  --color-logo-accent: #e13b2b;
+  --color-on-brand: var(--palette-white);
+  --color-action: var(--palette-red-600);
+  --color-action-active: var(--palette-red-700);
+  --color-on-action: var(--palette-white);
+  --color-status-success: #7bdba1;
+  --color-status-success-soft: #183424;
+  --color-status-warning: #f0ce75;
+  --color-status-warning-soft: #3a2d12;
   --shadow-hard: 0 5px 14px var(--color-shadow);
   --shadow-card: 0 4px 12px var(--color-shadow);
   --focus-color: var(--color-brand);
-  --focus-ring: 0 0 0 2px var(--color-brand-soft);
+  --focus-ring: 0 0 0 2px rgba(229, 66, 66, 0.36);
   --control-height: 48px;
   --segment-height: 46px;
   --page-gutter: 14px;
@@ -114,6 +163,10 @@
   --segment-border: var(--color-border-strong);
   --segment-border-width: var(--border-width-strong);
   --segment-radius: var(--radius-sm);
+  --cinema-title-duration: var(--motion-duration-emphasis);
+  --cinema-content-duration: var(--motion-duration-reveal);
+  --cinema-hero-duration: var(--motion-duration-hero);
+  --cinema-reveal-duration: var(--motion-duration-reveal);
 }
 
 * {
@@ -124,6 +177,7 @@
 
 html {
   background: var(--color-raised);
+  color-scheme: dark;
 }
 
 body {
@@ -326,7 +380,7 @@ code {
 /* ---------- 手机外壳 ---------- */
 .phone-shell {
   position: relative;
-  width: 395px;
+  width: 390px;
   height: 844px;
   padding: 10px;
   border-radius: 44px;
@@ -806,7 +860,7 @@ code {
 }
 
 .step.is-current {
-  background: var(--color-brand);
+  background: var(--color-brand-fill);
   color: var(--color-on-brand);
 }
 
@@ -828,7 +882,7 @@ code {
   top: 16px;
   bottom: 16px;
   width: 4px;
-  background: var(--color-brand);
+  background: var(--color-brand-fill);
 }
 
 .info-head {
@@ -1046,8 +1100,8 @@ code {
 
 .btn-inverse {
   border: 2px solid var(--color-on-media);
-  background: var(--color-on-media);
-  color: var(--color-text);
+  background: transparent;
+  color: var(--color-on-media);
 }
 
 .btn-inverse.is-ghost {
@@ -1376,7 +1430,7 @@ textarea.input.textarea::placeholder {
   width: 14px;
   height: 14px;
   border-radius: 2px;
-  background: var(--color-brand);
+  background: var(--color-brand-fill);
   color: var(--color-on-brand);
   font-size: 11px;
   font-weight: 900;
@@ -1808,7 +1862,7 @@ textarea.input.textarea::placeholder {
   width: 8px;
   height: 8px;
   border-radius: 2px;
-  background: var(--color-brand);
+  background: var(--color-brand-fill);
 }
 
 .bar-hint.is-neutral::before {
@@ -1855,7 +1909,7 @@ textarea.input.textarea::placeholder {
 }
 
 .state.is-error .state-mark {
-  background: var(--color-brand);
+  background: var(--color-brand-fill);
   color: var(--color-on-brand);
 }
 
@@ -2210,7 +2264,7 @@ textarea.input.textarea::placeholder {
   top: 16px;
   bottom: 16px;
   width: 4px;
-  background: var(--color-brand);
+  background: var(--color-brand-fill);
 }
 
 .credential-reject {
@@ -2448,7 +2502,7 @@ textarea.input.textarea::placeholder {
   color: var(--color-on-media);
 }
 .activity-detail-pg > .info-bar::before {
-  background: var(--color-brand);
+  background: var(--color-brand-fill);
 }
 .activity-detail-pg > .info-bar .info-kicker,
 .activity-detail-pg > .info-bar .info-meta {
@@ -2479,7 +2533,7 @@ textarea.input.textarea::placeholder {
   bottom: 16px;
   left: 0;
   width: 4px;
-  background: var(--color-brand);
+  background: var(--color-brand-fill);
 }
 .detail-decision--ink .decision-kicker {
   font-size: 12px;
@@ -2562,7 +2616,7 @@ textarea.input.textarea::placeholder {
   height: 18px;
   margin-left: 2px;
   vertical-align: -3px;
-  background: var(--color-brand);
+  background: var(--color-brand-fill);
   animation: blink 1s step-end infinite;
 }
 
@@ -2680,7 +2734,7 @@ textarea.input.textarea::placeholder {
   width: 8px;
   height: 8px;
   border-radius: 2px;
-  background: var(--color-brand);
+  background: var(--color-brand-fill);
 }
 
 .admin-card-more {
@@ -3489,7 +3543,7 @@ body.capture .screen-notes {
   flex: 0 0 6px;
   width: 6px;
   height: 6px;
-  background: var(--color-brand);
+  background: var(--color-brand-fill);
 }
 
 /* 个人资料：媒体名片、品牌头像与统一服务列表。 */
@@ -3603,7 +3657,7 @@ body.capture .screen-notes {
 }
 
 .review-filter button.is-active {
-  background: var(--color-brand);
+  background: var(--color-brand-fill);
   color: var(--color-on-brand);
 }
 
@@ -4481,7 +4535,7 @@ body.capture-viewport .screen-notes {
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: var(--color-brand);
+  background: var(--color-brand-fill);
   color: var(--color-on-brand);
   font-weight: 900;
   font-size: 12px;
@@ -5409,6 +5463,7 @@ body.capture-viewport .screen-notes {
 }
 .ra-diff {
   padding: 1px 6px;
+  border: 1px solid currentColor;
   border-radius: 3px;
   font-size: 10px;
   font-style: normal;
@@ -5416,16 +5471,16 @@ body.capture-viewport .screen-notes {
   letter-spacing: 0.5px;
 }
 .ra-diff.is-easy {
-  background: #e4ede8;
-  color: #185a4a;
+  background: #142d22;
+  color: #72e4a6;
 }
 .ra-diff.is-med {
-  background: #f8ecc9;
-  color: #7a5a0f;
+  background: #332a12;
+  color: #f0c75e;
 }
 .ra-diff.is-hard {
-  background: #fbe0d8;
-  color: #a52a1c;
+  background: #321814;
+  color: #ff8a79;
 }
 .ra-seg-range {
   font-size: 11px;
@@ -6649,7 +6704,7 @@ body.capture-viewport .screen-notes {
 
 .org-timeline li.is-highlight .org-timeline-dot {
   border-color: var(--color-brand);
-  background: var(--color-brand);
+  background: var(--color-brand-fill);
 }
 
 .org-timeline li > div {
@@ -6801,7 +6856,11 @@ body.capture-viewport .screen-notes {
 .club-avatar-md { width: 40px; height: 40px; font-size: 13px; }
 
 /* tone 变体——仅在既有令牌基础上调色 */
-.club-avatar-ink { background: var(--color-text); color: var(--color-on-media); }
+.club-avatar-ink {
+  background: var(--color-raised);
+  color: var(--color-text);
+  box-shadow: inset 0 0 0 1px var(--color-border-strong);
+}
 .club-avatar-brand {
   background: var(--color-media-card-bg);
   color: var(--color-on-media);
@@ -7321,7 +7380,7 @@ body.capture-viewport .screen-notes {
   background: var(--color-text);
 }
 
-.audience-rider::before { background: var(--color-brand); }
+.audience-rider::before { background: var(--color-brand-fill); }
 .audience-organizer::before { background: var(--color-text); }
 .audience-dev::before { background: var(--color-brand-active); }
 
@@ -9021,7 +9080,7 @@ body.capture-viewport .screen-notes {
   width: 28px;
   height: 28px;
   border-radius: 2px;
-  background: var(--color-brand);
+  background: var(--color-brand-fill);
   color: #fff;
   font-weight: 900;
   font-size: 16px;
@@ -9173,7 +9232,7 @@ body.capture-viewport .screen-notes {
   border-radius: 999px;
   background: transparent;
 }
-.planned-noti-card.is-unread .planned-noti-dot { background: var(--color-brand); }
+.planned-noti-card.is-unread .planned-noti-dot { background: var(--color-brand-fill); }
 .planned-noti-head {
   display: flex;
   justify-content: space-between;
@@ -9292,21 +9351,26 @@ body.capture-viewport .screen-notes {
 .planned-poster-metric-row {
   position: absolute;
   left: 14px;
-  right: 70px;
+  right: 96px;
   bottom: 20px;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  gap: 3px;
   color: #fbf5ea;
 }
 .planned-poster-metric-row b {
   display: block;
-  font-size: 18px;
+  overflow: hidden;
+  font-size: 13px;
   font-weight: 900;
+  letter-spacing: -0.3px;
+  text-overflow: clip;
+  white-space: nowrap;
 }
 .planned-poster-metric-row i {
+  display: block;
   font-style: normal;
-  font-size: 10px;
+  font-size: 8px;
   opacity: 0.8;
   margin-left: 2px;
 }
@@ -9317,6 +9381,12 @@ body.capture-viewport .screen-notes {
   background: #fbf5ea;
   padding: 4px;
   border-radius: 4px;
+}
+.planned-poster-qr .qr {
+  width: 68px;
+  height: 68px;
+  padding: 4px;
+  border: 0;
 }
 .planned-poster-options { margin-top: 12px; }
 .planned-switch {
@@ -9329,7 +9399,7 @@ body.capture-viewport .screen-notes {
 }
 .planned-switch:first-of-type { border-top: 0; }
 .planned-switch input { appearance: none; width: 36px; height: 20px; border-radius: 999px; background: rgba(33, 31, 28, 0.2); position: relative; }
-.planned-switch input:checked { background: var(--color-brand); }
+.planned-switch input:checked { background: var(--color-brand-fill); }
 .planned-switch input::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 999px; background: #fff; transition: 0.2s; }
 .planned-switch input:checked::after { left: 18px; }
 
@@ -9360,14 +9430,14 @@ body.capture-viewport .screen-notes {
   flex-shrink: 0;
   background: #211f1c;
 }
-.planned-feature-card.tone-brand .planned-feature-cover { background: var(--color-brand); }
+.planned-feature-card.tone-brand .planned-feature-cover { background: var(--color-brand-fill); }
 .planned-feature-card.tone-warm .planned-feature-cover { background: #c1392b; }
 .planned-feature-body { padding: 10px 12px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
 .planned-feature-body h4 { margin: 0 0 2px; font-size: 15px; font-weight: 800; color: var(--color-text); }
 .planned-feature-badge {
   display: inline-block;
   margin-top: 8px;
-  background: var(--color-brand);
+  background: var(--color-brand-fill);
   color: #fff;
   font-size: 11px;
   font-weight: 700;
@@ -9437,7 +9507,7 @@ body.capture-viewport .screen-notes {
   font-weight: 800;
   flex-shrink: 0;
 }
-.planned-todo-badge.pending { background: var(--color-brand); color: #fff; }
+.planned-todo-badge.pending { background: var(--color-brand-fill); color: #fff; }
 .planned-todo-badge.warning { background: #c1392b; color: #fff; }
 .planned-todo-badge.neutral { background: #211f1c; color: #fbf5ea; }
 .planned-quick-grid {
@@ -9513,7 +9583,7 @@ body.capture-viewport .screen-notes {
   width: 54px;
   height: 54px;
   border-radius: 999px;
-  background: var(--color-brand);
+  background: var(--color-brand-fill);
   color: #fff;
   align-items: center;
   justify-content: center;
@@ -12030,5 +12100,1352 @@ body.capture-viewport .screen-notes {
   .screen-container .fieldgrid,
   .screen-container .choicegrid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ======================================================
+ * 2026-10-29 · A / 一镜到底 · 全局暗色
+ * 390 × 844 标准竖屏预览；17 条正式路由共享三层电影暗场。
+ * ====================================================== */
+.phone-inner.is-cinema-route,
+.phone-inner.is-cinema-route .screen-container {
+  background: var(--color-cinema-bg);
+}
+.phone-inner.is-cinema-route .phone-status,
+.phone-inner.is-cinema-route .mini-program-bar,
+.phone-inner.is-cinema-route .tab-bar {
+  border-color: var(--color-cinema-line);
+  background: var(--color-cinema-bg);
+  color: var(--color-cinema-text);
+}
+.phone-inner.is-cinema-route .mini-more {
+  border-color: var(--color-cinema-line);
+  background: var(--color-cinema-panel);
+  color: var(--color-cinema-text);
+}
+.phone-inner.is-cinema-route .tab-button {
+  color: var(--color-cinema-muted);
+}
+.phone-inner.is-cinema-route .tab-button.is-active {
+  color: var(--color-brand);
+}
+.cinema-scroll-fade {
+  position: absolute;
+  z-index: 24;
+  right: 0;
+  left: 0;
+  height: 22px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--motion-duration-fast) var(--motion-easing-standard);
+}
+.cinema-scroll-fade--top {
+  top: 84px;
+  background: linear-gradient(180deg, rgba(11, 10, 12, 0.88), rgba(11, 10, 12, 0));
+}
+.custom-tab-navigation .cinema-scroll-fade--top {
+  top: 40px;
+}
+.cinema-scroll-fade--bottom {
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(11, 10, 12, 0), rgba(11, 10, 12, 0.88));
+}
+.phone-inner.is-cinema-route.cinema-can-scroll:not(.cinema-at-end) .cinema-scroll-fade--bottom,
+.phone-inner.is-cinema-route.cinema-is-scrolled .cinema-scroll-fade--top {
+  opacity: 1;
+}
+.phone-inner.is-cinema-route:has(.tab-bar:not([hidden])) .cinema-scroll-fade--bottom {
+  bottom: 76px;
+}
+/* 活动放映单 */
+.screen-container .activities-journal {
+  min-height: 100%;
+  background: var(--color-cinema-bg);
+  color: var(--color-cinema-text);
+}
+.screen-container .activities-journal .prototype-brand-logo,
+.screen-container .registrations-prototype .prototype-brand-logo {
+  color: var(--color-cinema-text);
+}
+.screen-container .activities-journal .prototype-wordmark,
+.screen-container .registrations-prototype .prototype-wordmark {
+  border: 1px solid var(--color-cinema-line);
+}
+.screen-container .activities-journal .pageheading {
+  padding: 12px 0 8px;
+}
+.screen-container .activities-journal .pageheading h1 {
+  margin: 4px 0;
+  font-size: 24px;
+  line-height: 30px;
+}
+.screen-container .activities-journal .pageheading p {
+  line-height: 20px;
+}
+.screen-container .activities-journal .pageheading .eyebrow,
+.screen-container .registration-journal .pageheading .eyebrow,
+.screen-container .registrations-prototype .pageheading .eyebrow,
+.screen-container .admin-reviews-cinema .pageheading .eyebrow {
+  color: var(--color-brand);
+}
+.screen-container .activities-journal .pageheading h1,
+.screen-container .activities-journal .pageheading p,
+.screen-container .registrations-prototype .pageheading h1,
+.screen-container .admin-reviews-cinema .pageheading h1 {
+  color: var(--color-cinema-text);
+}
+.screen-container .activities-journal .pageheading p,
+.screen-container .registrations-prototype .pageheading p {
+  color: var(--color-cinema-muted);
+}
+.screen-container .activities-journal .segment {
+  margin: 0 0 8px;
+  padding: 3px;
+  border: 1px solid var(--color-cinema-line);
+  border-radius: 8px;
+  background: var(--color-cinema-panel);
+}
+.screen-container .activities-journal .segment button {
+  color: var(--color-cinema-muted);
+  border: 0;
+  border-radius: 5px;
+}
+.screen-container .activities-journal .segment button[aria-selected='true'] {
+  background: var(--color-cinema-red);
+  color: var(--color-on-action);
+}
+.screen-container .activities-journal .story {
+  overflow: hidden;
+  margin: 0 0 16px;
+  border: 1px solid var(--color-cinema-line);
+  border-radius: 10px;
+  background: var(--color-cinema-panel);
+  color: var(--color-cinema-text);
+}
+.screen-container .activities-journal .story-opening {
+  width: 100%;
+  margin-left: 0;
+  border-right: 0;
+  border-left: 0;
+  border-radius: 0;
+}
+.screen-container .activities-journal .story .photo {
+  height: 238px;
+  border-radius: 0;
+}
+.screen-container .activities-journal .story-opening .photo {
+  height: min(60vw, 258px);
+}
+.screen-container .activities-journal .story-opening .caption {
+  padding: 12px;
+}
+.screen-container .activities-journal .story-opening .caption h2 {
+  font-size: 24px;
+  line-height: 30px;
+}
+.screen-container .activities-journal .story .shade {
+  background: linear-gradient(180deg, rgba(15, 13, 10, 0.02) 10%, rgba(15, 13, 10, 0.96) 100%);
+}
+.screen-container .activities-journal .storyfacts {
+  gap: 0;
+  padding: 0;
+  border-color: var(--color-cinema-line);
+}
+.screen-container .activities-journal .storyfacts span {
+  flex: 1;
+  padding: 8px 10px;
+  border-right: 1px solid var(--color-cinema-line);
+  color: var(--color-cinema-muted);
+}
+.screen-container .activities-journal .storyfacts span:last-child {
+  border-right: 0;
+}
+.screen-container .activities-journal .storyfacts strong {
+  color: var(--color-cinema-text);
+}
+.screen-container .activities-journal .storymeta {
+  min-height: 44px;
+  padding: 8px 12px;
+  color: var(--color-cinema-muted);
+}
+.screen-container .activities-journal .storymeta .go {
+  color: var(--color-brand);
+}
+
+/* 活动详情 */
+.screen-container .activity-detail-journal {
+  min-height: 100%;
+  background: var(--color-cinema-bg);
+  color: var(--color-cinema-text);
+}
+.screen-container .activity-detail-journal .journal-detail-cover {
+  width: 100%;
+  height: 390px;
+  margin-left: 0;
+  border-radius: 0;
+}
+.screen-container .activity-detail-journal .journal-detail-cover .shade {
+  background: linear-gradient(180deg, rgba(15, 13, 10, 0.02) 8%, rgba(15, 13, 10, 0.96) 100%);
+}
+.screen-container .activity-detail-journal > .ink {
+  width: 100%;
+  margin-left: 0;
+  padding: 0;
+  border-bottom: 1px solid var(--color-cinema-line);
+  background: var(--color-cinema-bg);
+}
+.screen-container .activity-detail-journal > .ink .metrics {
+  gap: 0;
+}
+.screen-container .activity-detail-journal > .ink .metrics > div {
+  padding: 12px 10px;
+  border-right: 1px solid var(--color-cinema-line);
+}
+.screen-container .activity-detail-journal > .ink .metrics > div:last-child {
+  border-right: 0;
+}
+.screen-container .activity-detail-journal > .ink .row {
+  padding: 12px var(--page-gutter);
+  border-color: var(--color-cinema-line);
+}
+.screen-container .activity-detail-journal .mode-switcher,
+.screen-container .activity-detail-journal .host-card,
+.screen-container .activity-detail-journal .route-brief-card,
+.screen-container .activity-detail-journal .detailrows,
+.screen-container .activity-detail-journal .map,
+.screen-container .activity-detail-journal .decision {
+  border-color: var(--color-cinema-line);
+  background: var(--color-cinema-panel);
+  color: var(--color-cinema-text);
+}
+.screen-container .activity-detail-journal .content {
+  padding-right: 0;
+  padding-left: 0;
+}
+.screen-container .activity-detail-journal .chapterhead {
+  position: relative;
+  padding-left: 10px;
+}
+.screen-container .activity-detail-journal .chapterhead::before {
+  position: absolute;
+  inset: 2px auto 2px 0;
+  width: 3px;
+  background: var(--color-cinema-red);
+  content: '';
+}
+.screen-container .activity-detail-journal .chapterhead h2,
+.screen-container .activity-detail-journal .section p,
+.screen-container .activity-detail-journal .row strong,
+.screen-container .activity-detail-journal .detailrows dd {
+  color: var(--color-cinema-text);
+}
+.screen-container .activity-detail-journal .chapterhead span,
+.screen-container .activity-detail-journal .section .muted,
+.screen-container .activity-detail-journal .row small,
+.screen-container .activity-detail-journal .detailrows dt {
+  color: var(--color-cinema-muted);
+}
+.screen-container .activity-detail-journal .btn {
+  border-radius: 5px;
+  border-color: var(--color-cinema-red);
+  background: var(--color-cinema-red);
+  color: var(--color-on-action);
+}
+.screen-container .activity-detail-journal .btn.secondary,
+.screen-container .activity-detail-journal .btn-chip {
+  border-color: var(--color-border-strong);
+  background: var(--color-cinema-panel-raised);
+  color: var(--color-cinema-text);
+}
+.screen-container .activity-detail-journal .decision {
+  border-left: 4px solid var(--color-cinema-red);
+}
+
+/* 报名、行程、凭证和审核：暗场内使用炭黑分层。 */
+.screen-container .registration-journal,
+.screen-container .registrations-prototype,
+.screen-container .credential-cinema,
+.screen-container .admin-reviews-cinema {
+  min-height: 100%;
+  background: var(--color-cinema-bg);
+  color: var(--color-cinema-text);
+}
+.screen-container .registration-journal .pageheading h1,
+.screen-container .registration-journal .pageheading p,
+.screen-container .registration-journal .chapterhead h2 {
+  color: var(--color-cinema-text);
+}
+.screen-container .registration-journal .timeline {
+  gap: 2px;
+  padding: 0;
+  border-color: var(--color-cinema-line);
+  border-radius: 0;
+  background: var(--color-cinema-bg);
+}
+.screen-container .registration-journal .timeline span {
+  min-height: 42px;
+  padding: 8px 4px;
+  background: var(--color-cinema-panel-raised);
+  color: var(--color-cinema-muted);
+}
+.screen-container .registration-journal .timeline .active {
+  background: var(--color-cinema-red);
+  color: var(--color-on-action);
+}
+.screen-container .registration-journal .timeline .active b {
+  border-color: currentColor;
+  background: transparent;
+  color: var(--color-on-action);
+}
+.screen-container .registration-journal .paper,
+.screen-container .registration-journal .registration-section,
+.screen-container .credential-cinema .credential-ticket,
+.screen-container .credential-cinema .card,
+.screen-container .admin-reviews-cinema .review-item,
+.screen-container .admin-reviews-cinema .card,
+.screen-container .registrations-prototype .trip-ticket {
+  border-color: var(--color-border-strong);
+  border-radius: 9px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+}
+.screen-container .registration-journal .actionbar {
+  border-color: var(--color-cinema-line);
+  background: var(--color-cinema-bg);
+}
+.screen-container .registration-journal .actionbar .btn,
+.screen-container .credential-cinema > .btn,
+.screen-container .credential-cinema .credential-share-action .btn,
+.screen-container .admin-reviews-cinema .review-action {
+  border-color: var(--color-cinema-red);
+  border-radius: 5px;
+  background: var(--color-cinema-red);
+  color: var(--color-on-action);
+}
+.screen-container .registrations-prototype .trip-summary > span {
+  border: 1px solid var(--color-cinema-line);
+  background: var(--color-cinema-panel);
+  color: var(--color-cinema-text);
+}
+.screen-container .registrations-prototype .trip-summary > span small,
+.screen-container .credential-cinema > .card-hint,
+.screen-container .credential-cinema .credential-share-action .card-hint {
+  color: var(--color-cinema-muted);
+}
+.screen-container .credential-cinema .credential-ticket .ticket-head {
+  background: var(--color-cinema-panel-raised);
+}
+.screen-container .credential-cinema .credential-share-action {
+  margin-top: 16px;
+}
+.screen-container .admin-reviews-cinema .pageheading {
+  padding-right: 0;
+  padding-left: 0;
+}
+.screen-container .admin-reviews-cinema > .info-bar {
+  border-color: var(--color-cinema-line);
+  background: var(--color-cinema-panel);
+  color: var(--color-cinema-text);
+}
+.screen-container .admin-reviews-cinema .review-filter button {
+  border-color: var(--color-cinema-line);
+  background: var(--color-cinema-panel);
+  color: var(--color-cinema-text);
+}
+.screen-container .admin-reviews-cinema .review-filter button.is-active {
+  border-color: var(--color-cinema-red);
+  background: var(--color-cinema-red);
+  color: var(--color-on-action);
+}
+.screen-container .admin-reviews-cinema .list-count,
+.screen-container .admin-reviews-cinema .list-count b {
+  color: var(--color-cinema-muted);
+}
+.screen-container .activity-detail-journal .journal-detail-cover .caption h1 {
+  color: var(--color-cinema-text);
+}
+
+@media (max-width: 430px) {
+  .phone-shell {
+    width: min(390px, 100vw);
+    height: min(844px, 100dvh);
+    padding: 0;
+    border-radius: 0;
+  }
+  .phone-inner {
+    border-radius: 0;
+  }
+}
+
+/* 全路由统一电影 Chrome、暗色正文与一次性入场。 */
+.screen-container .cinema-flow-page {
+  position: relative;
+  min-height: 100%;
+  background: var(--color-bg);
+  color: var(--color-text);
+  isolation: isolate;
+}
+
+.screen-container .cinema-flow-page .card,
+.screen-container .cinema-flow-page .paper,
+.screen-container .cinema-flow-page .ticket,
+.screen-container .cinema-flow-page .review-item,
+.screen-container .cinema-flow-page .reviewitem,
+.screen-container .cinema-flow-page .form-card,
+.screen-container .cinema-flow-page .menu-card,
+.screen-container .cinema-flow-page .state,
+.screen-container .cinema-flow-page .state-card,
+.screen-container .cinema-flow-page .modal-sheet,
+.screen-container .cinema-flow-page dialog {
+  border-color: var(--color-card-border);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+}
+.screen-container .cinema-flow-page input,
+.screen-container .cinema-flow-page textarea,
+.screen-container .cinema-flow-page select,
+.screen-container .cinema-flow-page .input,
+.screen-container .cinema-flow-page .textarea,
+.screen-container .cinema-flow-page .picker-value,
+.screen-container .cinema-flow-page .choice {
+  border-color: var(--color-border-strong);
+  background-color: var(--color-input-bg);
+  color: var(--color-text);
+}
+.screen-container .cinema-flow-page .fixed,
+.screen-container .cinema-flow-page .fixed-bar,
+.screen-container .cinema-flow-page .actionbar,
+.screen-container .cinema-flow-page .action-bar {
+  border-color: var(--color-border-strong);
+  background-color: var(--color-fixed-bar);
+}
+.screen-container .cinema-flow-page .decision,
+.screen-container .cinema-flow-page .conclusion-panel,
+.screen-container .cinema-flow-page .ink {
+  border-color: var(--color-cinema-line);
+  background-color: var(--color-media-card-bg);
+  color: var(--color-on-media);
+}
+.screen-container .cinema-flow-page .tag.dark,
+.screen-container .cinema-flow-page .ticket-tag,
+.screen-container .cinema-flow-page .filter-tab.is-active,
+.screen-container .cinema-flow-page .status-filter.active,
+.screen-container .cinema-flow-page .segment button[aria-selected='true'],
+.screen-container .cinema-flow-page .day-chip.is-active {
+  border-color: var(--color-action);
+  background-color: var(--color-action);
+  color: var(--color-on-action);
+}
+.screen-container .cinema-flow-page .tag-success,
+.screen-container .cinema-flow-page .tag.success,
+.screen-container .cinema-flow-page .tag--connected,
+.screen-container .cinema-flow-page .tag--approved,
+.screen-container .cinema-flow-page .tag--checked_in {
+  border-color: var(--color-status-success);
+  background-color: var(--color-status-success-soft);
+  color: var(--color-status-success);
+}
+.screen-container .cinema-flow-page .tag-warning,
+.screen-container .cinema-flow-page .tag.warning,
+.screen-container .cinema-flow-page .tag--pending,
+.screen-container .cinema-flow-page .tag--waiting {
+  border-color: var(--color-status-warning);
+  background-color: var(--color-status-warning-soft);
+  color: var(--color-status-warning);
+}
+.screen-container .cinema-enter > .pageheading .eyebrow,
+.screen-container .cinema-enter > .profile-hero,
+.screen-container .cinema-enter > .club-center-hero,
+.screen-container .cinema-enter > .journal-detail-cover,
+.screen-container .cinema-enter > .info-bar,
+.screen-container .cinema-enter > .ra-map {
+  animation:
+    cinema-blur-in var(--cinema-title-duration) var(--motion-delay-title)
+    var(--motion-easing-out) both;
+}
+.screen-container .cinema-enter .cinema-title-line {
+  display: block;
+  animation:
+    cinema-blur-in var(--cinema-title-duration)
+    var(--cinema-title-delay, var(--motion-delay-title)) var(--motion-easing-out) both;
+}
+.screen-container .cinema-enter .detail-hero-caption h1,
+.screen-container .cinema-enter .planned-head h1 {
+  animation:
+    cinema-blur-in var(--cinema-title-duration) var(--motion-delay-title)
+    var(--motion-easing-out) both;
+}
+.screen-container .cinema-enter .pageheading > p {
+  animation:
+    cinema-blur-in var(--motion-duration-reveal) var(--motion-delay-caption)
+    var(--motion-easing-out) both;
+}
+.screen-container .cinema-enter .detail-hero-caption > p,
+.screen-container .cinema-enter .planned-head > p {
+  animation:
+    cinema-blur-in var(--motion-duration-reveal) var(--motion-delay-caption)
+    var(--motion-easing-out) both;
+}
+.screen-container .cinema-enter .cinema-story-title {
+  animation:
+    cinema-blur-in var(--cinema-title-duration)
+    var(--cinema-story-delay, var(--motion-delay-story)) var(--motion-easing-out) both;
+}
+.screen-container .cinema-enter > .content:first-of-type,
+.screen-container .cinema-enter > .card:first-of-type,
+.screen-container .cinema-enter > .story:first-of-type,
+.screen-container .cinema-enter > .club-center-events {
+  animation:
+    cinema-rise-in var(--cinema-content-duration) var(--motion-delay-content)
+    var(--motion-easing-out) both;
+}
+.screen-container .cinema-enter .profile-background img,
+.screen-container .cinema-enter .journal-detail-cover img,
+.screen-container .cinema-enter .club-center-cover img,
+.screen-container .cinema-enter .story-opening img {
+  animation:
+    cinema-hero-in var(--cinema-hero-duration) var(--motion-duration-instant)
+    var(--motion-easing-out) both;
+}
+.screen-container .cinema-motion-ready .cinema-reveal {
+  opacity: 0;
+  transform: translateY(var(--motion-distance-reveal));
+  transition:
+    opacity var(--cinema-reveal-duration)
+      var(--cinema-reveal-delay, var(--motion-delay-none)) var(--motion-easing-out),
+    transform var(--cinema-reveal-duration)
+      var(--cinema-reveal-delay, var(--motion-delay-none)) var(--motion-easing-out);
+}
+.screen-container .cinema-motion-ready .cinema-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.screen-container .cinema-flow-page .chev,
+.screen-container .cinema-flow-page .storymeta-link,
+.screen-container .cinema-flow-page .go {
+  position: relative;
+  right: 0;
+  transition:
+    right var(--motion-duration-instant) var(--motion-easing-standard),
+    opacity var(--motion-duration-instant) var(--motion-easing-standard);
+}
+.screen-container .cinema-flow-page .rowlink:active .chev,
+.screen-container .cinema-flow-page .story:active .storymeta-link,
+.screen-container .cinema-flow-page [role='button']:active .go {
+  right: -2px;
+  opacity: 0.68;
+}
+.screen-container .cinema-flow-page button,
+.screen-container .cinema-flow-page [role='button'] {
+  transition:
+    opacity var(--motion-duration-fast) var(--motion-easing-standard),
+    transform var(--motion-duration-fast) var(--motion-easing-standard),
+    background-color var(--motion-duration-base) var(--motion-easing-standard),
+    border-color var(--motion-duration-base) var(--motion-easing-standard);
+}
+.screen-container .cinema-flow-page button:active,
+.screen-container .cinema-flow-page [role='button']:active {
+  opacity: 0.84;
+  transform: translateY(var(--motion-distance-press));
+}
+
+/* 路线分析全局暗色收口：清除历史暖白地图、面板和黑字，保留标记内部的识别色。 */
+.screen-container .cinema-flow-page.route-analysis-page {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-map,
+.screen-container .cinema-flow-page.route-analysis-page .ra-map-head {
+  background: var(--color-bg);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-map-head-title,
+.screen-container .cinema-flow-page.route-analysis-page .ra-panel,
+.screen-container .cinema-flow-page.route-analysis-page .ra-map-detail {
+  border-color: var(--color-card-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-map-head-title {
+  border-left-color: var(--color-action);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-map-stats {
+  background: var(--color-border-strong);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-map-stats > span,
+.screen-container .cinema-flow-page.route-analysis-page .ra-detail-metrics > div {
+  background: var(--color-raised);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-map-section {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-map-svg {
+  background: var(--color-bg);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-map-svg > rect:first-of-type {
+  fill: var(--color-bg);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-map-svg > g[opacity] circle {
+  stroke: var(--color-border-strong);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-map-svg > g[transform^='translate(6'] line,
+.screen-container .cinema-flow-page.route-analysis-page .ra-map-svg > g[transform^='translate(92'] path,
+.screen-container .cinema-flow-page.route-analysis-page .ra-map-svg > g[transform*='rotate(-55)'] path {
+  stroke: var(--color-text);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-map-svg > g[transform^='translate(92'] path {
+  fill: var(--color-text);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-map-svg text,
+.screen-container .cinema-flow-page.route-analysis-page .ra-mk text {
+  fill: var(--color-text);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-mk-wc text {
+  fill: #fff;
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-filter,
+.screen-container .cinema-flow-page.route-analysis-page .ra-detail-close {
+  border-color: var(--color-border-strong);
+  background: var(--color-raised);
+  color: var(--color-text);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-filter.is-active,
+.screen-container .cinema-flow-page.route-analysis-page .ra-kicker {
+  border-color: var(--color-action);
+  background: var(--color-action);
+  color: var(--color-on-action);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-filter.is-active i {
+  color: var(--color-on-action);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-map-legend-grid li,
+.screen-container .cinema-flow-page.route-analysis-page .ra-detail-title-row h3,
+.screen-container .cinema-flow-page.route-analysis-page .ra-detail-caption,
+.screen-container .cinema-flow-page.route-analysis-page .ra-detail-prov-v,
+.screen-container .cinema-flow-page.route-analysis-page .ra-map-detail-start h3,
+.screen-container .cinema-flow-page.route-analysis-page .ra-panel-head h3,
+.screen-container .cinema-flow-page.route-analysis-page .ra-elev-caption,
+.screen-container .cinema-flow-page.route-analysis-page .ra-seg-name,
+.screen-container .cinema-flow-page.route-analysis-page .ra-seg-strategy,
+.screen-container .cinema-flow-page.route-analysis-page .ra-tl-km,
+.screen-container .cinema-flow-page.route-analysis-page .ra-tl-name,
+.screen-container .cinema-flow-page.route-analysis-page .ra-strategy-list dd,
+.screen-container .cinema-flow-page.route-analysis-page .ra-supply-name,
+.screen-container .cinema-flow-page.route-analysis-page .ra-risk,
+.screen-container .cinema-flow-page.route-analysis-page .ra-gear-list li,
+.screen-container .cinema-flow-page.route-analysis-page .ra-tl-caution,
+.screen-container .cinema-flow-page.route-analysis-page .ra-dir-km,
+.screen-container .cinema-flow-page.route-analysis-page .ra-dir-road,
+.screen-container .cinema-flow-page.route-analysis-page .ra-dir-turn,
+.screen-container .cinema-flow-page.route-analysis-page .ra-dir-note,
+.screen-container .cinema-flow-page.route-analysis-page .ra-climb-range,
+.screen-container .cinema-flow-page.route-analysis-page .ra-climb-metrics b,
+.screen-container .cinema-flow-page.route-analysis-page .ra-climb-highest,
+.screen-container .cinema-flow-page.route-analysis-page .ra-rhythm-row dd,
+.screen-container .cinema-flow-page.route-analysis-page .ra-sp-name,
+.screen-container .cinema-flow-page.route-analysis-page .ra-sp-eta b,
+.screen-container .cinema-flow-page.route-analysis-page .ra-carry-list li,
+.screen-container .cinema-flow-page.route-analysis-page .ra-wc-name,
+.screen-container .cinema-flow-page.route-analysis-page .ra-fallback h2,
+.screen-container .cinema-flow-page.route-analysis-page .ra-fallback h3,
+.screen-container .cinema-flow-page.route-analysis-page .ra-fallback li,
+.screen-container .cinema-flow-page.route-analysis-page .ra-fallback b {
+  color: var(--color-text);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-map-head-title p,
+.screen-container .cinema-flow-page.route-analysis-page .ra-map-stats i,
+.screen-container .cinema-flow-page.route-analysis-page .ra-map-stats small,
+.screen-container .cinema-flow-page.route-analysis-page .ra-map-section-sub,
+.screen-container .cinema-flow-page.route-analysis-page .ra-filter i,
+.screen-container .cinema-flow-page.route-analysis-page .ra-map-caption,
+.screen-container .cinema-flow-page.route-analysis-page .ra-detail-sub,
+.screen-container .cinema-flow-page.route-analysis-page .ra-detail-metrics dt,
+.screen-container .cinema-flow-page.route-analysis-page .ra-detail-prov-k,
+.screen-container .cinema-flow-page.route-analysis-page .ra-map-sample,
+.screen-container .cinema-flow-page.route-analysis-page .ra-panel-head .ra-count,
+.screen-container .cinema-flow-page.route-analysis-page .ra-panel-head .ra-elev-range,
+.screen-container .cinema-flow-page.route-analysis-page .ra-empty,
+.screen-container .cinema-flow-page.route-analysis-page .ra-track-tick,
+.screen-container .cinema-flow-page.route-analysis-page .ra-seg-range,
+.screen-container .cinema-flow-page.route-analysis-page .ra-seg-ud b,
+.screen-container .cinema-flow-page.route-analysis-page .ra-tl-km i,
+.screen-container .cinema-flow-page.route-analysis-page .ra-tl-meta,
+.screen-container .cinema-flow-page.route-analysis-page .ra-tl-elev i,
+.screen-container .cinema-flow-page.route-analysis-page .ra-supply-type,
+.screen-container .cinema-flow-page.route-analysis-page .ra-dir-terrain,
+.screen-container .cinema-flow-page.route-analysis-page .ra-climb-metrics,
+.screen-container .cinema-flow-page.route-analysis-page .ra-climb-trend,
+.screen-container .cinema-flow-page.route-analysis-page .ra-sp-type,
+.screen-container .cinema-flow-page.route-analysis-page .ra-sp-eta small,
+.screen-container .cinema-flow-page.route-analysis-page .ra-wc-meta,
+.screen-container .cinema-flow-page.route-analysis-page .ra-fb-note,
+.screen-container .cinema-flow-page.route-analysis-page .ra-fallback p {
+  color: var(--color-muted);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-map-stats b,
+.screen-container .cinema-flow-page.route-analysis-page .ra-map-head-title h2,
+.screen-container .cinema-flow-page.route-analysis-page .ra-map-section-head h3 {
+  color: var(--color-text);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-detail-caption,
+.screen-container .cinema-flow-page.route-analysis-page .ra-map-sample,
+.screen-container .cinema-flow-page.route-analysis-page .ra-elev-caption,
+.screen-container .cinema-flow-page.route-analysis-page .ra-empty,
+.screen-container .cinema-flow-page.route-analysis-page .ra-tl-row.is-active,
+.screen-container .cinema-flow-page.route-analysis-page .ra-risk,
+.screen-container .cinema-flow-page.route-analysis-page .ra-gear-list li,
+.screen-container .cinema-flow-page.route-analysis-page .ra-tl-caution,
+.screen-container .cinema-flow-page.route-analysis-page .ra-dir-turn em,
+.screen-container .cinema-flow-page.route-analysis-page .ra-dir-note em,
+.screen-container .cinema-flow-page.route-analysis-page .ra-climb-highest,
+.screen-container .cinema-flow-page.route-analysis-page .ra-carry {
+  border-color: var(--color-border-strong);
+  background: var(--color-raised);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-detail-metrics,
+.screen-container .cinema-flow-page.route-analysis-page .ra-seg-list {
+  background: var(--color-border-strong);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-seg-row,
+.screen-container .cinema-flow-page.route-analysis-page .ra-tl-marker {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-seg-row.is-active {
+  background: var(--color-raised);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-panel-head,
+.screen-container .cinema-flow-page.route-analysis-page .ra-detail-provenance,
+.screen-container .cinema-flow-page.route-analysis-page .ra-strategy-list > div,
+.screen-container .cinema-flow-page.route-analysis-page .ra-supplies-list li,
+.screen-container .cinema-flow-page.route-analysis-page .ra-dir-row,
+.screen-container .cinema-flow-page.route-analysis-page .ra-climb-row,
+.screen-container .cinema-flow-page.route-analysis-page .ra-rhythm-list,
+.screen-container .cinema-flow-page.route-analysis-page .ra-sp-row,
+.screen-container .cinema-flow-page.route-analysis-page .ra-wc-row {
+  border-color: var(--color-border);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-track-bg,
+.screen-container .cinema-flow-page.route-analysis-page .ra-tl-list::before {
+  background: var(--color-border-strong);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-track-seg.is-active {
+  box-shadow: 0 0 0 2px var(--color-text);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-track-peak {
+  background: var(--color-text);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-track-peak::after,
+.screen-container .cinema-flow-page.route-analysis-page .ra-dot {
+  border-color: var(--color-surface);
+  box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 3px var(--color-action);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-dir-idx {
+  background: var(--color-action);
+  color: var(--color-on-action);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-map-svg .ra-mk circle[fill='#211f1c'],
+.screen-container .cinema-flow-page.route-analysis-page .ra-map-svg .ra-mk path[fill='#211f1c'],
+.screen-container .cinema-flow-page.route-analysis-page .ra-chart circle[fill='#211f1c'] {
+  fill: var(--color-text);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-chart circle[stroke='#fbf5ea'] {
+  stroke: var(--color-surface);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-chart line[stroke='#eadfca'] {
+  stroke: var(--color-border-strong);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-chart text {
+  fill: var(--color-muted);
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-fallback-head {
+  background: var(--color-media-card-bg) !important;
+  color: var(--color-on-media) !important;
+}
+.screen-container .cinema-flow-page.route-analysis-page .ra-fallback-head h2,
+.screen-container .cinema-flow-page.route-analysis-page .ra-fallback-head p {
+  background: transparent !important;
+  color: var(--color-on-media) !important;
+}
+
+@keyframes cinema-blur-in {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+    transform: translateY(var(--motion-distance-reveal));
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+@keyframes cinema-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--motion-distance-reveal));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes cinema-hero-in {
+  from {
+    opacity: 0.84;
+    transform: scale(1.025);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cinema-scroll-fade {
+    transition: none !important;
+  }
+  .screen-container .cinema-flow-page,
+  .screen-container .cinema-flow-page *,
+  .screen-container .cinema-flow-page *::before,
+  .screen-container .cinema-flow-page *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+/* ============================================================
+   2026-10-29 · 活动详情排版收口 + 规划页电影暗场
+   React Bits 仅转译一次性 reveal / settle 动效，不引入运行时依赖。
+   ============================================================ */
+.screen-container .activity-detail-journal .journal-detail-cover {
+  height: auto;
+  aspect-ratio: 5 / 4;
+}
+.screen-container .activity-detail-journal .detail-hero-caption {
+  right: 22px;
+  bottom: 22px;
+  left: 22px;
+  padding: 0;
+}
+.screen-container .activity-detail-journal .detail-hero-caption .eyebrow {
+  color: var(--color-cinema-text);
+}
+.screen-container .activity-detail-journal .detail-hero-caption h1 {
+  max-width: 310px;
+  margin-top: 8px;
+  font-size: 36px;
+  line-height: 1.08;
+  letter-spacing: -1.2px;
+  text-wrap: balance;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.screen-container .activity-detail-journal .detail-hero-caption p {
+  max-width: 280px;
+  margin-top: 8px;
+  color: var(--color-cinema-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+.screen-container .activity-detail-journal .detail-fact-strip .metrics {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.screen-container .activity-detail-journal .detail-fact-strip .metrics > div {
+  min-width: 0;
+  padding: 14px 12px 12px;
+}
+.screen-container .activity-detail-journal .detail-fact-strip .metrics strong {
+  display: block;
+  overflow: hidden;
+  color: var(--color-cinema-text);
+  font-family: var(--font-family-mono);
+  font-size: 27px;
+  line-height: 1.15;
+  letter-spacing: -1.2px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.screen-container .activity-detail-journal .detail-fact-strip .metrics span {
+  color: var(--color-cinema-muted);
+  font-size: 11px;
+  line-height: 16px;
+}
+.screen-container .activity-detail-journal .detail-meeting-strip {
+  gap: 12px;
+  min-height: 76px;
+}
+.screen-container .activity-detail-journal .detail-meeting-strip .lead,
+.screen-container .activity-detail-journal .detail-meeting-strip .lead > div {
+  min-width: 0;
+}
+.screen-container .activity-detail-journal .detail-meeting-strip strong,
+.screen-container .activity-detail-journal .detail-meeting-strip small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.screen-container .activity-detail-journal .detail-meeting-strip .mode-pill {
+  max-width: 132px;
+  min-height: 34px;
+  white-space: normal;
+}
+.screen-container .activity-detail-journal .content {
+  padding-top: 30px;
+  padding-bottom: 0;
+}
+.screen-container .activity-detail-journal .detail-section {
+  margin-bottom: 30px;
+  padding-bottom: 30px;
+  border-bottom: 1px solid var(--color-cinema-line);
+}
+.screen-container .activity-detail-journal .detail-section:last-child {
+  margin-bottom: 0;
+}
+.screen-container .activity-detail-journal .chapterhead {
+  align-items: baseline;
+  margin-bottom: 14px;
+}
+.screen-container .activity-detail-journal .chapterhead h2 {
+  font-size: 22px;
+  line-height: 1.25;
+}
+.screen-container .activity-detail-journal .chapterhead span {
+  max-width: 48%;
+  line-height: 16px;
+  text-align: right;
+  white-space: normal;
+}
+.screen-container .activity-detail-journal .detail-section > p:not(.small) {
+  font-size: 15px;
+  line-height: 1.75;
+}
+.screen-container .activity-detail-journal .detailrows {
+  margin: 12px 0;
+}
+.screen-container .activity-detail-journal .route-brief-card {
+  padding: 0 0 30px;
+  border: 0;
+  border-bottom: 1px solid var(--color-cinema-line);
+  border-radius: 0;
+  background: transparent;
+}
+.screen-container .activity-detail-journal .route-brief-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin: 14px 0;
+  border-top: 1px solid var(--color-cinema-line);
+  border-bottom: 1px solid var(--color-cinema-line);
+}
+.screen-container .activity-detail-journal .route-brief-metrics > div {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  padding: 12px 10px;
+  border: 0;
+  border-right: 1px solid var(--color-cinema-line);
+}
+.screen-container .activity-detail-journal .route-brief-metrics > div:last-child {
+  border-right: 0;
+}
+.screen-container .activity-detail-journal .route-brief-metrics dt,
+.screen-container .activity-detail-journal .route-brief-metrics dd {
+  width: 100%;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.screen-container .activity-detail-journal .route-brief-metrics dd {
+  font-family: var(--font-family-mono);
+  font-size: 15px;
+}
+.screen-container .activity-detail-journal .detail-rider-strip {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+  width: calc(100% + var(--page-gutter) * 2);
+  margin: 0 calc(0px - var(--page-gutter));
+  padding: 2px var(--page-gutter) 8px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: none;
+}
+.screen-container .activity-detail-journal .detail-rider-strip::-webkit-scrollbar {
+  display: none;
+}
+.screen-container .activity-detail-journal .detail-rider-strip .rider {
+  flex: 0 0 78px;
+  width: 78px;
+  min-height: 112px;
+  padding: 12px 8px;
+  border-radius: 8px;
+}
+.screen-container .activity-detail-journal .detail-rider-strip .attendee-authorization-card {
+  flex-basis: 156px;
+  width: 156px;
+  align-items: flex-start;
+}
+.screen-container .activity-detail-journal .detail-rider-strip .avatar {
+  width: 48px;
+  height: 48px;
+}
+.screen-container .activity-detail-journal .qr-row {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  align-items: center;
+}
+.screen-container .activity-detail-journal .detail-decision {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  margin-top: 6px;
+  padding: 22px 18px 20px 22px;
+}
+.screen-container .activity-detail-journal .detail-decision .decision-title {
+  margin: 4px 0 0;
+  font-size: 25px;
+  line-height: 1.24;
+  text-wrap: balance;
+}
+.screen-container .activity-detail-journal .detail-decision .decision-hint {
+  max-width: 30em;
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.screen-container .activity-detail-journal .detail-decision .btn {
+  width: 100%;
+  margin-top: 0;
+}
+
+/* 4 个规划画面继续保持 design-only，仅统一视觉与前端交互稿。 */
+.screen-container .planned-page {
+  min-height: 100%;
+  padding: 0 0 116px;
+  background: var(--color-cinema-bg);
+  color: var(--color-cinema-text);
+}
+.screen-container .planned-page .planned-head {
+  position: relative;
+  padding: 24px var(--page-gutter) 22px;
+  border-bottom: 1px solid var(--color-cinema-line);
+}
+.screen-container .planned-page .planned-head .eyebrow {
+  color: var(--color-brand);
+}
+.screen-container .planned-page .planned-head h1 {
+  margin: 10px 0 8px;
+  color: var(--color-cinema-text);
+  font-size: 34px;
+  line-height: 1.12;
+  letter-spacing: -1.2px;
+}
+.screen-container .planned-page .planned-head p {
+  max-width: 30em;
+  color: var(--color-cinema-muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+.screen-container .planned-page .planned-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  margin: 14px 0 0;
+  padding: 4px 9px;
+  border: 1px solid var(--color-cinema-line);
+  border-radius: 4px;
+  background: var(--color-cinema-panel);
+  color: var(--color-cinema-muted);
+  font-family: var(--font-family-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+.screen-container .planned-page .card {
+  margin: 14px var(--page-gutter) 0;
+  border: 1px solid var(--color-cinema-line);
+  border-radius: 9px;
+  background: var(--color-cinema-panel);
+  color: var(--color-cinema-text);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+}
+.screen-container .planned-page .card h3,
+.screen-container .planned-page .card-title,
+.screen-container .planned-page .card-head b,
+.screen-container .planned-page .detailrows dd {
+  color: var(--color-cinema-text);
+}
+.screen-container .planned-page .card-hint,
+.screen-container .planned-page .meta-line,
+.screen-container .planned-page .detailrows dt,
+.screen-container .planned-page .neutral-note {
+  color: var(--color-cinema-muted);
+}
+.screen-container .planned-page .btn-text {
+  min-height: 44px;
+  color: var(--color-brand);
+  font-weight: 800;
+}
+.screen-container .planned-privacy-summary {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: end;
+  gap: 0 10px;
+  margin: 18px var(--page-gutter) 4px;
+  padding: 0 0 16px;
+  border-bottom: 1px solid var(--color-cinema-line);
+}
+.screen-container .planned-privacy-summary b {
+  grid-row: 1 / 3;
+  color: var(--color-cinema-text);
+  font-family: var(--font-family-mono);
+  font-size: 44px;
+  line-height: 0.9;
+}
+.screen-container .planned-privacy-summary span {
+  color: var(--color-cinema-text);
+  font-weight: 800;
+}
+.screen-container .planned-privacy-summary i {
+  color: var(--color-cinema-muted);
+  font-size: 11px;
+  font-style: normal;
+}
+.screen-container .planned-privacy-card .detailrows {
+  margin: 12px 0 4px;
+}
+.screen-container .planned-privacy > .neutral-note {
+  margin: 16px var(--page-gutter) 0;
+}
+.screen-container .planned-notifications .planned-seg,
+.screen-container .planned-offline .planned-offline-switch {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  margin: 16px var(--page-gutter) 0;
+  padding-bottom: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.screen-container .planned-page .planned-seg button,
+.screen-container .planned-page .planned-offline-switch button {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 13px;
+  border: 1px solid var(--color-cinema-line);
+  border-radius: 5px;
+  background: var(--color-cinema-panel);
+  color: var(--color-cinema-muted);
+}
+.screen-container .planned-page .planned-seg button.is-active,
+.screen-container .planned-page .planned-offline-switch button.is-active {
+  border-color: var(--color-cinema-red);
+  background: var(--color-cinema-red);
+  color: var(--color-on-action);
+}
+.screen-container .planned-page .planned-seg-count {
+  background: rgba(255, 250, 242, 0.1);
+  color: currentColor;
+}
+.screen-container .planned-noti-list {
+  gap: 10px;
+  margin: 14px var(--page-gutter) 0;
+}
+.screen-container .planned-noti-card,
+.screen-container .planned-noti-card.is-unread {
+  min-height: 110px;
+  padding: 16px 14px 16px 22px;
+  border: 1px solid var(--color-cinema-line);
+  border-radius: 8px;
+  background: var(--color-cinema-panel);
+  color: var(--color-cinema-text);
+}
+.screen-container .planned-noti-card.is-unread {
+  border-left: 3px solid var(--color-cinema-red);
+  background: var(--color-cinema-panel-raised);
+}
+.screen-container .planned-noti-card h3,
+.screen-container .planned-noti-kind {
+  color: var(--color-cinema-text);
+}
+.screen-container .planned-noti-head,
+.screen-container .planned-noti-card .meta-line {
+  color: var(--color-cinema-muted);
+}
+.screen-container .planned-notifications > .neutral-note {
+  margin: 16px var(--page-gutter) 0;
+}
+.screen-container .planned-offline .planned-head--compact {
+  padding-bottom: 18px;
+}
+.screen-container .planned-offline-hero {
+  position: relative;
+  min-height: 320px;
+  margin: 18px var(--page-gutter) 0;
+  padding: 146px 20px 24px;
+  border: 1px solid var(--color-cinema-line);
+  border-radius: 10px;
+  background: var(--color-cinema-panel);
+  color: var(--color-cinema-text);
+}
+.screen-container .planned-offline-art svg path {
+  stroke: var(--color-brand);
+  stroke-dasharray: 360;
+  stroke-dashoffset: 360;
+  animation:
+    planned-route-draw calc(var(--motion-duration-hero) + var(--motion-delay-title))
+    var(--motion-delay-title) var(--motion-easing-out) forwards;
+}
+.screen-container .planned-offline-signal {
+  position: absolute;
+  top: 36px;
+  left: 50%;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 54px;
+  transform: translateX(-50%);
+}
+.screen-container .planned-offline-signal i {
+  width: 8px;
+  border-radius: 2px 2px 0 0;
+  background: var(--color-cinema-text);
+  transform-origin: bottom;
+  animation: planned-signal-in var(--motion-duration-reveal) var(--motion-easing-out) both;
+}
+.screen-container .planned-offline-signal i:nth-child(1) {
+  height: 18px;
+}
+.screen-container .planned-offline-signal i:nth-child(2) {
+  height: 34px;
+  animation-delay: var(--motion-delay-short);
+}
+.screen-container .planned-offline-signal i:nth-child(3) {
+  height: 52px;
+  background: var(--color-cinema-red);
+  animation-delay: var(--motion-delay-title);
+}
+.screen-container .planned-offline-title {
+  color: var(--color-cinema-text);
+  font-size: 26px;
+}
+.screen-container .planned-offline-sub {
+  color: var(--color-cinema-muted);
+  line-height: 1.6;
+}
+.screen-container .planned-offline-code {
+  border-color: var(--color-cinema-line);
+  background: var(--color-cinema-bg);
+  color: var(--color-cinema-text);
+}
+.screen-container .planned-offline-btns {
+  margin: 16px var(--page-gutter) 8px;
+}
+.screen-container .planned-offline-diag {
+  min-height: 44px;
+  color: var(--color-cinema-muted);
+}
+.screen-container .planned-poster-stage {
+  margin: 20px var(--page-gutter) 18px;
+  perspective: 800px;
+}
+.screen-container .planned-poster-canvas {
+  width: min(252px, 74vw);
+  height: auto;
+  aspect-ratio: 9 / 16;
+  border: 1px solid var(--color-cinema-line);
+  border-radius: 8px;
+  background: var(--color-cinema-panel);
+  box-shadow: 0 22px 44px rgba(0, 0, 0, 0.38);
+  animation:
+    planned-poster-enter var(--motion-duration-emphasis) var(--motion-duration-instant)
+    var(--motion-easing-out) both;
+}
+.screen-container .planned-poster-options {
+  margin-top: 0;
+}
+.screen-container .planned-switch {
+  min-height: 52px;
+  border-color: var(--color-cinema-line);
+  color: var(--color-cinema-text);
+}
+.screen-container .planned-switch input {
+  flex: none;
+  width: 44px;
+  height: 24px;
+  border: 1px solid var(--color-cinema-line);
+  background: var(--color-cinema-panel-raised);
+}
+.screen-container .planned-switch input::after {
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  background: var(--color-cinema-muted);
+}
+.screen-container .planned-switch input:checked {
+  border-color: var(--color-cinema-red);
+  background: var(--color-cinema-red);
+}
+.screen-container .planned-switch input:checked::after {
+  left: 22px;
+  background: var(--color-on-action);
+}
+
+@keyframes planned-route-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes planned-signal-in {
+  from {
+    opacity: 0;
+    transform: scaleY(0.2);
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+@keyframes planned-poster-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) rotateX(3deg) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotateX(0) scale(1);
+  }
+}
+
+@media (max-width: 350px) {
+  .screen-container .activity-detail-journal .detail-hero-caption h1,
+  .screen-container .planned-page .planned-head h1 {
+    font-size: 30px;
+  }
+  .screen-container .activity-detail-journal .detail-fact-strip .metrics strong {
+    font-size: 23px;
+  }
+  .screen-container .activity-detail-journal .detail-meeting-strip .mode-pill {
+    max-width: 118px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen-container .planned-offline-art svg path,
+  .screen-container .planned-offline-signal i,
+  .screen-container .planned-poster-canvas {
+    animation: none !important;
   }
 }
