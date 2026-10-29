@@ -62,19 +62,19 @@ describe('设置页', () => {
     await import('../miniprogram/pages/settings/index');
   });
 
-  it('当前版本为 2026.10.29.6 且 latest 唯一，上一版转为历史项', () => {
-    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.29.6');
+  it('当前版本为 2026.10.30.1 且 latest 唯一，上一版转为历史项', () => {
+    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.30.1');
     expect(page.data.releaseNotes).toHaveLength(45);
     expect(page.data.currentRelease).toBe(page.data.releaseNotes[0]);
     expect(page.data.currentRelease).toMatchObject({
-      version: '2026.10.29.6',
-      date: '2026-10-29',
-      title: '暗场启动保护与慢加载稳定性',
+      version: '2026.10.30.1',
+      date: '2026-10-30',
+      title: '界面对比度与加载反馈优化',
       latest: true,
     });
     expect(page.data.releaseNotes[1]).toMatchObject({
-      version: '2026.10.28.3',
-      title: '方案 B v6 视觉对齐',
+      version: '2026.10.29.6',
+      title: '暗场启动保护与慢加载稳定性',
       latest: false,
     });
     expect(page.data.releaseNotes.filter((note: { latest: boolean }) => note.latest)).toHaveLength(
