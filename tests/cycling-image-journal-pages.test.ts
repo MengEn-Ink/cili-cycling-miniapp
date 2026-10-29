@@ -1,7 +1,7 @@
 // @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { CLIENT_RELEASE_VERSION } from '../miniprogram/config/release';
+import { expandAppRoutes, type MiniProgramAppConfig } from './helpers/app-routes';
 
 const read = (path: string) => readFileSync(path, 'utf8');
 const schema = read('docs/schema.js');
@@ -71,6 +71,48 @@ describe('FORMAL GitHub Pages 骑行影像志', () => {
     expect(styles).toContain('@media (prefers-reduced-motion: reduce)');
   });
 
+  it('17 条正式路由不重复绘制导航，并共享暗色系统 Chrome 与一次性电影入场', () => {
+    const appConfig = JSON.parse(read('miniprogram/app.json')) as MiniProgramAppConfig;
+    const routes = expandAppRoutes(appConfig);
+
+    expect(routes).toHaveLength(17);
+    for (const route of routes) {
+      const template = read(`miniprogram/${route}.wxml`);
+      const config = JSON.parse(read(`miniprogram/${route}.json`));
+      expect(template).toContain('cinema-page');
+      expect(template).not.toContain('class="cinema-slate"');
+      expect(template).not.toContain('class="film-perforation"');
+      expect(template).not.toContain('CILI CINEMA');
+      expect(config.navigationBarBackgroundColor).toBe('#0b0a0c');
+      expect(config.navigationBarTextStyle).toBe('white');
+      expect(config.backgroundColor).toBe('#0b0a0c');
+      expect(config.backgroundTextStyle).toBe('light');
+    }
+
+    const appStyles = read('miniprogram/app.wxss');
+    for (const animation of ['cinema-blur-in', 'cinema-rise-in', 'cinema-hero-in']) {
+      expect(appStyles).toContain(`@keyframes ${animation}`);
+      expect(styles).toContain(`@keyframes ${animation}`);
+    }
+    expect(appStyles).not.toContain('cinema-slate');
+    expect(appStyles).not.toContain('film-perforation');
+    expect(styles).not.toContain('.screen-container .cinema-slate');
+    expect(styles).not.toContain('.screen-container .film-perforation');
+    expect(app).toContain('const cinemaRouteMeta = Object.freeze({');
+    expect(app).toContain('function prepareCinemaMotion(pageRoot)');
+    expect(app).toContain('root: container, threshold: 0.12');
+    expect(app).toContain("'capability-card': { label: '历史入口', index: '17'");
+    expect(app).toContain("'planned-activity-share-poster': { label: '分享海报', index: '21'");
+    expect(app).not.toContain('cinemaSlateMarkup');
+    expect(app).not.toContain("insertAdjacentHTML(\n          'afterbegin'");
+    expect(appStyles).toContain('animation-delay: var(--motion-delay-title-second)');
+    expect(appStyles).toContain(
+      'right var(--motion-duration-instant) var(--motion-easing-standard)',
+    );
+    expect(index).toContain('cinema-scroll-fade cinema-scroll-fade--bottom');
+    expect(styles).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*\.cinema-flow-page/s);
+  });
+
   it('首屏与交付中心立即提供正式最终版入口，同时保留技术文章和历史设计', () => {
     expect(index).toContain('骑行影像志 · 正式 Pages');
     expect(index).toContain('href="#profile"');
@@ -81,21 +123,14 @@ describe('FORMAL GitHub Pages 骑行影像志', () => {
     expect(deliveryCenter).toContain('设计演进记录');
   });
 
-  it('设置页展示 2026.10.28.2，并保留 2026.10.28.1 历史项', () => {
+  it('设置页以 2026.10.29.6 展示暗场启动保护与慢加载稳定性当前版本', () => {
     expect(schema).toContain(
-      "['2026.10.22.3', '影像志排版与设计稿逐页对齐', '16 个核心页面统一使用设计稿的字体、颜色、间距与圆角规范。']",
+      "['2026.10.29.6', '暗场启动保护与慢加载稳定性', '启动、慢资源与图片失败场景补齐暗色兜底，卡顿时不再短暂露出白底。']",
     );
-    expect(schema).toContain(
-      "['2026.10.28.1', '17 个页面焕新为内容先行界面', '活动、行程、个人资料与管理页面统一为更紧凑的阅读层级，重点标题增加轻量动效，所有原有操作保持不变。']",
-    );
-    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.28.2');
     runtime.prototypeState = 'default';
     const settings = runtime.pageTemplates?.settings?.() ?? '';
-    expect(settings).toContain(`V${CLIENT_RELEASE_VERSION}`);
-    expect(settings).toContain('小程序发布恢复正常');
-    expect(settings).toContain('修复部分样式在微信编译阶段不兼容的问题');
-    expect(settings).toContain('开启减少动态效果后，页面动效仍会自动降级');
-    expect(settings).toContain('页面布局、配色和日常操作保持不变');
+    expect(settings).toContain('V2026.10.29.6');
+    expect(settings).toContain('2026.10.29');
   });
 
   it('报名提交按审核中、公开通过和满员候补展示真实行程结果', () => {
@@ -230,6 +265,27 @@ describe('FORMAL GitHub Pages 骑行影像志', () => {
     expect(styles).toMatch(
       /\.screen-container \.photo \.caption\s*\{[^}]*color:\s*var\(--color-on-media\)/s,
     );
+  });
+
+  it('活动首页首屏使用紧凑单行导语与 3:5 开场图，并完整保留首场关键信息', () => {
+    const miniTemplate = read('miniprogram/pages/activities/index.wxml');
+    const miniStyles = read('miniprogram/pages/activities/index.wxss');
+    runtime.prototypeState = 'default';
+    const activities = runtime.pageTemplates?.activities?.() ?? '';
+
+    expect(miniTemplate).toContain('周末，交给山路。');
+    expect(miniTemplate).not.toContain('<text class="pageheading-line">');
+    expect(miniStyles).toMatch(
+      /\.activities-page \.story--opening \.photo\s*\{[^}]*padding-top:\s*60%/s,
+    );
+    expect(miniStyles).not.toContain('padding-top: 104%');
+    expect(styles).toMatch(
+      /\.activities-journal \.story-opening \.photo\s*\{[^}]*height:\s*min\(60vw, 258px\)/s,
+    );
+    expect(styles).not.toContain('height: 400px');
+    expect(activities).toContain('周末，交给山路。');
+    expect(activities).toContain('class="storyfacts"');
+    expect(activities).toContain('class="storymeta"');
   });
 
   it('card-v3 继续作为状态别名，但标签不再描述旧轮播尺寸', () => {

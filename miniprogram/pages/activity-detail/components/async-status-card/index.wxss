@@ -59,7 +59,7 @@
   background: var(--color-status-success);
 }
 .async-status--failed .async-status__dot {
-  background: var(--color-brand);
+  background: var(--color-brand-fill);
 }
 @keyframes status-pulse {
   50% {

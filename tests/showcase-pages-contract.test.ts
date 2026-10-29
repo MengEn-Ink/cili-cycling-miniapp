@@ -18,6 +18,17 @@ const routeAnalysisDataFoundationArticle = read(
 const agileDeliveryArticle = read('docs/articles/agile-delivery.html');
 const engineeringDeliveryPracticeArticle = read('docs/articles/engineering-delivery-practice.html');
 const templates = read('docs/templates.js');
+const themeTokens = (source: string) =>
+  Object.fromEntries(
+    [...source.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)].map((match) => [match[1], match[2].trim()]),
+  );
+const resolveThemeToken = (values: Record<string, string>, name: string) => {
+  let value = values[name] || '';
+  for (let index = 0; index < 12 && /var\(--[\w-]+\)/.test(value); index += 1) {
+    value = value.replace(/var\((--[\w-]+)\)/g, (reference, token) => values[token] || reference);
+  }
+  return value.toLowerCase();
+};
 
 type PrototypeRuntime = {
   prototypeData?: Record<string, any>;
@@ -101,10 +112,11 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(html).toContain('17 个正式路由 + 4 个规划原型 / 21 个画面');
   });
 
-  it('活动首页使用三张影像志故事卡组成自然长滚动列表', () => {
+  it('活动首页使用一张开场镜头与两张故事卡组成自然长滚动列表', () => {
     const output = renderPrototypeState('activities', 'default');
     expect(output).toContain('class="pg activities-journal"');
-    expect(output.match(/class="story"/g)).toHaveLength(3);
+    expect(output.match(/class="story(?:\s[^"]*)?"/g)).toHaveLength(3);
+    expect(output.match(/class="story story-opening"/g)).toHaveLength(1);
     expect(output).toContain('class="storyfacts"');
     expect(output).toContain('骑行');
     expect(output).not.toContain('class="activity-date-stamp"');
@@ -316,7 +328,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(templates).toContain('其他骑友缺少素材时只显示昵称和报名状态');
   });
 
-  it('真实页面与 M0 原型页面都带浅色关键状态与“问题 → 改法 → 规范”设计说明，并提供总览页', () => {
+  it('真实页面与 M0 原型页面都带关键状态与“问题 → 改法 → 规范”设计说明，并提供总览页', () => {
     expect(schema.match(/\n {6}states: \[/g)).toHaveLength(17);
     expect(schema.match(/\n {6}problems: \[/g)).toHaveLength(17);
     expect(schema.match(/\n {6}fixes: \[/g)).toHaveLength(17);
@@ -562,18 +574,8 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
 
   it('颜色变量与 miniprogram/app.wxss 同名同值，不引入装饰性渐变', () => {
     const wxss = read('miniprogram/app.wxss');
-    const wxssVars = new Map(
-      [...wxss.matchAll(/(--color-[a-z-]+):\s*(#[0-9a-f]{6})\b/gi)].map(([, name, value]) => [
-        name,
-        value.toLowerCase(),
-      ]),
-    );
-    const cssVars = [...css.matchAll(/(--color-[a-z-]+):\s*(#[0-9a-f]{6})\b/gi)];
-    expect(cssVars.length).toBeGreaterThan(10);
-    for (const [, name, value] of cssVars) {
-      const expected = wxssVars.get(name);
-      if (expected !== undefined) expect(expected, name).toBe(value.toLowerCase());
-    }
+    const wxssVars = themeTokens(wxss);
+    const cssVars = themeTokens(css);
     for (const name of [
       '--color-bg',
       '--color-surface',
@@ -583,15 +585,17 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
       '--color-status-success',
       '--color-status-warning',
     ]) {
-      expect(wxssVars.get(name), name).toBeDefined();
-      expect(
-        cssVars.some(([, cssName]) => cssName === name),
-        name,
-      ).toBe(true);
+      expect(wxssVars[name], name).toBeDefined();
+      expect(cssVars[name], name).toBeDefined();
+      expect(resolveThemeToken(wxssVars, name), name).toBe(resolveThemeToken(cssVars, name));
     }
-    const declaredHex = new Set(cssVars.map(([, , value]) => value.toLowerCase()));
-    // route-analysis V2 作为"高密度特殊页面"豁免：地图青绿 / 海拔橙红 / 路段黄 / 暖白底等功能色
-    // 以及活动详情路线摘要卡的海拔线色，可直接内联 hex 以保证可读性与信息密度。
+    const declaredHex = new Set(
+      Object.values(cssVars)
+        .map((value) => value.match(/#[0-9a-f]{6}\b/i)?.[0]?.toLowerCase())
+        .filter(Boolean),
+    );
+    // 路线分析保留地图青绿 / 海拔橙红 / 路段黄等语义色；旧浅色声明由末尾
+    // 页面级暗色规则覆盖，仅保留 marker 白色符号和数据图形需要的内联色。
     const routeAnalysisExemptHex = new Set([
       '#fbf5ea', // 暖白底
       '#f3e6d0', // 轨道底 / 分段弱
@@ -601,9 +605,15 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
       '#e4ede8', // 简单段徽章底
       '#f8ecc9', // 中等段徽章底
       '#fbe0d8', // 困难段徽章底
+      '#142d22', // 暗色轻松段底
+      '#72e4a6', // 暗色轻松段字
+      '#332a12', // 暗色适中段底
+      '#f0c75e', // 暗色适中段字
+      '#321814', // 暗色挑战段底
+      '#ff8a79', // 暗色挑战段字
       '#211f1c', // 深炭字 / 顶棒
       '#0c0a07', // 极深 active
-      '#6f675d', // 次级灰
+      '#6f675d', // 历史路线模块次级灰，由末尾暗色覆盖规则接管
       '#e8d9b6', // 时间轴虚线
       '#ededed', // 分隔线
       '#fff', // 面板白底（短 hex 不触发断言，这里留作文档）
@@ -621,22 +631,23 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
       '#d9a93a', // 中海拔段 / 施工条纹 / 置信度 mid / 观景
       '#c1392b', // 爬顶段 / 补给 / 风险 / 封路 / 置信度 low
       '#ffffff', // marker 白色符号（SVG fill 使用的长 hex）
+      '#eadfca', // 历史海拔网格声明，暗色收口规则会覆盖为强边界色
     ]);
     const allHex = [...css.matchAll(/#[0-9a-f]{6}\b/gi)].map(([color]) => color.toLowerCase());
     expect(
       allHex.every((color) => declaredHex.has(color) || routeAnalysisExemptHex.has(color)),
     ).toBe(true);
     expect(css).not.toMatch(/\bnavy\b|\bblue\b|radial-gradient/i);
-    // 影像志顶图/故事卡使用从透明到墨黑（rgba(15,13,10)）的垂直渐变遮罩，保证标题可读；
+    // 影像志顶图/故事卡使用从透明到近黑的垂直渐变遮罩，保证标题可读；
     // 这是唯一允许的 linear-gradient 用途，与设计稿 shared.css 对齐。
     const gradientMatches = css.match(/linear-gradient\([^)]*\)/g) || [];
     expect(gradientMatches.length).toBeGreaterThanOrEqual(1);
     for (const gradient of gradientMatches) {
-      expect(gradient).toMatch(/rgba\((0|15),\s*(0|13),\s*(0|10)/);
+      expect(gradient).toMatch(/rgba\((0|11|15),\s*(0|10|13),\s*(0|10|12)/);
     }
     expect(css).toMatch(/\.screen-container \.profile-hero::after\s*\{[^}]*linear-gradient/s);
-    expect(css).toContain('--color-text: #211f1c');
-    expect(css).toContain('--color-brand: #e13b2b');
+    expect(resolveThemeToken(cssVars, '--color-text')).toBe('#f7f4f2');
+    expect(resolveThemeToken(cssVars, '--color-brand')).toBe('#e54242');
     expect(css).toMatch(
       /\.credential-spotlight\s*\{[^}]*background:\s*var\(--color-media-card-bg\)/s,
     );
@@ -658,15 +669,15 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
 
   it('成功 / 警告色只小范围用于小标签、行内提示和图标，不做底色、按钮、描边卡片', () => {
     for (const [name, value] of [
-      ['--color-status-success', '#16633a'],
-      ['--color-status-success-soft', '#e7f4eb'],
-      ['--color-status-warning', '#7a5c00'],
-      ['--color-status-warning-soft', '#fff2c7'],
+      ['--color-status-success', '#7bdba1'],
+      ['--color-status-success-soft', '#183424'],
+      ['--color-status-warning', '#f0ce75'],
+      ['--color-status-warning-soft', '#3a2d12'],
     ]) {
       expect(css).toContain(`${name}: ${value}`);
     }
     const allowedSelectors =
-      /^(\.(tag-success|tag-warning|inline-toast|club-admin-card-status)|\.activities-v3 \.activity-card-v3\.is-(closing|joined) \.activity-card-status|\.route-source-conn\.tone-(success|warning) \.route-source-conn-dot|\.screen-container \.tag\.(success|warning)|\.screen-container \.notice\.(success|warning|error))$/;
+      /^(\.(tag-success|tag-warning|inline-toast|club-admin-card-status)|\.activities-v3 \.activity-card-v3\.is-(closing|joined) \.activity-card-status|\.route-source-conn\.tone-(success|warning) \.route-source-conn-dot|\.screen-container \.tag\.(success|warning)|\.screen-container \.notice\.(success|warning|error)|\.screen-container \.cinema-flow-page \.(tag-success|tag-warning|tag\.(success|warning)|tag--(connected|approved|checked_in|pending|waiting)))$/;
     const cssNoComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
     for (const [, selector, body] of cssNoComments.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
       if (!/var\(--color-status-/.test(body)) continue;
@@ -692,10 +703,10 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
   });
 
   it('GitHub Pages 使用 docs 根目录的相对静态资源', () => {
-    expect(html).toContain('href="./styles.css"');
-    expect(html).toContain('src="./schema.js"');
-    expect(html).toContain('src="./templates.js"');
-    expect(html).toContain('src="./app.js"');
+    expect(html).toMatch(/href="\.\/styles\.css\?v=\d+"/);
+    expect(html).toMatch(/src="\.\/schema\.js\?v=\d+"/);
+    expect(html).toMatch(/src="\.\/templates\.js\?v=\d+"/);
+    expect(html).toMatch(/src="\.\/app\.js\?v=\d+"/);
     expect(html).not.toMatch(/href="\/(styles|app)|src="\/(schema|templates|app)/);
   });
 

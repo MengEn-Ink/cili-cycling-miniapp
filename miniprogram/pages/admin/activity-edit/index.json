@@ -1,12 +1,12 @@
 {
   "navigationBarTitleText": "编辑活动",
-  "navigationBarBackgroundColor": "#fbf5ea",
-  "navigationBarTextStyle": "black",
+  "navigationBarBackgroundColor": "#0b0a0c",
+  "navigationBarTextStyle": "white",
   "enablePullDownRefresh": false,
-  "backgroundColor": "#fbf5ea",
-  "backgroundColorTop": "#fbf5ea",
-  "backgroundColorBottom": "#fbf5ea",
-  "backgroundTextStyle": "dark",
+  "backgroundColor": "#0b0a0c",
+  "backgroundColorTop": "#0b0a0c",
+  "backgroundColorBottom": "#0b0a0c",
+  "backgroundTextStyle": "light",
   "usingComponents": {
     "state-view": "/components/state-view/index",
     "activity-card": "/components/activity-card/index",

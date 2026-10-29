@@ -1,14 +1,15 @@
 # 固定体验版发布记录
 
-本目录只保存已经在微信公众平台完成回读的 `verified` 清单。开发版仍由 `微信开发版自动上传` 工作流滚动上传；体验版只能通过 `微信体验版晋级证据门禁` 两阶段流程人工晋级，自动上传不得覆盖体验基线。
+本目录只保存已经在微信公众平台完成回读的 `verified` 清单。开发版仍由 `微信开发版自动上传` 工作流滚动上传；同 SHA 的真实上传成功后，`微信体验版晋级证据门禁` 自动准备 candidate，但不会冒充微信公众平台选版。自动上传和自动候选均不得覆盖体验基线。
 
 ## 晋级
 
 1. 确认目标是当前 `main`，对应 CI 与微信开发版上传工作流均成功，核心流程 smoke 已通过；门禁会通过 GitHub API 核验 smoke/CI/上传 run 的仓库、工作流、结论和目标 SHA，并下载上传 receipt 核对版本、SHA 与 run ID，任意外链或跳过上传的成功 run 不能晋级。
-2. 手动运行 `微信体验版晋级证据门禁`，选择 `candidate/promote`，固定入口使用 `pages/activities/index`。
-3. 下载候选清单，核对版本、SHA、CI run、上传 run、入口和摘要；然后由发布负责人在微信公众平台把同一开发版选为体验版。
-4. 取得平台版本页回读证据后，以相同参数运行 `verified/promote`，填写 candidate 工作流 run ID、其输出的 `sha256` 摘要，并由 `wechat-experience` 受保护环境审批人填写 `CONFIRMED`；工作流会下载原候选 artifact、生成与版本/SHA/入口绑定的结构化平台声明并逐字段校验，禁止换包。即使期间 `main` 已前进，verified 仍沿用原 candidate。
-5. 将 verified artifact 原样提交到本目录，文件名使用 `<releaseId>.json`。脚本采用排他写入，已有记录不得覆盖。
+2. `微信开发版自动上传` 成功后会自动触发 `candidate/promote`；门禁从真实 upload/release receipt 反推版本、SHA、CI run 和 smoke run。纯文档安全跳过、receipt 不完整或上传后 `main` 已前进时只记录跳过。平台瞬时故障时可手动运行 `candidate/promote` 恢复，固定入口仍为 `pages/activities/index`。
+3. 下载候选清单，核对版本、SHA、CI run、上传 run、入口和摘要；然后先回读微信公众平台版本管理。原生开发权限可用时，由发布负责人把同一开发版选为体验版。`miniprogram-ci` 没有公开的体验版选版接口，此动作不能由开发版上传伪装或绕过。
+4. 若版本管理显示“开发管理已禁用 / 开发权限已托管给第三方”，不得生成 verified。授权第三方必须使用微信开放平台 `commit` 上传代码并生成体验版，或由管理员恢复原生开发权限后重新选版；两条路径都要回读同版本、SHA 与入口。
+5. 取得平台版本页回读证据后运行 `verified/promote`，只填写 candidate 工作流 run ID 与 `platform_evidence=CONFIRMED`；工作流下载原候选 artifact，并从中反推版本、SHA、CI、上传、smoke、入口和摘要。额外填写的字段只作为一致性检查，任一冲突都会失败。即使期间 `main` 已前进，verified 仍沿用原 candidate。
+6. 将 verified artifact 原样提交到本目录，文件名使用 `<releaseId>.json`。脚本采用排他写入，已有记录不得覆盖。
 
 ## 回退演练
 

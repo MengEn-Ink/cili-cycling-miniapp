@@ -3,7 +3,7 @@
   - 骨架：pageheading(宋体标题) → content.tight(timeline + form + section × 4 + check + notice + 提交) → fixed actionbar
   - 真实业务保留：profile 已读 + 完善入口、集合方式 radio choice（多模式）或默认行、能力自评 radio、备注、紧急联系人、订阅通知、错误汇总、teamId、submitBlockedHint
 -->
-<view class="page form-page" data-v1-layout="form">
+<view class="page form-page cinema-page cinema-page--dark" data-v1-layout="form">
   <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{submitFeedback}}</view>
   <state-view loading="{{loading}}" error="{{!profile && errors.length ? errors[0] : ''}}" loading-title="正在检查活动、资料与报名条件" loading-copy="正在核对活动名额与个人资料">
     <block wx:if="{{profile}}">

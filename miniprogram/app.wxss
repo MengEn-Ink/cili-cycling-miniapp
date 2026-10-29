@@ -28,62 +28,145 @@ page {
     -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
   --font-family-editorial: 'Songti SC', STSong, serif;
   --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --motion-duration-fast: 120ms;
-  --motion-duration-base: 180ms;
-  --motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  /* Primitive palette: only this layer owns raw theme values. */
+  --palette-ink-950: #0b0a0c;
+  --palette-ink-900: #121116;
+  --palette-ink-800: #1a1820;
+  --palette-ink-700: #24212b;
+  --palette-red-500: #e54242;
+  --palette-red-600: #d93636;
+  --palette-red-700: #b72c2c;
+  --palette-warm-50: #f7f4f2;
+  --palette-white: #ffffff;
+  --palette-neutral-300: #b8b3ba;
+  --palette-neutral-500: #8c858f;
+  --palette-line-500: #4b454f;
+  --palette-line-700: #766f7a;
 
-  /* Semantic tokens: preserve established names for existing consumers. */
-  --color-bg: #fbf5ea;
-  --color-surface: #ffffff;
-  --color-raised: #f3e6d0;
-  --color-text: #211f1c;
-  --color-muted: #6f675d;
-  --color-placeholder: #6f675d;
-  --color-disabled-text: #6f675d;
-  --color-border: #ededed;
+  /* Primitive motion: brief feedback, readable reveal, no continuous loops. */
+  --motion-duration-instant: 100ms;
+  --motion-duration-fast: 150ms;
+  --motion-duration-base: 220ms;
+  --motion-duration-reveal: 420ms;
+  --motion-duration-emphasis: 560ms;
+  --motion-duration-hero: 680ms;
+  --motion-delay-none: 0ms;
+  --motion-delay-short: 80ms;
+  --motion-delay-title: 120ms;
+  --motion-delay-story: 180ms;
+  --motion-delay-content: 220ms;
+  --motion-delay-section: 280ms;
+  --motion-delay-title-second: 340ms;
+  --motion-delay-caption: 400ms;
+  --motion-delay-story-second: 300ms;
+  --motion-delay-story-third: 420ms;
+  --motion-delay-story-fourth: 540ms;
+  --motion-stagger-step: 40ms;
+  --motion-distance-press: 2rpx;
+  --motion-distance-reveal: 16rpx;
+  --motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --motion-easing-out: cubic-bezier(0.25, 1, 0.5, 1);
+  --motion-easing-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* Global cinematic dark tokens: all 17 routes share one canvas and hierarchy. */
+  --color-bg: var(--palette-ink-950);
+  --color-surface: var(--palette-ink-900);
+  --color-raised: var(--palette-ink-800);
+  --color-floating: var(--palette-ink-700);
+  --color-text: var(--palette-warm-50);
+  --color-muted: var(--palette-neutral-300);
+  --color-placeholder: var(--palette-neutral-500);
+  --color-disabled-text: var(--palette-neutral-500);
+  --color-border: var(--palette-line-500);
   --color-border-subtle: var(--color-border);
-  --color-border-strong: #9a9186;
-  --color-card-border: #ededed;
-  --color-input-bg: #ffffff;
-  --color-action: #c0321f;
-  --color-action-active: #a52a1c;
+  --color-border-strong: var(--palette-line-700);
+  --color-card-border: var(--palette-line-700);
+  --color-input-bg: var(--palette-ink-800);
+  --color-action: var(--palette-red-600);
+  --color-action-active: var(--palette-red-700);
   /* Legacy editorial aliases: keep older page styles on the current journal palette. */
   --color-paper: var(--color-surface);
   --color-ink: var(--color-text);
   --color-ink-muted: var(--color-muted);
   --color-rule: var(--color-border-strong);
   --color-accent: var(--color-action);
-  --color-on-action: #ffffff;
-  --color-on-action-muted: #ffffff;
-  --color-on-media: #ffffff;
-  --color-media-muted: #d4d4d4;
-  --color-media-card-bg: #211f1c;
-  --color-media-placeholder-bg: #211f1c;
-  --color-media-scrim: rgba(12, 10, 7, 0.58);
-  --color-scrim-base: #0c0a07;
-  --color-scrim-dark: rgba(12, 10, 7, 0.72);
-  --color-scrim-mid: rgba(12, 10, 7, 0.42);
-  --color-brand: #e13b2b;
-  --color-brand-active: #c0321f;
-  --color-brand-soft: #fcebea;
-  --color-on-brand: #0c0a07;
-  --color-status-success: #16633a;
-  --color-status-success-soft: #e7f4eb;
-  --color-status-warning: #7a5c00;
-  --color-status-warning-soft: #fff2c7;
+  --color-on-action: var(--palette-white);
+  --color-on-action-muted: var(--palette-white);
+  --color-on-media: var(--palette-warm-50);
+  --color-media-muted: var(--palette-neutral-300);
+  --color-media-card-bg: var(--palette-ink-900);
+  --color-media-placeholder-bg: var(--palette-ink-900);
+  --color-media-scrim: rgba(11, 10, 12, 0.58);
+  --surface-media-action: rgba(11, 10, 12, 0.82);
+  --surface-media-danger: rgba(165, 42, 28, 0.92);
+  --color-scrim-clear: rgba(11, 10, 12, 0);
+  --color-scrim-faint: rgba(11, 10, 12, 0.04);
+  --color-scrim-soft: rgba(11, 10, 12, 0.18);
+  --color-scrim-base: var(--palette-ink-950);
+  --color-scrim-dark: rgba(11, 10, 12, 0.72);
+  --color-scrim-mid: rgba(11, 10, 12, 0.42);
+  --color-scrim-strong: rgba(11, 10, 12, 0.76);
+  --color-scrim-heavy: rgba(11, 10, 12, 0.96);
+  --color-control-scrim: rgba(11, 10, 12, 0.56);
+  --color-on-media-surface: rgba(255, 255, 255, 0.18);
+  --color-on-media-border: rgba(255, 255, 255, 0.2);
+  --color-on-media-divider: rgba(255, 255, 255, 0.3);
+  --color-brand: var(--palette-red-500);
+  --color-brand-fill: var(--palette-red-600);
+  --color-brand-active: var(--palette-red-700);
+  --color-brand-soft: rgba(229, 66, 66, 0.14);
+  --color-brand-glow: rgba(229, 66, 66, 0.28);
+  --color-on-brand: var(--palette-white);
+  --color-status-success: #7bdba1;
+  --color-status-success-soft: #183424;
+  --color-status-warning: #f0ce75;
+  --color-status-warning-soft: #3a2d12;
+  /* Logo asset contract stays independent from the UI theme palette. */
   --color-logo-background: #211f1c;
   --color-logo-foreground: #ffffff;
   --color-logo-accent: #e13b2b;
-  --color-fixed-bar: rgba(255, 255, 255, 0.98);
+  --color-fixed-bar: rgba(11, 10, 12, 0.98);
+  --color-sticky-surface: rgba(21, 19, 22, 0.96);
   --color-overlay: rgba(0, 0, 0, 0.72);
-  --color-shadow: rgba(33, 31, 28, 0.06);
-  --color-danger: var(--color-text);
-  --color-danger-text: var(--color-text);
-  --color-danger-soft: var(--color-raised);
+  --color-shadow: rgba(0, 0, 0, 0.34);
+  --color-cinema-bg: var(--color-bg);
+  --color-cinema-panel: var(--color-surface);
+  --color-cinema-panel-raised: var(--color-raised);
+  --color-cinema-line: var(--color-border-strong);
+  --color-cinema-text: var(--color-text);
+  --color-cinema-muted: var(--color-muted);
+  --color-cinema-red: var(--color-action);
+  --color-danger: #ffb4a6;
+  --color-danger-text: #ffb4a6;
+  --color-danger-soft: #431b17;
   --shadow-hard: 0 10rpx 28rpx var(--color-shadow);
   --shadow-card: 0 8rpx 24rpx var(--color-shadow);
+  --shadow-floating: 0 16rpx 36rpx var(--color-shadow);
+  --shadow-actionbar: 0 -16rpx 32rpx var(--color-shadow);
+  --gradient-cover: linear-gradient(
+    to bottom,
+    var(--color-scrim-clear) 0%,
+    var(--color-scrim-clear) 48%,
+    var(--color-scrim-dark) 100%
+  );
+  --gradient-cover-opening: linear-gradient(
+    to bottom,
+    var(--color-scrim-faint) 10%,
+    var(--color-scrim-soft) 42%,
+    var(--color-scrim-heavy) 100%
+  );
+  --gradient-dialog-cover: linear-gradient(
+    to top,
+    var(--color-scrim-strong),
+    var(--color-scrim-clear) 60%
+  );
+  --gradient-ticket-cover: linear-gradient(
+    to bottom,
+    var(--color-scrim-clear) 0%,
+    var(--color-scrim-mid) 100%
+  );
   --focus-color: var(--color-brand);
-  --focus-ring: 0 0 0 4rpx var(--color-brand-soft);
+  --focus-ring: 0 0 0 4rpx rgba(229, 66, 66, 0.36);
   --control-height: 96rpx;
   --segment-height: 92rpx;
   --page-gutter: 28rpx;
@@ -94,6 +177,8 @@ page {
   --tab-page-bottom-space: 32rpx;
   --fixed-action-reserve: 240rpx;
   --fixed-action-reserve-narrow: 292rpx;
+  --action-bar-height: 128rpx;
+  --radius-full: 9999rpx;
   --font-mono: var(--font-family-mono);
 
   /* Component tokens: shared controls consume these aliases first. */
@@ -124,57 +209,12 @@ page {
   --segment-border: var(--color-border-strong);
   --segment-border-width: var(--border-width-strong);
   --segment-radius: var(--radius-sm);
-  /* PR B value-preserving media and route component tokens. */
-  --scrim-activity-cover-clear: rgba(12, 10, 7, 0);
-  --scrim-activity-cover-strong: rgba(12, 10, 7, 0.68);
-  --surface-media-tag: rgba(12, 10, 7, 0.72);
-  --scrim-activity-detail-cover-clear: rgba(12, 10, 7, 0);
-  --scrim-activity-detail-cover-strong: rgba(12, 10, 7, 0.72);
-  --surface-countdown: rgba(12, 10, 7, 0.6);
-  --surface-dialog-backdrop: rgba(12, 10, 7, 0.68);
-  --surface-dialog-control: rgba(12, 10, 7, 0.56);
-  --scrim-attendee-card-strong: rgba(12, 10, 7, 0.76);
-  --scrim-attendee-card-clear: rgba(12, 10, 7, 0);
-  --surface-attendee-avatar-glass: rgba(255, 255, 255, 0.18);
-  --surface-media-index: rgba(12, 10, 7, 0.78);
-  --surface-media-action: rgba(12, 10, 7, 0.82);
-  --surface-media-danger: rgba(165, 42, 28, 0.92);
-  --shadow-swipe-color: rgba(0, 0, 0, 0.08);
-  --surface-photo-count: rgba(12, 10, 7, 0.56);
-  --surface-upload-progress-track: rgba(255, 255, 255, 0.3);
-  --scrim-club-admin-top: rgba(12, 10, 7, 0.1);
-  --scrim-club-admin-mid: rgba(12, 10, 7, 0.05);
-  --scrim-club-admin-strong: rgba(12, 10, 7, 0.72);
-  --color-club-admin-eyebrow: rgba(255, 255, 255, 0.86);
-  --surface-club-fallback-shine: rgba(255, 255, 255, 0.08);
-  --surface-club-fallback-clear: rgba(255, 255, 255, 0);
-  --surface-club-fallback-glow: rgba(255, 255, 255, 0.12);
-  --scrim-club-cover-top: rgba(12, 10, 7, 0.1);
-  --scrim-club-cover-mid: rgba(12, 10, 7, 0.05);
-  --scrim-club-cover-strong: rgba(12, 10, 7, 0.78);
-  --border-club-location: rgba(255, 255, 255, 0.7);
-  --surface-club-location: rgba(12, 10, 7, 0.4);
-  --surface-club-identity: rgba(12, 10, 7, 0.42);
-  --border-club-avatar: rgba(255, 255, 255, 0.85);
-  --color-club-intro: rgba(255, 255, 255, 0.84);
-  --border-credential-divider: rgba(255, 255, 255, 0.3);
-  --surface-credential-chip: rgba(255, 255, 255, 0.12);
-  --border-credential-chip: rgba(255, 255, 255, 0.2);
-  --scrim-profile-hero-top: rgba(12, 10, 7, 0.08);
-  --scrim-profile-hero-soft: rgba(12, 10, 7, 0.04);
-  --scrim-profile-hero-mid: rgba(12, 10, 7, 0.42);
-  --scrim-profile-hero-strong: rgba(12, 10, 7, 0.94);
-  --color-profile-eyebrow: rgba(255, 255, 255, 0.78);
-  --color-profile-meta: rgba(255, 255, 255, 0.86);
-  --scrim-registration-cover-clear: rgba(0, 0, 0, 0);
-  --scrim-registration-cover-strong: rgba(0, 0, 0, 0.35);
-  /* UI Revamp V1 component surfaces: only route slices consume these names. */
-  --scrim-cover-top: rgba(17, 15, 12, 0.04);
-  --scrim-cover-strong: rgba(17, 15, 12, 0.88);
-  --scrim-hero: rgba(17, 15, 12, 0.72);
-  --surface-glass: rgba(255, 255, 255, 0.88);
+  --scrim-cover-strong: var(--color-scrim-dark);
   --surface-sheet: var(--color-surface);
-  --shadow-sheet: 0 12rpx 32rpx var(--color-shadow);
+  --cinema-title-duration: var(--motion-duration-emphasis);
+  --cinema-content-duration: var(--motion-duration-reveal);
+  --cinema-hero-duration: var(--motion-duration-hero);
+  --cinema-reveal-duration: var(--motion-duration-reveal);
   min-height: 100%;
   background: var(--color-bg);
   color: var(--color-text);
@@ -228,7 +268,7 @@ button::after {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-brand);
+  background: var(--color-brand-fill);
   color: var(--color-on-brand);
 }
 .a11y-live-region {
@@ -554,7 +594,7 @@ picker[disabled] {
   bottom: 32rpx;
   left: 0;
   width: 8rpx;
-  background: var(--color-brand);
+  background: var(--color-brand-fill);
   content: '';
 }
 .context-kicker,
@@ -690,7 +730,7 @@ picker[disabled] {
   border-right: 0;
 }
 .step-active {
-  background: var(--color-brand);
+  background: var(--color-brand-fill);
   color: var(--color-on-brand);
 }
 .segment.selected,
@@ -830,6 +870,224 @@ picker[disabled] {
   color: var(--color-brand-active);
 }
 
+/* 17 条正式路由共用的一镜到底入场。只播放一次，不拦截滚动与触控。 */
+.cinema-page {
+  --cinema-scroll-edge: rgba(11, 10, 12, 0.96);
+  position: relative;
+  isolation: isolate;
+}
+.cinema-page::after {
+  position: fixed;
+  z-index: 5;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 36rpx;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(15, 13, 10, 0), var(--cinema-scroll-edge));
+  content: '';
+}
+.cinema-page .pageheading .eyebrow,
+.cinema-page .profile-hero,
+.cinema-page .info-bar {
+  animation: cinema-blur-in var(--cinema-title-duration) var(--motion-delay-title)
+    var(--motion-easing-out) both;
+}
+.cinema-page .pageheading-line {
+  animation: cinema-blur-in var(--cinema-title-duration) var(--motion-delay-title)
+    var(--motion-easing-out) both;
+}
+.review-detail-page .pageheading-title {
+  animation: cinema-blur-in var(--cinema-title-duration) var(--motion-delay-title)
+    var(--motion-easing-out) both;
+}
+.cinema-page .pageheading-line + .pageheading-line {
+  animation-delay: var(--motion-delay-title-second);
+}
+.cinema-page .pageheading-sub,
+.cinema-page .pageheading-meta {
+  animation: cinema-blur-in var(--motion-duration-reveal) var(--motion-delay-caption)
+    var(--motion-easing-out) both;
+}
+.cinema-page > .content,
+.cinema-page > state-view,
+.cinema-page .content.tight {
+  animation: cinema-rise-in var(--cinema-content-duration) var(--motion-delay-content)
+    var(--motion-easing-out) both;
+}
+.cinema-page .content > .section:first-child > .chapterhead,
+.cinema-page .content > .section:nth-child(2) > .chapterhead {
+  animation: cinema-blur-in var(--motion-duration-reveal) var(--motion-delay-section)
+    var(--motion-easing-out) both;
+}
+.cinema-page .content > .section:nth-child(2) > .chapterhead {
+  animation-delay: var(--motion-delay-title-second);
+}
+.cinema-page .profile-background-image,
+.cinema-page .photo.hero image,
+.cinema-page .club-cover-image {
+  animation: cinema-hero-in var(--cinema-hero-duration) var(--motion-duration-instant)
+    var(--motion-easing-out) both;
+}
+.cinema-page .story-title,
+.cinema-page .hero-title {
+  animation: cinema-blur-in var(--cinema-title-duration) var(--motion-delay-story)
+    var(--motion-easing-out) both;
+}
+.activities-page .story-shell:nth-child(2) .story-title {
+  animation-delay: var(--motion-delay-story-second);
+}
+.activities-page .story-shell:nth-child(3) .story-title {
+  animation-delay: var(--motion-delay-story-third);
+}
+.activities-page .story-shell:nth-child(n + 4) .story-title {
+  animation-delay: var(--motion-delay-story-fourth);
+}
+.cinema-page .chev,
+.cinema-page .storymeta-link,
+.cinema-page .compact-item__arrow {
+  position: relative;
+  right: 0;
+  transition:
+    right var(--motion-duration-instant) var(--motion-easing-standard),
+    opacity var(--motion-duration-instant) var(--motion-easing-standard);
+}
+.cinema-page .rowlink:active .chev,
+.cinema-page .story:active .storymeta-link,
+.cinema-page .compact-item:active .compact-item__arrow {
+  right: -4rpx;
+  opacity: 0.68;
+}
+.cinema-page button {
+  transition:
+    opacity var(--motion-duration-fast) var(--motion-easing-standard),
+    transform var(--motion-duration-fast) var(--motion-easing-standard),
+    background-color var(--motion-duration-base) var(--motion-easing-standard),
+    border-color var(--motion-duration-base) var(--motion-easing-standard);
+}
+.cinema-page button:active {
+  transform: translateY(var(--motion-distance-press));
+  opacity: 0.84;
+}
+
+/* 全局暗色收口：旧页面类名继续复用，但不再产生暖白票身、表单或管理卡。 */
+.cinema-page,
+.cinema-page .content,
+.cinema-page .pageheading,
+.cinema-page .section {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+.cinema-page .card,
+.cinema-page .paper,
+.cinema-page .ticket,
+.cinema-page .reviewitem,
+.cinema-page .form-card,
+.cinema-page .menu-list,
+.cinema-page .state-card,
+.cinema-page .modal-sheet,
+.cinema-page .dialog,
+.cinema-page .trip-skeleton__card {
+  border-color: var(--color-card-border);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+}
+.cinema-page .input,
+.cinema-page .textarea,
+.cinema-page input,
+.cinema-page textarea,
+.cinema-page .picker-value,
+.cinema-page .field-input,
+.cinema-page .field-textarea,
+.cinema-page .choice,
+.cinema-page .segment-choice {
+  border-color: var(--color-border-strong);
+  background-color: var(--color-input-bg);
+  color: var(--color-text);
+}
+.cinema-page .fixed,
+.cinema-page .fixed-bar,
+.cinema-page .action-bar,
+.cinema-page .actionbar {
+  border-color: var(--color-border-strong);
+  background-color: var(--color-fixed-bar);
+}
+.cinema-page .decision,
+.cinema-page .conclusion-panel,
+.cinema-page .ink {
+  border-color: var(--color-cinema-line) !important;
+  background-color: var(--color-media-card-bg) !important;
+  color: var(--color-on-media) !important;
+}
+.cinema-page .tag--dark,
+.cinema-page .ticket-tag,
+.cinema-page .filter-tab.is-active,
+.cinema-page .status-filter.active,
+.cinema-page .segment.selected,
+.cinema-page .day-chip.is-active {
+  border-color: var(--color-action) !important;
+  background-color: var(--color-action) !important;
+  color: var(--color-on-action) !important;
+}
+.cinema-page .tag-success,
+.cinema-page .tag--connected,
+.cinema-page .tag--approved,
+.cinema-page .tag--checked_in,
+.cinema-page .approved-mark {
+  border-color: var(--color-status-success) !important;
+  background-color: var(--color-status-success-soft) !important;
+  color: var(--color-status-success) !important;
+}
+.cinema-page .tag-warning,
+.cinema-page .tag--pending,
+.cinema-page .tag--waiting,
+.cinema-page .group-qr-warning {
+  border-color: var(--color-status-warning) !important;
+  background-color: var(--color-status-warning-soft) !important;
+  color: var(--color-status-warning) !important;
+}
+.cinema-page .tag--rejected,
+.cinema-page .tag--cancelled,
+.cinema-page .tag--error,
+.cinema-page .tag.is-error {
+  border-color: var(--color-danger) !important;
+  background-color: var(--color-danger-soft) !important;
+  color: var(--color-danger-text) !important;
+}
+
+@keyframes cinema-blur-in {
+  from {
+    opacity: 0;
+    filter: blur(8rpx);
+    transform: translateY(var(--motion-distance-reveal));
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+@keyframes cinema-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--motion-distance-reveal));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes cinema-hero-in {
+  from {
+    opacity: 0.84;
+    transform: scale(1.025);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @media (max-width: 340px) {
   page {
     --page-gutter: var(--page-gutter-narrow);
@@ -865,149 +1123,5 @@ picker[disabled] {
   .filter-tabs .filter-tab,
   .experience-segment .segment {
     min-height: var(--segment-height);
-  }
-}
-
-/* UI Revamp V1 · shared content-first and steady single-column language. */
-[data-v1-layout] .pageheading {
-  padding: var(--space-5) 0 var(--space-4);
-}
-[data-v1-layout] .pageheading-title {
-  max-width: 18em;
-  margin-top: var(--space-3);
-  font-family: var(--font-family-editorial);
-  font-size: 56rpx;
-  line-height: 64rpx;
-  font-weight: 600;
-  letter-spacing: -1rpx;
-}
-[data-v1-layout] .pageheading-sub {
-  max-width: 32em;
-  margin-top: var(--space-3);
-  color: var(--color-muted);
-  font-size: var(--font-size-body);
-  line-height: var(--line-height-body);
-  font-weight: 400;
-}
-[data-v1-layout] .chapterhead {
-  padding-bottom: var(--space-2);
-  border-bottom: var(--border-width-hairline) solid var(--color-border);
-}
-[data-v1-layout] .chapterhead-title {
-  font-family: var(--font-family-editorial);
-  font-size: var(--font-size-title);
-  line-height: 48rpx;
-  font-weight: 600;
-}
-[data-v1-layout] .chev {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 88rpx;
-  min-width: 88rpx;
-  height: 88rpx;
-  border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: 50%;
-  background: var(--color-surface);
-}
-[data-v1-layout] .rowbutton,
-[data-v1-layout] .rowlink,
-[data-v1-layout] .filter-tab,
-[data-v1-layout] .segment-item,
-[data-v1-layout] .choice,
-[data-v1-layout] .segment-choice {
-  min-height: 88rpx;
-}
-[data-v1-layout='form'] .section,
-[data-v1-layout='admin'] .section,
-[data-v1-layout='admin-form'] .section {
-  border-radius: 0;
-  box-shadow: none;
-}
-[data-v1-layout='form'] .form-card,
-[data-v1-layout='admin-form'] .form-card,
-[data-v1-layout='admin-form'] .club-profile-card {
-  padding: var(--space-5) 0;
-  border-width: 0 0 var(--border-width-hairline);
-  border-radius: 0;
-  background: transparent;
-}
-[data-v1-layout] .filters,
-[data-v1-layout] .segment {
-  border-width: 0 0 var(--border-width-hairline);
-  border-radius: 0;
-  background: transparent;
-}
-[data-v1-layout] .filter-tab,
-[data-v1-layout] .segment-item {
-  border: 0;
-  border-bottom: var(--border-width-strong) solid transparent;
-  border-radius: 0;
-  background: transparent;
-  color: var(--color-muted);
-}
-[data-v1-layout] .filter-tab.is-active,
-[data-v1-layout] .segment-item.selected {
-  border-bottom-color: var(--color-action);
-  background: transparent !important;
-  color: var(--color-text) !important;
-}
-[data-v1-layout] .metric .em,
-[data-v1-layout] .metric-value,
-[data-v1-layout] .metric-number,
-[data-v1-layout] .storyfacts-value,
-[data-v1-layout] .trip-stat__value {
-  font-family: var(--font-family-mono);
-  font-variant-numeric: tabular-nums;
-}
-.profile-page[data-v1-layout] .profile-permission {
-  position: relative;
-  z-index: 2;
-  margin-top: -32rpx;
-  border-radius: var(--radius-display);
-  background: var(--surface-sheet);
-  box-shadow: var(--shadow-sheet);
-}
-@media (max-width: 340px) {
-  [data-v1-layout] .pageheading-title {
-    font-size: 48rpx;
-    line-height: 60rpx;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  [data-v1-layout] view,
-  [data-v1-layout] text,
-  [data-v1-layout] button,
-  [data-v1-layout] input,
-  [data-v1-layout] textarea,
-  [data-v1-layout] image,
-  [data-v1-layout] navigator,
-  [data-v1-layout] scroll-view,
-  [data-v1-layout] swiper,
-  [data-v1-layout] swiper-item,
-  [data-v1-layout] picker,
-  [data-v1-layout] form,
-  [data-v1-layout] label,
-  [data-v1-layout] radio,
-  [data-v1-layout] checkbox,
-  [data-v1-layout] switch,
-  [data-v1-layout] slider,
-  [data-v1-layout] canvas,
-  [data-v1-layout] map,
-  [data-v1-layout] video,
-  [data-v1-layout] cover-view,
-  [data-v1-layout] cover-image,
-  [data-v1-layout] rich-text,
-  [data-v1-layout] progress,
-  [data-v1-layout] icon,
-  [data-v1-layout] .avatar,
-  [data-v1-layout] .brand-logo,
-  [data-v1-layout] .state-view,
-  [data-v1-layout] .status-pill,
-  [data-v1-layout] .generated-cover,
-  [data-v1-layout] .async-status-card,
-  [data-v1-layout] .blur-text {
-    animation-duration: 1ms !important;
-    transition-duration: 1ms !important;
   }
 }

@@ -1,5 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144" role="img" aria-label="CILI 圆形标志">
-  <circle cx="72" cy="72" r="71" fill="#211f1c"/>
-  <text x="15" y="88" fill="#ffffff" font-family="Arial, Helvetica Neue, sans-serif" font-size="48" font-weight="900" letter-spacing="-3">CILI</text>
-  <path d="M31 91h13l-4 6H27z" fill="#e13b2b"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144" role="img" aria-label="CILI 圆形头像标志">
+  <title>CILI 圆形头像标志</title>
+  <circle cx="72" cy="72" r="72" fill="#211f1c"/>
+
+  <g transform="translate(27 27) scale(0.9375)" aria-label="CILI 路线环标志">
+    <rect width="96" height="96" rx="26" fill="#e13b2b"/>
+    <path d="M68 25 C56 20 44 23 42 33 C40 42 47 46 56 49 C65 52 68 58 66 66 C63 75 54 79 44 78 C35 77 29 72 25 65" fill="none" stroke="#ffffff" stroke-width="10.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
 </svg>

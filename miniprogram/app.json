@@ -49,19 +49,19 @@
   "requiredPrivateInfos": ["chooseLocation"],
   "window": {
     "navigationBarTitleText": "此里",
-    "navigationBarBackgroundColor": "#fbf5ea",
-    "navigationBarTextStyle": "black",
+    "navigationBarBackgroundColor": "#0b0a0c",
+    "navigationBarTextStyle": "white",
     "enablePullDownRefresh": false,
-    "backgroundColor": "#fbf5ea",
-    "backgroundColorTop": "#fbf5ea",
-    "backgroundColorBottom": "#fbf5ea",
-    "backgroundTextStyle": "dark"
+    "backgroundColor": "#0b0a0c",
+    "backgroundColorTop": "#0b0a0c",
+    "backgroundColorBottom": "#0b0a0c",
+    "backgroundTextStyle": "light"
   },
   "tabBar": {
-    "backgroundColor": "#ffffff",
-    "borderStyle": "white",
-    "color": "#6f675d",
-    "selectedColor": "#C0321F",
+    "backgroundColor": "#0b0a0c",
+    "borderStyle": "black",
+    "color": "#b8b3ba",
+    "selectedColor": "#e54242",
     "list": [
       {
         "pagePath": "pages/activities/index",

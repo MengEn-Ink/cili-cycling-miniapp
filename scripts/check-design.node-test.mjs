@@ -8,6 +8,7 @@ import {
   parseFontMigrationTable,
   parseMigrationTable,
   parseWxssTokens,
+  resolvedTokenValue,
   runRepositoryCheck,
   validateContractSnapshot,
   validateDocumentedScripts,
@@ -209,8 +210,66 @@ test('direct values cannot drift and fallback effective tokens must exist', () =
   );
 });
 
+test('historical migration ledger keeps its frozen evidence while current tokens may evolve', () => {
+  const evolvedTokens = { ...tokensFixture, '--token-direct-1': '#0b0a0c' };
+  assert.doesNotThrow(() =>
+    validateMigrationRows(parsedRows, evolvedTokens, { requireCurrentTokenValues: false }),
+  );
+  assert.throws(
+    () =>
+      validateMigrationRows(
+        parsedRows.map((row, index) =>
+          index === 0 ? { ...row, tokenCurrentValue: '#0b0a0c' } : row,
+        ),
+        evolvedTokens,
+        { requireCurrentTokenValues: false },
+      ),
+    /历史 direct/,
+  );
+});
+
+test('semantic tokens resolve through primitive aliases and reject cycles', () => {
+  assert.equal(
+    resolvedTokenValue(
+      {
+        '--color-text': 'var(--palette-warm-50)',
+        '--palette-warm-50': '#f7f4f2',
+      },
+      '--color-text',
+    ),
+    '#f7f4f2',
+  );
+  assert.throws(
+    () => resolvedTokenValue({ '--a': 'var(--b)', '--b': 'var(--a)' }, '--a'),
+    /CSS token cycle/,
+  );
+});
+
 test('native source-specific values and declared equivalents are both enforced', () => {
   assert.doesNotThrow(() => validateContractSnapshot(validSnapshot));
+  const alignedNative = {
+    ...native,
+    appTabBar: { ...native.appTabBar, selectedColor: native.runtimeTabBar.selectedColor },
+  };
+  assert.doesNotThrow(() =>
+    validateContractSnapshot({
+      ...validSnapshot,
+      contract: {
+        ...validContract,
+        native: alignedNative,
+        sourceSpecificDifferences: [],
+      },
+      appJson: { ...validAppJson, tabBar: alignedNative.appTabBar },
+    }),
+  );
+  assert.throws(
+    () =>
+      validateContractSnapshot({
+        ...validSnapshot,
+        contract: { ...validContract, sourceSpecificDifferences: [] },
+      }),
+    /requires a reason/,
+  );
   assert.throws(() => validateContractSnapshot({ ...validSnapshot, appJson: badApp }), /tabBar/);
   assert.throws(
     () => validateContractSnapshot({ ...validSnapshot, themeSource: badTheme }),
@@ -242,7 +301,7 @@ test('contrast uses WCAG luminance', () => {
   assert.ok(contrastRatio('#211f1c', '#fbf5ea') >= 4.5);
 });
 
-test('migrated repository resolves all frozen literals through the contract', () => {
+test('repository resolves the current theme while retaining the historical migration ledger', () => {
   assert.deepEqual(runRepositoryCheck(), {
     colorLiteralCount: 0,
     fontLiteralCount: 0,

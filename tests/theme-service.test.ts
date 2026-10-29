@@ -23,27 +23,27 @@ async function loadAppearanceService(wxApi: Record<string, unknown>) {
   return import('../miniprogram/services/theme-service');
 }
 
-describe('固定明亮系统外观服务', () => {
+describe('电影暗场系统外观服务', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
-  it('同步暖米白导航、白色 TabBar、浅色图标和暖米白滚动边界', async () => {
+  it('同步暗场导航、暗色 TabBar、现有图标和暗色滚动边界', async () => {
     const wxApi = wxMock();
     const service = await loadAppearanceService(wxApi);
 
     service.applyAppAppearance();
 
     expect(wxApi.setNavigationBarColor).toHaveBeenCalledWith(
-      expect.objectContaining({ backgroundColor: '#fbf5ea', frontColor: '#000000' }),
+      expect.objectContaining({ backgroundColor: '#0b0a0c', frontColor: '#ffffff' }),
     );
     expect(wxApi.setTabBarStyle).toHaveBeenCalledWith(
       expect.objectContaining({
-        backgroundColor: '#ffffff',
-        borderStyle: 'white',
-        color: '#6f675d',
-        selectedColor: '#211f1c',
+        backgroundColor: '#0b0a0c',
+        borderStyle: 'black',
+        color: '#b8b3ba',
+        selectedColor: '#e54242',
       }),
     );
     expect(wxApi.setTabBarItem.mock.calls.map(([item]) => item?.iconPath)).toEqual([
@@ -53,9 +53,9 @@ describe('固定明亮系统外观服务', () => {
     ]);
     expect(wxApi.setBackgroundColor).toHaveBeenCalledWith(
       expect.objectContaining({
-        backgroundColor: '#fbf5ea',
-        backgroundColorTop: '#fbf5ea',
-        backgroundColorBottom: '#fbf5ea',
+        backgroundColor: '#0b0a0c',
+        backgroundColorTop: '#0b0a0c',
+        backgroundColorBottom: '#0b0a0c',
       }),
     );
   });

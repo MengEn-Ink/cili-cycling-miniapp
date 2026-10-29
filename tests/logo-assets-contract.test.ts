@@ -11,6 +11,14 @@ const brandAssets = [
   'docs/brand/logo-materials/generated/logo-photo-watermark-360x144.png',
   'docs/brand/logo-materials/generated/logo-share-500x400.png',
   'docs/brand/logo-materials/generated/logo-loading-512.gif',
+  'docs/brand/logo-materials/generated/core/logo-horizontal-dark-1200x540.png',
+  'docs/brand/logo-materials/generated/core/logo-horizontal-light-1200x540.png',
+  'docs/brand/logo-materials/generated/platform/logo-app-icon-1024.png',
+  'docs/brand/logo-materials/generated/platform/favicon.ico',
+  'docs/brand/logo-materials/generated/applications/logo-business-card-1050x600.png',
+  'docs/brand/logo-materials/generated/applications/logo-letterhead-a4-1240x1754.png',
+  'docs/brand/logo-materials/generated/preview/logo-brand-board-1600x1200.png',
+  'docs/brand/logo-materials/generated/print/logo-brand-board.pdf',
 ];
 
 describe('统一 Logo 物料与页面接入契约', () => {
@@ -28,7 +36,25 @@ describe('统一 Logo 物料与页面接入契约', () => {
       background: '#211F1C',
       foreground: '#FFFFFF',
       accent: '#E13B2B',
+      warm: '#F7F4F2',
+      muted: '#B8B3BA',
     });
+    expect(manifest.assets).toHaveLength(42);
+    expect(new Set(manifest.assets.map((item: { path: string }) => item.path)).size).toBe(42);
+    for (const item of manifest.assets as Array<{
+      path: string;
+      width: number;
+      height: number;
+      bytes: number;
+      sha256: string;
+    }>) {
+      expect(existsSync(item.path), item.path).toBe(true);
+      expect(item.width).toBeGreaterThan(0);
+      expect(item.height).toBeGreaterThan(0);
+      expect(item.bytes).toBeGreaterThan(0);
+      expect(item.sha256).toMatch(/^[a-f0-9]{64}$/);
+    }
+    expect(existsSync('docs/brand/logo-materials/GUIDELINES.md')).toBe(true);
     expect(existsSync('miniprogram/assets/brand/logo-circle-144.png')).toBe(true);
     expect(existsSync('miniprogram/assets/brand/logo-share-500x400.png')).toBe(true);
   });
@@ -66,7 +92,7 @@ describe('统一 Logo 物料与页面接入契约', () => {
     }
   });
 
-  it('活动空态复用 brand-logo，旧名片路由只做无旧字标的兼容跳转', () => {
+  it('活动空态复用 brand-logo，旧名片路由只做兼容跳转且不重复绘制导航', () => {
     const activityCard = read('miniprogram/components/activity-card/index.wxml');
     const capabilityCard = read('miniprogram/pages/capability-card/index.wxml');
     const reviewDetail = read('miniprogram/pages/admin/review-detail/index.wxml');
@@ -81,7 +107,10 @@ describe('统一 Logo 物料与页面接入契约', () => {
       "url: '/pages/profile/index'",
     );
     expect(reviewDetail).toContain('<brand-logo compact="{{true}}" meta="审批详情" />');
-    expect(`${activityCard}\n${capabilityCard}\n${reviewDetail}`).not.toMatch(/>CILI<|骑有此里/);
+    expect(activityCard).not.toMatch(/>CILI<|骑有此里/);
+    expect(capabilityCard).not.toContain('class="cinema-slate"');
+    expect(reviewDetail).not.toContain('class="cinema-slate"');
+    expect(`${capabilityCard}\n${reviewDetail}`).not.toContain('骑有此里');
   });
 
   it('通用默认头像保留品牌物料，但活动报名人员绝不回退默认头像或背景', () => {

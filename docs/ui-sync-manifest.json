@@ -1,16 +1,16 @@
 {
   "schemaVersion": 2,
-  "syncedThrough": "68da96f40d2b810f2b18d24ccce07ed73a9bf90c",
-  "syncedAt": "2026-10-28T07:31:20.226Z",
+  "syncedThrough": "558e8664b01b8c671ec3cd0f8b50aa6cd317f775",
+  "syncedAt": "2026-10-29T08:49:50.073Z",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:9ba54653ba81c04fb4bf441865f86b59d19a28dadbe507e921047662924fd2c5"
+    "digest": "sha256:5a2543494c43581983ae74315ba5dc7b5806117d43d340e88aabf4efba75ebf2"
   },
   "prototype": {
-    "digest": "sha256:2f72486f9fd7150619aba98ca6ef2b40ea933b093f8375932aecbb3b55b2f0de"
+    "digest": "sha256:879d43a9eeeff1af3d49d47b7654e6b248f53dfe6c88069b8b43d3997155b07a"
   },
   "routes": [
     {
@@ -83,7 +83,7 @@
     }
   ],
   "evidence": {
-    "directory": "docs/evidence/ui-sync/2026-10-26-activity-media-response",
+    "directory": "docs/evidence/ui-sync/2026-10-29-cinematic-dark",
     "viewport": {
       "width": 390,
       "height": 844
@@ -93,10 +93,10 @@
         "id": "activities",
         "devtools": "activities-devtools.png",
         "pages": "activities-pages.png",
-        "state": "真实云 1 场近期活动 · 摄影纵向列表",
+        "state": "真实云 1 场近期活动 · 电影暗色首卡",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。真实活动与原型合成活动的标题、数量、照片与里程不同。照片与个人信息按 redaction-record.json 不透明遮挡。公开骑友媒体本次已通过；普通成员写链路和双物理设备仍未验收。"
+        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。真实活动与原型合成活动的标题、数量、照片与里程不同。照片与个人信息按 redaction-record.json 不透明遮挡。本轮仅完成只读视觉采集；公开骑友媒体完整验收、普通成员写链路和双物理设备仍未执行。"
       },
       {
         "id": "activity-detail",
@@ -105,7 +105,7 @@
         "state": "管理员公开详情 · 真实封面与两名骑友媒体读取通过",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。真实活动与合成活动的标题、媒体、指标、状态及管理入口不同；骑友弹层另有脱敏补充图。照片与个人信息按 redaction-record.json 不透明遮挡。公开骑友媒体本次已通过；普通成员写链路和双物理设备仍未验收。"
+        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。真实活动与合成活动的标题、媒体、指标、状态及管理入口不同；骑友弹层另有脱敏补充图。照片与个人信息按 redaction-record.json 不透明遮挡。本轮仅完成只读视觉采集；公开骑友媒体完整验收、普通成员写链路和双物理设备仍未执行。"
       },
       {
         "id": "route-analysis",
@@ -114,7 +114,7 @@
         "state": "真实路线只读 · 完整分析就绪",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。真实路线的摘要、海拔和图形与合成路线不同。照片与个人信息按 redaction-record.json 不透明遮挡。公开骑友媒体本次已通过；普通成员写链路和双物理设备仍未验收。"
+        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。真实路线的摘要、海拔和图形与合成路线不同。照片与个人信息按 redaction-record.json 不透明遮挡。本轮仅完成只读视觉采集；公开骑友媒体完整验收、普通成员写链路和双物理设备仍未执行。"
       },
       {
         "id": "registration-form",
@@ -123,7 +123,7 @@
         "state": "本人已保存资料 · 骑行经验未选 · 提交禁用",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。真实表单当前经验未选、禁止提交；原型为合成资料示例。照片与个人信息按 redaction-record.json 不透明遮挡。公开骑友媒体本次已通过；普通成员写链路和双物理设备仍未验收。"
+        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。真实表单当前经验未选、禁止提交；原型为合成资料示例。照片与个人信息按 redaction-record.json 不透明遮挡。本轮仅完成只读视觉采集；公开骑友媒体完整验收、普通成员写链路和双物理设备仍未执行。"
       },
       {
         "id": "registrations",
@@ -132,7 +132,7 @@
         "state": "真实 1 场已通过行程",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。真实一场已通过行程；原型有多种合成行程状态。照片与个人信息按 redaction-record.json 不透明遮挡。公开骑友媒体本次已通过；普通成员写链路和双物理设备仍未验收。"
+        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。真实一场已通过行程；原型有多种合成行程状态。照片与个人信息按 redaction-record.json 不透明遮挡。本轮仅完成只读视觉采集；公开骑友媒体完整验收、普通成员写链路和双物理设备仍未执行。"
       },
       {
         "id": "credential",
@@ -141,25 +141,25 @@
         "state": "已通过凭证 · 实名电话与报名编号脱敏",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。真实凭证的活动、编号与个人资料不同；原型为合成示例。照片与个人信息按 redaction-record.json 不透明遮挡。公开骑友媒体本次已通过；普通成员写链路和双物理设备仍未验收。"
+        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。真实凭证的活动、编号与个人资料不同；原型为合成示例。照片与个人信息按 redaction-record.json 不透明遮挡。本轮仅完成只读视觉采集；公开骑友媒体完整验收、普通成员写链路和双物理设备仍未执行。"
       },
       {
         "id": "profile",
         "devtools": "profile-devtools.png",
         "pages": "profile-pages.png",
-        "state": "本人管理员 · 已授权并保存的头像背景回显",
+        "state": "本人管理员 · 已保存头像背景回显 · 展示授权待确认",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。真实已有授权媒体；权限说明与入口状态和合成名片不同。照片与个人信息按 redaction-record.json 不透明遮挡。公开骑友媒体本次已通过；普通成员写链路和双物理设备仍未验收。"
+        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。真实已有授权媒体；权限说明与入口状态和合成名片不同。照片与个人信息按 redaction-record.json 不透明遮挡。本轮仅完成只读视觉采集；公开骑友媒体完整验收、普通成员写链路和双物理设备仍未执行。"
       },
       {
         "id": "settings",
         "devtools": "settings-devtools.png",
         "pages": "settings-pages.png",
-        "state": "管理员 · 本地客户端 2026.10.27.1",
+        "state": "管理员 · 本地客户端 2026.10.29.6",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。本地客户端版本及管理员入口与原型示例不同。照片与个人信息按 redaction-record.json 不透明遮挡。公开骑友媒体本次已通过；普通成员写链路和双物理设备仍未验收。"
+        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。本地客户端版本及管理员入口与原型示例不同。照片与个人信息按 redaction-record.json 不透明遮挡。本轮仅完成只读视觉采集；公开骑友媒体完整验收、普通成员写链路和双物理设备仍未执行。"
       },
       {
         "id": "capability-card",
@@ -168,7 +168,7 @@
         "state": "历史路由进入我的 · 兼容转跳已验证",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。实际进入我的页；与原型复用我的内容，真实与合成的媒体和权限入口状态不同。照片与个人信息按 redaction-record.json 不透明遮挡。公开骑友媒体本次已通过；普通成员写链路和双物理设备仍未验收。"
+        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。实际进入我的页；与原型复用我的内容，真实与合成的媒体和权限入口状态不同。照片与个人信息按 redaction-record.json 不透明遮挡。本轮仅完成只读视觉采集；公开骑友媒体完整验收、普通成员写链路和双物理设备仍未执行。"
       },
       {
         "id": "profile-edit",
@@ -177,7 +177,7 @@
         "state": "本人已有授权媒体 · 编辑页展示使用说明弹层",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。真实截图有本地使用说明弹层；本次未确认该说明或修改资料，原型为合成编辑表单。该弹层不代表已保存的媒体未授权。照片与个人信息按 redaction-record.json 不透明遮挡。公开骑友媒体本次已通过；普通成员写链路和双物理设备仍未验收。"
+        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。真实截图有本地使用说明弹层；本次未确认该说明或修改资料，原型为合成编辑表单。该弹层不代表已保存的媒体未授权。照片与个人信息按 redaction-record.json 不透明遮挡。本轮仅完成只读视觉采集；公开骑友媒体完整验收、普通成员写链路和双物理设备仍未执行。"
       },
       {
         "id": "admin-activity-list",
@@ -186,7 +186,7 @@
         "state": "真实 1 场已上线活动 · 两人报名",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。真实一场活动、两人报名；原型包含多种合成活动。照片与个人信息按 redaction-record.json 不透明遮挡。公开骑友媒体本次已通过；普通成员写链路和双物理设备仍未验收。"
+        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。真实一场活动、两人报名；原型包含多种合成活动。照片与个人信息按 redaction-record.json 不透明遮挡。本轮仅完成只读视觉采集；公开骑友媒体完整验收、普通成员写链路和双物理设备仍未执行。"
       },
       {
         "id": "admin-activity-edit",
@@ -195,7 +195,7 @@
         "state": "空白创建表单 · 未保存未发布",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。真实为空白创建表单，原型为填好的编辑状态；未注入数据改变运行证据。照片与个人信息按 redaction-record.json 不透明遮挡。公开骑友媒体本次已通过；普通成员写链路和双物理设备仍未验收。"
+        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。真实为空白创建表单，原型为填好的编辑状态；未注入数据改变运行证据。照片与个人信息按 redaction-record.json 不透明遮挡。本轮仅完成只读视觉采集；公开骑友媒体完整验收、普通成员写链路和双物理设备仍未执行。"
       },
       {
         "id": "admin-reviews",
@@ -204,7 +204,7 @@
         "state": "真实审核列表 · 待审核筛选为空",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。真实待审核为空，原型待审核含合成人员。照片与个人信息按 redaction-record.json 不透明遮挡。公开骑友媒体本次已通过；普通成员写链路和双物理设备仍未验收。"
+        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。真实待审核为空，原型待审核含合成人员。照片与个人信息按 redaction-record.json 不透明遮挡。本轮仅完成只读视觉采集；公开骑友媒体完整验收、普通成员写链路和双物理设备仍未执行。"
       },
       {
         "id": "admin-review-detail",
@@ -213,7 +213,7 @@
         "state": "已通过报名 · 可确认签到 · 个人信息脱敏",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。真实已通过状态与合成待审核状态不同；真实个人信息已遮挡。照片与个人信息按 redaction-record.json 不透明遮挡。公开骑友媒体本次已通过；普通成员写链路和双物理设备仍未验收。"
+        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。真实已通过状态与合成待审核状态不同；真实个人信息已遮挡。照片与个人信息按 redaction-record.json 不透明遮挡。本轮仅完成只读视觉采集；公开骑友媒体完整验收、普通成员写链路和双物理设备仍未执行。"
       },
       {
         "id": "club/center",
@@ -222,7 +222,7 @@
         "state": "唯一俱乐部 · 真实媒体脱敏 · 近期活动",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。真实俱乐部背景、介绍与活动不同；原型为合成媒体和列表。照片与个人信息按 redaction-record.json 不透明遮挡。公开骑友媒体本次已通过；普通成员写链路和双物理设备仍未验收。"
+        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。真实俱乐部背景、介绍与活动不同；原型为合成媒体和列表。照片与个人信息按 redaction-record.json 不透明遮挡。本轮仅完成只读视觉采集；公开骑友媒体完整验收、普通成员写链路和双物理设备仍未执行。"
       },
       {
         "id": "admin-club-applications",
@@ -231,7 +231,7 @@
         "state": "唯一俱乐部资料概览 · 平台管理员",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。真实俱乐部大幅背景与合成紧凑列表结构存在差异。照片与个人信息按 redaction-record.json 不透明遮挡。公开骑友媒体本次已通过；普通成员写链路和双物理设备仍未验收。"
+        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。真实俱乐部大幅背景与合成紧凑列表结构存在差异。照片与个人信息按 redaction-record.json 不透明遮挡。本轮仅完成只读视觉采集；公开骑友媒体完整验收、普通成员写链路和双物理设备仍未执行。"
       },
       {
         "id": "admin-club-application-detail",
@@ -240,7 +240,7 @@
         "state": "编辑唯一俱乐部 · 现有媒体脱敏 · 未保存",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。真实分段表单与原型编号章节不同；媒体与可见内容长度不同。照片与个人信息按 redaction-record.json 不透明遮挡。公开骑友媒体本次已通过；普通成员写链路和双物理设备仍未验收。"
+        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。真实分段表单与原型编号章节不同；媒体与可见内容长度不同。照片与个人信息按 redaction-record.json 不透明遮挡。本轮仅完成只读视觉采集；公开骑友媒体完整验收、普通成员写链路和双物理设备仍未执行。"
       }
     ]
   },

@@ -305,12 +305,7 @@
   right: 0;
   bottom: 0;
   left: 0;
-  background: linear-gradient(
-    to bottom,
-    var(--scrim-activity-cover-clear) 0%,
-    var(--scrim-activity-cover-clear) 48%,
-    var(--scrim-activity-cover-strong) 100%
-  );
+  background: var(--gradient-cover);
   pointer-events: none;
 }
 .corner {
@@ -331,7 +326,7 @@
   letter-spacing: 1rpx;
 }
 .tag.dark {
-  background: var(--surface-media-tag);
+  background: var(--color-scrim-dark);
   color: var(--color-on-media);
 }
 .caption {
@@ -528,49 +523,183 @@
   }
 }
 
-/* UI Revamp V1 · compact content-first home. */
-.activities-page > .pageheading {
-  padding-bottom: 16rpx;
+/* 2026-10-28 · Direction A / 一镜到底
+ * 页面直接使用真实手机视口；首场活动承担开场镜头，其余内容保持可滚动和可访问。
+ */
+.activities-page {
+  --color-bg: var(--color-cinema-bg);
+  --color-surface: var(--color-cinema-panel);
+  --color-raised: var(--color-cinema-panel-raised);
+  --color-text: var(--color-cinema-text);
+  --color-muted: var(--color-cinema-muted);
+  --color-border: var(--color-cinema-line);
+  --color-border-subtle: var(--color-cinema-line);
+  --color-card-border: var(--color-cinema-line);
+  background: var(--color-cinema-bg);
+  color: var(--color-cinema-text);
 }
-.activities-page > .pageheading .pageheading-title {
-  margin-top: 12rpx;
-  font-size: 56rpx;
-  line-height: 64rpx;
-  font-weight: 600;
+.activities-page .custom-nav-title {
+  color: var(--color-cinema-text);
 }
-.segment {
-  position: relative;
-  top: auto;
-  padding: 0;
+.activities-page .pageheading {
+  padding: 24rpx 0 16rpx;
 }
-.segment-end {
+.activities-page .pageheading .eyebrow {
+  color: var(--color-brand);
+}
+.activities-page .pageheading-title {
+  display: block;
+  max-width: none;
+  margin-top: 10rpx;
+  color: var(--color-cinema-text);
+  font-size: 48rpx;
+  line-height: 60rpx;
+  letter-spacing: -1rpx;
+}
+.activities-page .pageheading-sub {
+  margin-top: 8rpx;
+  max-width: 590rpx;
+  color: var(--color-cinema-muted);
+  font-size: 24rpx;
+  line-height: 36rpx;
+}
+.activities-page .segment {
+  top: 4rpx;
+  margin-top: 0;
+  padding: 6rpx;
+  border-color: var(--color-cinema-line);
+  border-radius: 16rpx;
+  background: var(--color-sticky-surface);
+  box-shadow: var(--shadow-card);
+}
+.activities-page .segment-item {
+  min-height: 88rpx;
+}
+.activities-page .segment-end {
   width: 88rpx;
   min-width: 88rpx;
   height: 88rpx;
 }
-.story-list {
+.activities-page .day-chip-shell {
+  margin-top: 16rpx;
+}
+.activities-page .day-chip {
+  min-height: 88rpx;
+}
+.activities-page .list-toolbar {
+  margin-top: 20rpx;
+}
+.activities-page .story-list {
+  margin-top: 16rpx;
+}
+.activities-page .segment-item,
+.activities-page .segment-end {
+  border-color: transparent;
+  border-radius: 10rpx;
+  background: transparent;
+  color: var(--color-cinema-muted);
+}
+.activities-page .segment-item.selected,
+.activities-page .segment-end.selected {
+  border-color: var(--color-cinema-red);
+  background: var(--color-cinema-red);
+  color: var(--color-on-action);
+}
+.activities-page .day-chip {
+  border-color: var(--color-cinema-line);
+  border-radius: 12rpx;
+  background: var(--color-cinema-panel);
+  color: var(--color-cinema-text);
+}
+.activities-page .day-chip.is-active {
+  border-color: var(--color-cinema-red);
+  background: var(--color-cinema-red);
+}
+.activities-page .chapterhead-title,
+.activities-page .storyfacts > .em,
+.activities-page .storymeta-main,
+.activities-page .compact-item__title,
+.activities-page .compact-item__date text:first-child {
+  color: var(--color-cinema-text);
+}
+.activities-page .story-list {
   gap: 32rpx;
 }
-.photo {
-  padding-top: 75%;
+.activities-page .story {
+  border-color: var(--color-cinema-line);
+  border-radius: 20rpx;
+  background: var(--color-cinema-panel);
+  color: var(--color-cinema-text);
 }
-.story {
-  border-radius: 24rpx;
+.activities-page .story--opening {
+  width: calc(100% + var(--page-gutter) * 2);
+  margin-left: calc(0rpx - var(--page-gutter));
+  border-right: 0;
+  border-left: 0;
+  border-radius: 0;
 }
-.story-title {
-  display: -webkit-box;
-  overflow: hidden;
-  font-weight: 600;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+.activities-page .story--opening .photo {
+  padding-top: 60%;
 }
-.storymeta-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 88rpx;
-  padding: 0 20rpx;
-  border: 2rpx solid var(--color-border);
-  border-radius: 999rpx;
-  background: var(--color-surface);
+.activities-page .story--opening .caption {
+  right: 24rpx;
+  bottom: 20rpx;
+  left: 24rpx;
+}
+.activities-page .story--opening .story-title {
+  margin-top: 8rpx;
+  font-size: 48rpx;
+  line-height: 58rpx;
+}
+.activities-page .story--opening .story-sub {
+  margin-top: 4rpx;
+}
+.activities-page .story--opening .shade {
+  background: var(--gradient-cover-opening);
+}
+.activities-page .storyfacts {
+  gap: 0;
+  padding: 0;
+  border-color: var(--color-cinema-line);
+}
+.activities-page .storyfacts > .em {
+  min-width: 0;
+  padding: 12rpx 16rpx;
+  border-right: 2rpx solid var(--color-cinema-line);
+  font-family: var(--font-family-mono);
+}
+.activities-page .storyfacts > .em:last-child {
+  border-right: 0;
+}
+.activities-page .storyfacts > .em > text {
+  color: var(--color-cinema-muted);
+}
+.activities-page .storymeta {
+  background: var(--color-cinema-panel);
+  color: var(--color-cinema-muted);
+}
+.activities-page .storymeta-pin,
+.activities-page .storymeta-link {
+  color: var(--color-brand);
+}
+.activities-page .compact-item {
+  border-color: var(--color-cinema-line);
+  background: var(--color-cinema-panel);
+  color: var(--color-cinema-text);
+}
+.activities-page .btn.secondary {
+  border-color: var(--color-border-strong);
+  background: var(--color-cinema-panel);
+  color: var(--color-cinema-text);
+}
+
+@media (max-width: 350px) {
+  .activities-page .pageheading-title {
+    font-size: 44rpx;
+    line-height: 56rpx;
+  }
+  .activities-page .story--opening .story-title {
+    font-size: 44rpx;
+    line-height: 54rpx;
+  }
 }

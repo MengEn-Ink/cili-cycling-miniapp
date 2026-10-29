@@ -10,14 +10,14 @@
 - **页面范围**：项目总览、产品与需求、设计与体验、技术与架构、开发规范、测试与验收、发布与运维、版本与复盘，以及 17 个核心页面原型。
 - **图片说明**：以下图片直接引用当前 UI 同步清单绑定的 Pages 效果图，不再使用历史真机或开发者工具截图。图中姓名、电话、路线编号和车辆信息均为脱敏演示数据，人物与骑行素材为 AI 生成示意图。
 
-| 活动首页                                                                                                                                 | 活动创建                                                                                                                                       | 设置与版本说明                                                                                                                   |
-| ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| ![Pages 活动首页效果图，展示日期筛选、活动卡片与报名入口](docs/evidence/ui-sync/2026-10-26-activity-media-response/activities-pages.png) | ![Pages 活动编辑页效果图，展示报名截止与 GPX 恢复入口](docs/evidence/ui-sync/2026-10-26-activity-media-response/admin-activity-edit-pages.png) | ![Pages 设置页效果图，展示通知、隐私与安全缓存管理](docs/evidence/ui-sync/2026-10-26-activity-media-response/settings-pages.png) |
-| 浏览活动与报名入口                                                                                                                       | 配置报名截止与恢复路线详情                                                                                                                     | 管理通知、隐私、缓存与版本                                                                                                       |
+| 活动首页                                                                                                                        | 活动创建                                                                                                                              | 设置与版本说明                                                                                                          |
+| ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| ![Pages 活动首页效果图，展示日期筛选、活动卡片与报名入口](docs/evidence/ui-sync/2026-10-29-cinematic-dark/activities-pages.png) | ![Pages 活动编辑页效果图，展示报名截止与 GPX 恢复入口](docs/evidence/ui-sync/2026-10-29-cinematic-dark/admin-activity-edit-pages.png) | ![Pages 设置页效果图，展示通知、隐私与安全缓存管理](docs/evidence/ui-sync/2026-10-29-cinematic-dark/settings-pages.png) |
+| 浏览活动与报名入口                                                                                                              | 配置报名截止与恢复路线详情                                                                                                            | 管理通知、隐私、缓存与版本                                                                                              |
 
 预览图遵循三条维护规则：仅使用 `docs/ui-sync-manifest.json` 当前清单登记的 Pages 截图；不展示真实用户资料、凭证或受保护媒体；界面基线更新时同步更新清单、截图和本节引用。
 
-统一口径见 [E2E 验收流程](docs/verification/wechat-devtools-e2e.md)；[双端截图对照](docs/evidence/ui-sync/2026-10-26-activity-media-response/README.md) 当前覆盖 17 条运行路由，并逐页标注数据类型、脱敏范围、差异与待复验状态。本轮证据仍在本地分支，尚未发布到 Pages。
+统一口径见 [E2E 验收流程](docs/verification/wechat-devtools-e2e.md)；[双端截图对照](docs/evidence/ui-sync/2026-10-29-cinematic-dark/README.md) 当前覆盖 17 条运行路由，并逐页标注数据类型、脱敏范围、差异与待复验状态。本轮证据仍在本地分支，尚未发布到 Pages。
 
 ## 已实现能力
 
@@ -83,7 +83,7 @@ npm run test:cloud       # 各云函数与路线函数测试
 npm run coverage         # 覆盖率门禁
 npm run audit:all        # 根项目和云函数依赖审计
 npm run test:design      # 主题契约、迁移映射和门禁接线测试
-npm run check:design     # 53 处颜色 + 1 处字体迁移、17 页原生外观、跨端 token 与浅色对比度
+npm run check:design     # 53 处历史迁移账本、17 页原生外观、跨端 token 与暗色对比度
 npm run check:ui-sync -- --strict # 17 路由双端截图与内容摘要
 npm run check:pr-description # PR 八段描述、测试/E2E 报告与 diff 统计（由 PR CI 注入上下文）
 npm run check:governance     # 文档口径、源码卫生与 Actions 安全基线
@@ -136,12 +136,14 @@ npm run deploy:miniprogram
 
 ## 体验版晋级与回退
 
-体验版不会随着开发版自动上传而自动更新。当前仓库采用受证据约束的两阶段人工晋级流程：
+微信 `miniprogram-ci` 只提供开发版上传和预览能力，没有公开的“选为体验版”接口。原生开发权限可用时，平台选版仍必须由发布负责人在微信公众平台完成；若开发权限已托管给第三方，公众平台版本管理会被禁用，开发版上传成功也不能证明体验版存在。第三方模式只能由持有授权平台凭据的一方调用微信开放平台 `commit` 接口上传代码并生成体验版，或由管理员恢复原生开发权限后走公众平台选版。
 
-1. 先确认目标提交仍是当前 `main`，且 `CI`、微信开发版上传与核心 smoke 均已成功。
-2. 手动运行 `.github/workflows/promote-miniprogram-experience.yml`，先生成 `candidate/promote` 候选清单。
-3. 由发布负责人在微信公众平台把同一开发版选为体验版，并回读版本、SHA 与入口。
-4. 以同一组参数运行 `verified/promote`，再把验证后的 manifest 固化到 [`docs/releases/experience/`](docs/releases/experience/README.md)。
+仓库把可安全自动化的步骤收敛为自动候选 + 单次确认：
+
+1. 当前 `main` 的 CI、核心 smoke 与微信开发版上传成功后，`.github/workflows/promote-miniprogram-experience.yml` 会读取不可变 upload/release receipt，自动生成 `candidate/promote`；纯文档安全跳过、receipt 缺失或上传后 `main` 已前进时不会晋级。
+2. 发布负责人先确认版本管理未被第三方托管；原生权限可用时，在微信公众平台把候选清单中的同一开发版选为体验版。若页面显示“开发管理已禁用”，必须停止 verified，转由授权第三方生成体验版或恢复原生权限。
+3. 手动运行同一工作流的 `verified/promote`，只填写 candidate run ID 与 `platform_evidence=CONFIRMED`；SHA、版本、CI、上传、smoke、入口和摘要全部从 candidate artifact 反推，任何额外填写的冲突值都会失败。
+4. 将验证后的 manifest 固化到 [`docs/releases/experience/`](docs/releases/experience/README.md)。若自动候选因平台瞬时故障失败，仍可用 `candidate/promote` 手动恢复，不会重新上传开发版。
 
 固定入口为 `pages/activities/index`。完整晋级、回退和长期审计规则见 [`docs/releases/experience/README.md`](docs/releases/experience/README.md)。
 

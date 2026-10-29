@@ -1,4 +1,5 @@
 import { rideService } from '../../services/ride-service';
+import { THEME_COLORS } from '../../config/theme';
 import { customNavigationTopPx } from '../../utils/custom-navigation';
 import { formatActivityDate } from '../../utils/date-time';
 import {
@@ -191,7 +192,7 @@ Page({
         title: '删除已取消行程？',
         content: '删除后，这条行程记录将不再显示且无法恢复。',
         confirmText: '删除记录',
-        confirmColor: '#c0321f',
+        confirmColor: THEME_COLORS.action,
         success: (result: { confirm: boolean }) => resolve(result.confirm),
         fail: () => resolve(false),
       });

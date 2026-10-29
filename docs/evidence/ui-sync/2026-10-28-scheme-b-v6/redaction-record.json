@@ -1,0 +1,965 @@
+{
+  "schemaVersion": 1,
+  "captureGit": "d81e2d9367c88d3947862d03487a50f25bf426a2",
+  "captureDirty": true,
+  "captureDirtyReason": "方案 B v6 对齐工作树，部署前本地只读验证",
+  "releaseVersion": "2026.10.28.3",
+  "sourceUiDigest": "sha256:cb0c04705f59847c350d7029d5efcb6f82ed412b84a654277cf29de72451bb8d",
+  "prototypeDigest": "sha256:6652f7607ce97bcffc37aa6e050ab7fa2858f9fe104dbf09f57f98c2859e663c",
+  "devtoolsCapturedAt": "2026-10-28T10:04:17.207574+00:00",
+  "pagesCapturedAt": "2026-10-28T09:51:13.164Z",
+  "updatedRouteCaptures": {
+    "settings": {
+      "devtoolsCapturedAt": "2026-10-28T10:19:25.000Z",
+      "pagesCapturedAt": "2026-10-28T10:18:38.809Z"
+    }
+  },
+  "devtoolsSummary": {
+    "outcome": "screenshot_capture_complete",
+    "registeredRoutes": 17,
+    "compileFailures": 0,
+    "consoleErrorMatches": 0,
+    "independentE2EDriver": "automator-connection-timeout-before-report"
+  },
+  "mode": "real-cloud-readonly",
+  "devtoolsData": "sanitized-runtime",
+  "pagesData": "synthetic-fixture",
+  "policy": "真实照片、头像、背景、昵称、实名、电话与编号不透明遮挡；不替换真实数据。Pages 为合成资料；原图只留在 /tmp。",
+  "notCovered": [
+    "ordinary-member-write-journey",
+    "ios-physical-device",
+    "android-physical-device",
+    "deployment",
+    "experience-version-readback"
+  ],
+  "routes": [
+    {
+      "id": "activities",
+      "devtools": "activities-devtools.png",
+      "pages": "activities-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            32,
+            638,
+            748,
+            1085
+          ],
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "c441ce55d81b608752c1ac33abfd9dc58bd40f1a3f6f01e2a02b1d7d127562fa"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [],
+        "redactedSha256": "fe77e37cec581d15c16df7f7b1d48848e9d93337ace9cc129e0b8bc05c1fd1df"
+      },
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "activity-detail",
+      "devtools": "activity-detail-devtools.png",
+      "pages": "activity-detail-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            0,
+            182,
+            780,
+            690
+          ],
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "a207b997f56d8131300fbebf9c6ed46d38df615cc08d023ac6bea633ba1df0f5"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [],
+        "redactedSha256": "4553b08fb848c5856caf598c0c8557170207971bd2e31efd04d6c47eb9fa688c"
+      },
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "route-analysis",
+      "devtools": "route-analysis-devtools.png",
+      "pages": "route-analysis-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "d7393de19a4ee4410b9bf27a34acc11c899329181c8fb7fac14d9e251a989337"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [],
+        "redactedSha256": "a6c9ce58e5d413acfbad25442d8e6863684f8b48209ddaaa516ba529805ef826"
+      },
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "registration-form",
+      "devtools": "registration-form-devtools.png",
+      "pages": "registration-form-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            32,
+            745,
+            748,
+            1248
+          ],
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "07ebc69cedec70c709523419950a23f6168d54456d371bc8a7917f4028a14f41"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [
+          [
+            223,
+            533,
+            334,
+            557
+          ],
+          [
+            222,
+            576,
+            334,
+            600
+          ]
+        ],
+        "redactedSha256": "134b17f96f50c79d52eebb6af60a9255dda18b154e6b431a23239f396236f3d5"
+      },
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "registrations",
+      "devtools": "registrations-devtools.png",
+      "pages": "registrations-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "513ea519a962030f7a3e8780b7d8ec5aeaae256f3f21daa11f7cd5b435c1c933"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [],
+        "redactedSha256": "2a3e96b60c7a3f32810752d506d5f8e793d012f63a8499b9745e247cd8029166"
+      },
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "credential",
+      "devtools": "credential-devtools.png",
+      "pages": "credential-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            32,
+            475,
+            748,
+            1455
+          ],
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "eb3277ef93573d1cc0c18617e295f18bcc48df1521de2abaa93782085805c702"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [
+          [
+            251,
+            611,
+            366,
+            635
+          ]
+        ],
+        "redactedSha256": "f4f41c32ff8e18bdae212503e8d7dd267f5cad0885da0ae9352b93ad4f43f99f"
+      },
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "profile",
+      "devtools": "profile-devtools.png",
+      "pages": "profile-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            0,
+            182,
+            780,
+            623
+          ],
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "2fba9e21eb7657cbb8f3e2b78fb10401e6210d95c122cef596d106fe0ffd60d0"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [],
+        "redactedSha256": "ebd095aaee7ce0beb2d66439c9ba9c437dfb16d678cd17ffaa76c729771dd87e"
+      },
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "settings",
+      "devtools": "settings-devtools.png",
+      "pages": "settings-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "7c3656d08baeb612db0266ab662f5d6a32986b0777c8432dd198b82169f5e883"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [],
+        "redactedSha256": "03d72b6949f4f306d056909c3d4e509d3b9cfb34ec241d5724b52b754df7edec"
+      },
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "capability-card",
+      "devtools": "capability-card-devtools.png",
+      "pages": "capability-card-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            0,
+            182,
+            780,
+            623
+          ],
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "384e2862fdaf85f0e914f6fb9aa3473754546794b452171dbfbc0d9d3b6a474e"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [],
+        "redactedSha256": "ebd095aaee7ce0beb2d66439c9ba9c437dfb16d678cd17ffaa76c729771dd87e"
+      },
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "profile-edit",
+      "devtools": "profile-edit-devtools.png",
+      "pages": "profile-edit-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "014d94c7bd502c10f6934695f76bd876523122e818b8e7d42527399482909692"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [
+          [
+            34,
+            722,
+            147,
+            746
+          ]
+        ],
+        "redactedSha256": "456e506bf75fc9445d7375942c811a9eeb6fcca1616d193e96f0c75c88b27fb4"
+      },
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "admin-activity-list",
+      "devtools": "admin-activity-list-devtools.png",
+      "pages": "admin-activity-list-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "95f35ae21b63c9e0cb8f05afb581b38a67e7e0e6412ac2fd4a88f5f647af04f0"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [],
+        "redactedSha256": "d7bdc892a8ae2b6b61d42002f4963643209632cf1145e005873e591a4f01f0b1"
+      },
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "admin-activity-edit",
+      "devtools": "admin-activity-edit-devtools.png",
+      "pages": "admin-activity-edit-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "c8238ecdc9a7544a3fe1567e99420d8b05d021e872991e839efe12fb10227520"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [],
+        "redactedSha256": "c6c1d1d2c586294ae76b7dd4f6d43172ba5eead35811e1cf3c6b8c16487dfa63"
+      },
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "admin-reviews",
+      "devtools": "admin-reviews-devtools.png",
+      "pages": "admin-reviews-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "2c96c2b6b52106199c8ce720a9b992e3d5b3c3e94aa8755f05649eb3aa7e47f8"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [],
+        "redactedSha256": "801521c702ed75f88c6b24a21511019bb4f222b32e9d2582e5df4a07ceba25a6"
+      },
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "admin-review-detail",
+      "devtools": "admin-review-detail-devtools.png",
+      "pages": "admin-review-detail-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            0,
+            214,
+            780,
+            291
+          ],
+          [
+            32,
+            326,
+            748,
+            434
+          ],
+          [
+            32,
+            568,
+            748,
+            990
+          ],
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "5874f425102b67b4a774cd14b92beb1e9f411dd3e35844e40caad545947e5276"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [
+          [
+            255,
+            469,
+            370,
+            493
+          ]
+        ],
+        "redactedSha256": "06ac801879dbad19e13b43f2e65904d46166de064717b6e07e125e8e7a5eb926"
+      },
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "club/center",
+      "devtools": "club-center-devtools.png",
+      "pages": "club-center-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            0,
+            182,
+            780,
+            670
+          ],
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "8ca445d8650da2d705eac85cc68c17f3c69d43ca131777102255817ff7c492c6"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [],
+        "redactedSha256": "80fe41f49d7742bee7e6c27b68631a86bbaeca25bea46b698129c726d55bf215"
+      },
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "admin-club-applications",
+      "devtools": "admin-club-applications-devtools.png",
+      "pages": "admin-club-applications-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            32,
+            501,
+            748,
+            907
+          ],
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "33adab508ca3dbb3867c619d134f4c1386dde877fc760301ddb3b3de46be2ba9"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [],
+        "redactedSha256": "86d54c0b5a3191a8373efb46c127e9e6231c110beee2596f43a285b8e4315f6c"
+      },
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    },
+    {
+      "id": "admin-club-application-detail",
+      "devtools": "admin-club-application-detail-devtools.png",
+      "pages": "admin-club-application-detail-pages.png",
+      "runtime": {
+        "dimensions": [
+          780,
+          1688
+        ],
+        "opaqueRectangles": [
+          [
+            53,
+            870,
+            322,
+            1024
+          ],
+          [
+            53,
+            1265,
+            205,
+            1430
+          ],
+          [
+            0,
+            0,
+            780,
+            8
+          ],
+          [
+            0,
+            1664,
+            780,
+            1688
+          ],
+          [
+            0,
+            8,
+            8,
+            1664
+          ],
+          [
+            772,
+            8,
+            780,
+            1664
+          ]
+        ],
+        "redactedSha256": "c262ec79a3aadaa60b1c9019b30c1d1a79fc6e4624b77ddca0445347f86a5dc7"
+      },
+      "prototype": {
+        "dimensions": [
+          390,
+          844
+        ],
+        "opaqueRectangles": [],
+        "redactedSha256": "baf48daaeb2eeeb14d4a98607e83db7a0c0636d974be53d1949a6d3e0548b5d3"
+      },
+      "pagesOverflow": false,
+      "pagesScriptErrors": 0
+    }
+  ]
+}

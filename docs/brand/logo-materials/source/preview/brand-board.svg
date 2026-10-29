@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1200" viewBox="0 0 1600 1200" role="img" aria-label="CILI Logo 全套物料总览">
+  <title>CILI Logo 全套物料总览</title>
+  <rect width="1600" height="1200" fill="#f0ebe4"/>
+
+  <text x="90" y="100" fill="#211f1c" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="24" font-weight="800" letter-spacing="5">CILI · LOGO SYSTEM V3</text>
+  <text x="90" y="170" fill="#211f1c" font-family="-apple-system, BlinkMacSystemFont, PingFang SC, sans-serif" font-size="52" font-weight="800">路线环标志与响应式字标</text>
+  <rect x="90" y="230" width="1420" height="330" rx="36" fill="#211f1c"/>
+  <g transform="translate(152 285) scale(2.2916666666666665)" aria-label="CILI 路线环标志">
+    <rect width="96" height="96" rx="26" fill="#e13b2b"/>
+    <path d="M68 25 C56 20 44 23 42 33 C40 42 47 46 56 49 C65 52 68 58 66 66 C63 75 54 79 44 78 C35 77 29 72 25 65" fill="none" stroke="#ffffff" stroke-width="10.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g transform="translate(416 355.2166666666667) scale(1.4208333333333332)" fill="#ffffff" fill-rule="evenodd" aria-label="CILI">
+    <!-- CILI custom slab-mono wordmark; paths avoid platform font substitution. -->
+    <path d="M40 0H12C5.373 0 0 5.373 0 12v32c0 6.627 5.373 12 12 12h28V44H14V12h26V0Z"/>
+    <path d="M54 0h34v10H77v36h11v10H54V46h11V10H54V0Z"/>
+    <path d="M102 0h12v44h32v12h-44V0Z"/>
+    <path d="M160 0h34v10h-11v36h11v10h-34V46h11V10h-11V0Z"/>
+  </g>
+  <rect x="90" y="610" width="680" height="360" rx="36" fill="#f7f4f2"/>
+  <g transform="translate(152 696) scale(1.625)" aria-label="CILI 路线环标志">
+    <rect width="96" height="96" rx="26" fill="#e13b2b"/>
+    <path d="M68 25 C56 20 44 23 42 33 C40 42 47 46 56 49 C65 52 68 58 66 66 C63 75 54 79 44 78 C35 77 29 72 25 65" fill="none" stroke="#ffffff" stroke-width="10.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g transform="translate(339.2 745.79) scale(1.0075)" fill="#211f1c" fill-rule="evenodd" aria-label="CILI">
+    <!-- CILI custom slab-mono wordmark; paths avoid platform font substitution. -->
+    <path d="M40 0H12C5.373 0 0 5.373 0 12v32c0 6.627 5.373 12 12 12h28V44H14V12h26V0Z"/>
+    <path d="M54 0h34v10H77v36h11v10H54V46h11V10H54V0Z"/>
+    <path d="M102 0h12v44h32v12h-44V0Z"/>
+    <path d="M160 0h34v10h-11v36h11v10h-34V46h11V10h-11V0Z"/>
+  </g>
+  <rect x="830" y="610" width="680" height="360" rx="36" fill="#211f1c"/>
+  <g transform="translate(912 696) scale(1.625)" aria-label="CILI 路线环标志">
+    <rect width="96" height="96" rx="26" fill="#ffffff"/>
+    <path d="M68 25 C56 20 44 23 42 33 C40 42 47 46 56 49 C65 52 68 58 66 66 C63 75 54 79 44 78 C35 77 29 72 25 65" fill="none" stroke="#211f1c" stroke-width="10.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g transform="translate(1099.2 745.79) scale(1.0075)" fill="#ffffff" fill-rule="evenodd" aria-label="CILI">
+    <!-- CILI custom slab-mono wordmark; paths avoid platform font substitution. -->
+    <path d="M40 0H12C5.373 0 0 5.373 0 12v32c0 6.627 5.373 12 12 12h28V44H14V12h26V0Z"/>
+    <path d="M54 0h34v10H77v36h11v10H54V46h11V10H54V0Z"/>
+    <path d="M102 0h12v44h32v12h-44V0Z"/>
+    <path d="M160 0h34v10h-11v36h11v10h-34V46h11V10h-11V0Z"/>
+  </g>
+  <circle cx="120" cy="1070" r="22" fill="#211f1c"/><text x="160" y="1078" fill="#211f1c" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="22">#211F1C · CINEMA INK</text>
+  <circle cx="570" cy="1070" r="22" fill="#e13b2b"/><text x="610" y="1078" fill="#211f1c" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="22">#E13B2B · LOGO RED</text>
+  <circle cx="1010" cy="1070" r="22" fill="#ffffff" stroke="#211f1c" stroke-opacity=".12"/><text x="1050" y="1078" fill="#211f1c" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="22">#FFFFFF · ROUTE WHITE</text>
+</svg>

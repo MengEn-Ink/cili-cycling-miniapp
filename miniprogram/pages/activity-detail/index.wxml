@@ -3,7 +3,7 @@
   - 骨架：photo.hero.detail → ink(metrics + 行) → content(section × N：这次一起骑 / 集合与出发 / 山路有迹可循 / 一起出发的骑友 / 行前约定 / 活动群 / Strava 官方路线 / 费用 / 装备 / 时间安排 / 终点导航) → decision → fixed actionbar
   - 真实业务保留：画面轮播 + 失败降级 + 单图封面、权限视图(viewerStatus)、报名 CTA、GPX 下载(MD5)、Strava 复制、路线分析入口、报名骑友头像 scroll + 公开名片 modal、活动群二维码、admin 管理按钮
 -->
-<view class="page detail-page" data-v1-layout="content-sheet">
+<view class="page detail-page cinema-page cinema-page--dark" data-v1-layout="content-sheet">
   <state-view loading="{{loading}}" error="{{!item ? error : ''}}" retryable="{{true}}" bind:retry="retryLoad">
     <block wx:if="{{item}}">
       <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{refreshing ? '正在刷新活动详情' : ''}}</view>
@@ -20,7 +20,7 @@
         <view class="corner"><text class="tag dark">{{viewerStatus.label}}</text></view>
         <view class="caption">
           <view class="eyebrow">{{displayDate}}{{item.route.level ? ' · ' + item.route.level : ''}}</view>
-          <view class="hero-title editorial"><blur-text text="{{item.title}}" animate-by="words" direction="bottom" delay="70" step-duration="360" /></view>
+          <view class="hero-title editorial">{{item.title}}</view>
           <view class="hero-sub">{{item.clubIdentity.name}}</view>
         </view>
         <view class="cover-count" wx:if="{{galleryImages.length}}">{{currentGalleryIndex + 1}} / {{galleryImages.length}}</view>
@@ -30,12 +30,11 @@
       <view class="refresh-note refresh-error" wx:if="{{refreshError}}" role="button" bindtap="retryLoad" aria-label="活动详情刷新失败，点击重试">{{refreshError}}，点此重试</view>
 
       <!-- ink：指标 + 集合概要行 -->
-      <view class="ink" data-v1-sheet="true">
+      <view class="ink">
         <view class="metrics">
           <view><text class="em">{{item.route.distanceKm > 0 ? item.route.distanceKm : '—'}}<text class="unit">km</text></text><text>全程距离</text></view>
           <view><text class="em">{{item.route.elevationM > 0 ? item.route.elevationM : '—'}}<text class="unit">m</text></text><text>累计爬升</text></view>
           <view><text class="em">{{estimatedRideTime || '—'}}<text class="unit"></text></text><text>预计骑行</text></view>
-          <view wx:if="{{!item.registrationUnlimited}}"><text class="em">{{item.approvedRegistrationCount || 0}}<text class="unit">人</text></text><text>已通过</text></view>
         </view>
         <view class="row ink-row">
           <view class="lead">
@@ -45,6 +44,7 @@
               <text class="sub">{{displayDate}} · {{item.route.start || '集合地点待公布'}}</text>
             </view>
           </view>
+          <view class="ink-capacity" wx:if="{{!item.registrationUnlimited}}"><text>已通过</text><text>{{item.approvedRegistrationCount || 0}} 人</text></view>
         </view>
       </view>
 

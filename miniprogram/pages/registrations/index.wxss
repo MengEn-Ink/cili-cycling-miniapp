@@ -259,11 +259,7 @@
   right: 0;
   bottom: 0;
   height: 50%;
-  background: linear-gradient(
-    180deg,
-    var(--scrim-registration-cover-clear) 0%,
-    var(--scrim-registration-cover-strong) 100%
-  );
+  background: var(--gradient-ticket-cover);
   pointer-events: none;
 }
 .photo.ticketphoto generated-activity-cover,
@@ -493,4 +489,60 @@
   .trip-stat__value {
     font-size: 36rpx;
   }
+}
+
+/* 2026-10-28 · Direction A / 暗场行程、炭黑票据 */
+.registrations-page {
+  background: var(--color-cinema-bg);
+  color: var(--color-cinema-text);
+}
+.registrations-page .custom-nav-title {
+  color: var(--color-cinema-text);
+}
+.registrations-page .pageheading {
+  padding: 40rpx 0 28rpx;
+}
+.registrations-page .pageheading .eyebrow {
+  color: var(--color-brand);
+}
+.registrations-page .pageheading-title,
+.registrations-page .chapterhead-title {
+  color: var(--color-cinema-text);
+}
+.registrations-page .pageheading-sub,
+.registrations-page .pageheading-meta,
+.registrations-page .chapterhead-aside,
+.registrations-page .refresh-note {
+  color: var(--color-cinema-muted);
+}
+.registrations-page .chapterhead-rule {
+  background: var(--color-cinema-line);
+}
+.registrations-page .trip-stats {
+  border-color: var(--color-cinema-line);
+  border-radius: 14rpx;
+  background: var(--color-cinema-panel);
+}
+.registrations-page .trip-stat__value {
+  color: var(--color-cinema-text);
+}
+.registrations-page .trip-stat__label {
+  color: var(--color-cinema-muted);
+}
+.registrations-page .ticket {
+  border-color: var(--color-border-strong);
+  border-radius: 18rpx;
+  box-shadow: var(--shadow-card);
+}
+.registrations-page .trip-skeleton__card,
+.registrations-page .empty {
+  border-color: var(--color-cinema-line);
+  background: var(--color-cinema-panel);
+  color: var(--color-cinema-text);
+}
+.registrations-page .empty-title {
+  color: var(--color-cinema-text);
+}
+.registrations-page .empty-copy {
+  color: var(--color-cinema-muted);
 }

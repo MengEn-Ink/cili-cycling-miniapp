@@ -3,14 +3,32 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#fbf5ea" />
+    <meta name="theme-color" content="#0b0a0c" />
+    <meta name="color-scheme" content="dark" />
+    <style id="critical-dark-canvas">
+      html,
+      body {
+        min-height: 100%;
+        margin: 0;
+        background: #0b0a0c;
+        color: #f7f4f2;
+        color-scheme: dark;
+      }
+      body {
+        min-height: 100vh;
+      }
+      .phone-inner,
+      .screen-container {
+        background: #0b0a0c;
+      }
+    </style>
     <meta
       name="description"
       content="此里骑行影像志正式 Pages：17 个正式路由的摄影与编辑式骑行体验，并保留完整技术文章、历史设计和交付证据。"
     />
     <title>此里 · 骑行影像志 · 正式 Pages</title>
     <link rel="icon" href="./brand/logo-materials/generated/logo-square-1024.png" />
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=2026102911" />
   </head>
   <body>
     <header class="site-header">
@@ -63,7 +81,9 @@
               <strong id="mini-title">此里活动</strong>
               <button class="mini-more" data-action="toast" data-message="小程序菜单">•••</button>
             </div>
+            <div class="cinema-scroll-fade cinema-scroll-fade--top" aria-hidden="true"></div>
             <div id="screen-container" class="screen-container" aria-live="polite"></div>
+            <div class="cinema-scroll-fade cinema-scroll-fade--bottom" aria-hidden="true"></div>
             <nav class="tab-bar" id="tab-bar" aria-label="小程序主导航">
               <button class="tab-button" data-route="activities">
                 <i class="tab-icon tab-icon--activities" aria-hidden="true"></i>活动
@@ -91,14 +111,14 @@
           <div><span>当前状态</span><b id="screen-state">有活动</b></div>
         </div>
         <div class="note-block">
-          <h3>浅色关键状态</h3>
+          <h3>关键状态</h3>
           <div class="state-switch" id="state-switch"></div>
         </div>
         <div class="note-block">
           <h3>影像志视觉验收</h3>
           <ul>
-            <li>暖米白画布承载白卡，正文与关键信息使用墨黑。</li>
-            <li>品牌红只作强调，深行动红承载唯一主行动。</li>
+            <li>17 条正式路由统一为沉浸暗场；表单、凭证和审核资料使用炭黑分层与暖白正文。</li>
+            <li>品牌红用于场记带、选中态与唯一主行动。</li>
             <li>基础控件 48px、主按钮 52px，340px 窄屏不得横向溢出。</li>
           </ul>
         </div>
@@ -133,9 +153,9 @@
       <span>当前产品基线以 requirements-design.md 与当前分支为准 · Strava OAuth 仅用于云端 GPX 路线导入，手动上传仍可降级</span>
     </footer>
 
-    <script src="./schema.js"></script>
-    <script src="./templates.js"></script>
+    <script src="./schema.js?v=2026102911"></script>
+    <script src="./templates.js?v=2026102911"></script>
     <script src="./delivery-center.js"></script>
-    <script src="./app.js"></script>
+    <script src="./app.js?v=2026102911"></script>
   </body>
 </html>

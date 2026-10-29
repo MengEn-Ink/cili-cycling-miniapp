@@ -428,3 +428,111 @@
     line-height: 48rpx;
   }
 }
+
+/* Scheme B v6: compact review dossier ----------------------------------- */
+.review-detail-page .pageheading {
+  padding: 24rpx var(--page-gutter) 12rpx;
+}
+.review-detail-page .pageheading-logo-row,
+.review-detail-page .pageheading-title,
+.review-detail-page .pageheading-sub {
+  display: none;
+}
+.review-detail-page .pageheading-title {
+  margin-top: 10rpx;
+  font-family: var(--font-family-body);
+  font-size: 36rpx;
+  line-height: 46rpx;
+  letter-spacing: 0;
+}
+.review-detail-page .pageheading-sub {
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  line-height: 32rpx;
+}
+.review-detail-page .pageheading-meta {
+  justify-content: space-between;
+  margin: 0 var(--page-gutter);
+  padding: 14rpx 16rpx;
+  border-radius: 8rpx;
+  background: var(--color-raised);
+}
+.review-detail-page .tag {
+  padding: 3rpx 10rpx;
+  border-radius: 6rpx;
+  font-size: 20rpx;
+}
+.review-detail-page .content.tight {
+  gap: 22rpx;
+}
+.review-detail-page .person {
+  min-height: 88rpx;
+  gap: 16rpx;
+  padding: 14rpx 16rpx;
+  border-radius: 10rpx;
+  box-sizing: border-box;
+}
+.review-detail-page .person-avatar {
+  width: 72rpx;
+  height: 72rpx;
+  font-size: 28rpx;
+}
+.review-detail-page .person-title {
+  font-family: var(--font-family-body);
+  font-size: 28rpx;
+  line-height: 38rpx;
+}
+.review-detail-page .person-sub {
+  font-size: 21rpx;
+}
+.review-detail-page .section {
+  gap: 10rpx;
+}
+.review-detail-page .chapterhead-title {
+  font-family: var(--font-family-body);
+  font-size: 28rpx;
+  line-height: 38rpx;
+  letter-spacing: 0;
+}
+.review-detail-page .chapterhead-aside {
+  font-size: 20rpx;
+}
+.review-detail-page .detailrows {
+  border-radius: 10rpx;
+}
+.review-detail-page .detailrow {
+  padding: 14rpx 16rpx;
+}
+.review-detail-page .detailrow .dt {
+  min-width: 150rpx;
+  font-size: 22rpx;
+}
+.review-detail-page .detailrow .dd {
+  font-size: 24rpx;
+  line-height: 34rpx;
+}
+.review-detail-page .section-body {
+  padding: 14rpx 16rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: 8rpx;
+  background: var(--color-surface);
+  font-size: 24rpx;
+  line-height: 36rpx;
+}
+.review-detail-page .photo-cell {
+  border-radius: 8rpx;
+}
+.review-detail-page .textarea {
+  min-height: 120rpx;
+  padding: 16rpx;
+  border-radius: 8rpx;
+  font-size: 25rpx;
+}
+.review-detail-page .notice {
+  padding: 14rpx 16rpx;
+  border-radius: 8rpx;
+}
+.review-detail-page .btn {
+  border-radius: 8rpx;
+  font-size: 26rpx;
+}

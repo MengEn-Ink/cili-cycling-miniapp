@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" role="img" aria-label="CILI 邮件签名模板">
+  <title>CILI 邮件签名模板</title>
+  <rect width="1200" height="360" fill="#f7f4f2"/>
+
+  <g transform="translate(64 56) scale(2.25)" aria-label="CILI 路线环标志">
+    <rect width="96" height="96" rx="26" fill="#e13b2b"/>
+    <path d="M68 25 C56 20 44 23 42 33 C40 42 47 46 56 49 C65 52 68 58 66 66 C63 75 54 79 44 78 C35 77 29 72 25 65" fill="none" stroke="#ffffff" stroke-width="10.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g transform="translate(323.2 124.94) scale(1.395)" fill="#211f1c" fill-rule="evenodd" aria-label="CILI">
+    <!-- CILI custom slab-mono wordmark; paths avoid platform font substitution. -->
+    <path d="M40 0H12C5.373 0 0 5.373 0 12v32c0 6.627 5.373 12 12 12h28V44H14V12h26V0Z"/>
+    <path d="M54 0h34v10H77v36h11v10H54V46h11V10H54V0Z"/>
+    <path d="M102 0h12v44h32v12h-44V0Z"/>
+    <path d="M160 0h34v10h-11v36h11v10h-34V46h11V10h-11V0Z"/>
+  </g>
+  <rect x="64" y="300" width="1072" height="4" rx="2" fill="#e13b2b"/>
+  <text x="646" y="188" fill="#211f1c" font-family="-apple-system, BlinkMacSystemFont, PingFang SC, sans-serif" font-size="26" font-weight="700">骑有此里 · 一路同行</text>
+  <text x="646" y="232" fill="#211f1c" fill-opacity=".58" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="700" letter-spacing="4">RIDE TOGETHER</text>
+</svg>

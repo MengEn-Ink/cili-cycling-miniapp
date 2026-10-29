@@ -13,7 +13,7 @@
   - 真实业务保留：管理员鉴权、报名详情加载、capabilityCard、电话来源、照片预览、
     photoFailed、驳回理由、通过、签到。
 -->
-<view class="page review-detail-page" data-v1-layout="admin-form">
+<view class="page review-detail-page cinema-page cinema-page--dark" data-v1-layout="admin-form">
   <view class="skeleton" wx:if="{{loading}}" aria-label="正在加载审批详情"><view></view><view></view><view></view></view>
 
   <view class="empty" wx:if="{{error && !x}}" role="alert">

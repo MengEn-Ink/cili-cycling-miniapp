@@ -1,5 +1,5 @@
 <!-- 骑行影像志 · 俱乐部中心（1:1 对齐 docs/designs/2026-10-22-cycling-image-journal/pages/club-center.html） -->
-<view class="page club-center-page" data-v1-layout="content">
+<view class="page club-center-page cinema-page cinema-page--dark" data-v1-layout="content">
   <view class="a11y-live-region" role="status" aria-live="polite">{{mode === 'loading' ? '正在加载俱乐部主页' : (mode === 'error' ? '俱乐部主页加载失败' : '俱乐部主页已更新')}}</view>
 
   <!-- 加载态骨架：封面占位 + 内容占位 -->

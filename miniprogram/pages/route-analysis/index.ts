@@ -1,4 +1,5 @@
 import { rideService } from '../../services/ride-service';
+import { THEME_COLORS } from '../../config/theme';
 import { hasAnalyzableRoute } from '../../utils/route-outline';
 import { ROUTE_VISUAL_STYLE } from '../../utils/route-visual';
 import {
@@ -10,10 +11,16 @@ import {
 import { drawRouteAnalysisElevation } from './utils/route-analysis-chart';
 import { routeAnalysisForMap } from './utils/gcj02';
 
-const SELECTED_COLOR = '#211f1c';
+const SELECTED_COLOR = THEME_COLORS.ink;
 const POINT_LABELS = {
   start: { type: '起点', purpose: '路线出发位置', marker: '起', color: '#16633a', size: 30 },
-  end: { type: '终点', purpose: '路线完成位置', marker: '终', color: '#c0321f', size: 30 },
+  end: {
+    type: '终点',
+    purpose: '路线完成位置',
+    marker: '终',
+    color: THEME_COLORS.action,
+    size: 30,
+  },
   highest: {
     type: '最高点',
     purpose: '全程海拔最高位置',
@@ -25,7 +32,7 @@ const POINT_LABELS = {
     type: '主爬坡',
     purpose: '连续爬升的节奏切换位置',
     marker: '爬',
-    color: '#c0321f',
+    color: THEME_COLORS.action,
     size: 25,
   },
   descent: {

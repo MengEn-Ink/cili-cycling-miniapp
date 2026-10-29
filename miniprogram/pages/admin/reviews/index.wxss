@@ -417,3 +417,74 @@
     line-height: 42rpx;
   }
 }
+
+/* 2026-10-28 · Direction A / 暗场后台、炭黑审核卡 */
+.review-page {
+  background: var(--color-cinema-bg);
+  color: var(--color-cinema-text);
+}
+.review-page .pageheading {
+  padding-top: 40rpx;
+}
+.review-page .pageheading .eyebrow {
+  color: var(--color-brand);
+}
+.review-page .pageheading-title {
+  color: var(--color-cinema-text);
+}
+.review-page .pageheading-sub,
+.review-page > .content > .result-count,
+.review-page > .content > .limit-notice {
+  color: var(--color-cinema-muted);
+}
+.review-page .info-bar {
+  border-color: var(--color-cinema-line);
+  background: var(--color-cinema-panel);
+}
+.review-page .info-tag {
+  border-color: var(--color-cinema-line);
+  background: var(--color-cinema-panel-raised);
+  color: var(--color-cinema-muted);
+}
+.review-page .info-tag.is-pending,
+.review-page .filter-tab.is-active {
+  border-color: var(--color-cinema-red);
+  background: var(--color-cinema-red);
+  color: var(--color-on-action);
+}
+.review-page .switch-activity,
+.review-page .filter-tab {
+  border-color: var(--color-cinema-line);
+  border-radius: 10rpx;
+  background: var(--color-cinema-panel);
+  color: var(--color-cinema-text);
+}
+.review-page .reviewitem,
+.review-page .paper,
+.review-page .empty {
+  border-color: var(--color-border-strong);
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  box-shadow: var(--shadow-card);
+}
+.review-page .reviewitem {
+  border-radius: 18rpx;
+}
+.review-page > .content > .notice {
+  border-color: var(--color-cinema-line);
+  background: var(--color-cinema-panel);
+  color: var(--color-cinema-text);
+}
+.review-page > .content > .notice .notice-dot {
+  background: var(--color-cinema-red);
+}
+.review-page .btn {
+  border-color: var(--color-cinema-red);
+  border-radius: 10rpx;
+  background: var(--color-cinema-red);
+}
+.review-page .btn.secondary {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text);
+}

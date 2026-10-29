@@ -11,7 +11,8 @@
 3. CI 全部通过后触发“微信开发版自动上传”；
 4. 工作流确认目标提交仍是最新 `main`；
 5. 使用 GitHub Secret 中的上传私钥调用 `miniprogram-ci`；
-6. 清理临时密钥，并在微信公众平台核验开发版。
+6. 清理临时密钥，并在微信公众平台核验开发版；
+7. 真实上传 receipt 完整且目标仍为最新 `main` 时，自动触发体验版 candidate；原生平台人工选版或授权第三方真实生成体验版后，只需 candidate run ID 完成 verified 回读。
 
 目标是让“代码已合入”“测试已通过”“开发版已更新”成为同一条可审计链路，而不是三个互相独立的人工状态。
 
@@ -21,6 +22,7 @@
 | --- | --- | --- |
 | 项目 CI | `.github/workflows/ci.yml` | 验证 `main` 和 PR 的格式、类型、测试、覆盖率、CloudBase 包一致性及依赖安全 |
 | 自动上传工作流 | `.github/workflows/deploy-miniprogram.yml` | 在 `main` CI 成功后上传开发版，并支持受控手动触发 |
+| 体验版晋级工作流 | `.github/workflows/promote-miniprogram-experience.yml` | 监听开发版成功 run 自动生成 candidate；平台人工选版后从 candidate 反推全部不可变参数并生成 verified |
 | 上传入口 | `scripts/upload-miniprogram-ci.mjs` | 读取 AppID、校验输入、收紧密钥权限并调用微信上传接口 |
 | 契约测试 | `scripts/upload-miniprogram-ci.node-test.mjs` | 锁定参数、密钥、防回退和工作流安全不变量 |
 | 上传工具依赖 | `tools/miniprogram-ci/package*.json` | 独立锁定 `miniprogram-ci@2.1.48`，并对存在已知漏洞的传递依赖做兼容版本收口 |
@@ -37,6 +39,14 @@
 - CI 结论是 `success`。
 
 自动版本格式为 `0.0.<run_number>.<run_attempt>`，版本说明包含目标 `main` SHA，便于从微信开发版反查 GitHub 提交。
+
+开发版工作流终态为成功后，体验版晋级工作流会读取同 run 的 upload receipt 与 release receipt。只有 receipt 唯一、未过期、`outcome=SUCCEEDED`、绑定同 SHA/CI/run，且目标仍是最新 `main` 时才生成 candidate；纯文档安全跳过、receipt 缺失或 `main` 已前进时不会自动晋级。微信 `miniprogram-ci` 没有公开的“选为体验版”接口，开发版上传成功不能代替平台体验版状态。
+
+发布前必须打开微信公众平台版本管理检查开发权限归属：
+
+- 页面正常显示开发版时，由发布负责人把同版本选为体验版并回读。
+- 页面显示“开发管理已禁用 / 开发权限已托管给第三方”时，停止 native 选版和 verified。第三方模式需要授权平台使用微信开放平台 `commit` 接口上传代码并生成体验版；仓库的 AppID 私钥和 `miniprogram-ci` receipt 不能替代第三方平台的 component 凭据与模板。
+- 若第三方授权并非预期，由小程序管理员在公众平台调整或解除相应开发权限；这是权限变更，必须单独审批并在变更后重新回读版本管理。
 
 ### 手动触发
 

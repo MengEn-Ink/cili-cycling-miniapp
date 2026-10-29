@@ -403,3 +403,79 @@
     padding: 20rpx 0;
   }
 }
+
+/* Scheme B v6: compact paper settings ----------------------------------- */
+.settings-page .pageheading {
+  padding: 12rpx 0 12rpx;
+}
+.settings-page .pageheading .eyebrow {
+  font-size: 20rpx;
+}
+.settings-page .pageheading-title {
+  margin-top: 8rpx;
+  font-size: 48rpx;
+  line-height: 56rpx;
+  letter-spacing: -1rpx;
+}
+.settings-page .pageheading-sub {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  line-height: 34rpx;
+}
+.settings-page .content.tight {
+  gap: 0;
+}
+.settings-page .section {
+  gap: 10rpx;
+  margin-top: 24rpx;
+}
+.settings-page .section:first-child {
+  margin-top: 0;
+}
+.settings-page .chapterhead {
+  margin-bottom: 8rpx;
+}
+.settings-page .chapterhead-title {
+  font-family: var(--font-family-body);
+  font-size: 30rpx;
+  line-height: 40rpx;
+}
+.settings-page .row.rowlink.rowbutton {
+  min-height: 88rpx;
+  padding: 14rpx 0;
+}
+.settings-page .lead {
+  gap: 16rpx;
+}
+.settings-page .rowicon {
+  width: 36rpx;
+  height: 36rpx;
+}
+.settings-page .rowtext-title {
+  font-size: 26rpx;
+  line-height: 36rpx;
+}
+.settings-page .rowtext-sub {
+  font-size: 21rpx;
+  line-height: 30rpx;
+}
+.settings-page .notice {
+  padding: 14rpx 0;
+  font-size: 22rpx;
+  line-height: 32rpx;
+}
+.settings-page .detailrow {
+  padding: 14rpx 0;
+}
+.settings-page .section-strava .strava-body {
+  gap: 14rpx;
+  padding: 16rpx;
+  border-radius: 10rpx;
+}
+.settings-page .btn {
+  border-radius: 10rpx;
+  font-size: 26rpx;
+}
+.settings-page .settings-footer {
+  margin-top: 44rpx;
+}

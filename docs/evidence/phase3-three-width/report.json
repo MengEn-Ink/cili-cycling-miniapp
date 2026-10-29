@@ -1,12 +1,12 @@
 {
-  "base": "http://127.0.0.1:45959",
+  "base": "http://127.0.0.1:64879",
   "pages": 16,
   "widths": [
     340,
     375,
     430
   ],
-  "generatedAt": "2026-10-25T10:35:47.103Z",
+  "generatedAt": "2026-10-29T09:08:11.500Z",
   "results": [
     {
       "slug": "activities",
@@ -625,7 +625,7 @@
         "340": {
           "docW": 340,
           "viewW": 340,
-          "docH": 1599,
+          "docH": 1622,
           "horizontalOverflow": 0,
           "offenders": [],
           "fixedBars": [],
@@ -639,7 +639,7 @@
         "375": {
           "docW": 375,
           "viewW": 375,
-          "docH": 1576,
+          "docH": 1599,
           "horizontalOverflow": 0,
           "offenders": [],
           "fixedBars": [],
@@ -653,7 +653,7 @@
         "430": {
           "docW": 430,
           "viewW": 430,
-          "docH": 1557,
+          "docH": 1580,
           "horizontalOverflow": 0,
           "offenders": [],
           "fixedBars": [],

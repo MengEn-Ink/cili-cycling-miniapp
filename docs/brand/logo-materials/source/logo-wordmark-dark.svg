@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="224" height="80" viewBox="0 0 224 80" role="img" aria-label="CILI 深色字标">
+  <title>CILI 深色字标</title>
+
+  <g transform="translate(15 12) scale(1)" fill="#211f1c" fill-rule="evenodd" aria-label="CILI">
+    <!-- CILI custom slab-mono wordmark; paths avoid platform font substitution. -->
+    <path d="M40 0H12C5.373 0 0 5.373 0 12v32c0 6.627 5.373 12 12 12h28V44H14V12h26V0Z"/>
+    <path d="M54 0h34v10H77v36h11v10H54V46h11V10H54V0Z"/>
+    <path d="M102 0h12v44h32v12h-44V0Z"/>
+    <path d="M160 0h34v10h-11v36h11v10h-34V46h11V10h-11V0Z"/>
+  </g>
+</svg>
