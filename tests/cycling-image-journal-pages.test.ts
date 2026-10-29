@@ -123,14 +123,14 @@ describe('FORMAL GitHub Pages 骑行影像志', () => {
     expect(deliveryCenter).toContain('设计演进记录');
   });
 
-  it('设置页以 2026.10.29.6 展示暗场启动保护与慢加载稳定性当前版本', () => {
+  it('设置页以 2026.10.30.1 展示界面对比度与加载反馈优化当前版本', () => {
     expect(schema).toContain(
-      "['2026.10.29.6', '暗场启动保护与慢加载稳定性', '启动、慢资源与图片失败场景补齐暗色兜底，卡顿时不再短暂露出白底。']",
+      "['2026.10.30.1', '界面对比度与加载反馈优化', '提升暗色界面的文字、二维码与加载反馈。']",
     );
     runtime.prototypeState = 'default';
     const settings = runtime.pageTemplates?.settings?.() ?? '';
-    expect(settings).toContain('V2026.10.29.6');
-    expect(settings).toContain('2026.10.29');
+    expect(settings).toContain('V2026.10.30.1');
+    expect(settings).toContain('2026.10.30');
   });
 
   it('报名提交按审核中、公开通过和满员候补展示真实行程结果', () => {

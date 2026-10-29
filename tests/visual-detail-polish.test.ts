@@ -30,7 +30,7 @@ describe('视觉细节收口', () => {
     expect(reviewDetail).not.toContain('word-break: break-all');
   });
 
-  it('活动二维码使用有留白的双层承托，不与页面背景硬切', () => {
+  it('活动二维码仅保留二维码白底与轻量投影，避免多层套框', () => {
     const detailTemplate = read('miniprogram/pages/activity-detail/index.wxml');
     const detailStyles = read('miniprogram/pages/activity-detail/index.wxss');
     const editTemplate = read('miniprogram/pages/admin/activity-edit/index.wxml');
@@ -38,7 +38,11 @@ describe('视觉细节收口', () => {
 
     expect(detailTemplate).toContain('class="group-qr-frame"');
     expect(detailStyles).toMatch(
-      /\.group-qr-frame\s*\{[^}]*padding:\s*24rpx;[^}]*background:\s*var\(--color-raised\)/s,
+      /\.group-qr-frame\s*\{[^}]*max-width:\s*472rpx;[^}]*margin:\s*4rpx auto 0;[^}]*\}/s,
+    );
+    expect(detailStyles).not.toMatch(/\.group-qr-frame\s*\{[^}]*padding:/s);
+    expect(detailStyles).toMatch(
+      /\.group-qr-image\s*\{[^}]*background:\s*var\(--color-surface\);[^}]*box-shadow:/s,
     );
     expect(editTemplate).toContain('class="group-qr-media"');
     expect(editStyles).toMatch(/\.group-qr-card\s*\{[^}]*background:\s*var\(--color-raised\)/s);
