@@ -1,8 +1,17 @@
 {
   "schemaVersion": 1,
   "releaseVersion": "2026.10.29.6",
-  "sourceUiDigest": "sha256:5a2543494c43581983ae74315ba5dc7b5806117d43d340e88aabf4efba75ebf2",
+  "sourceUiDigest": "sha256:afa1f2548fcc28151a860d4e7e08a37b23740d8a31c8cbb65ebb0f4c7378d90d",
+  "capturedSourceUiDigest": "sha256:5a2543494c43581983ae74315ba5dc7b5806117d43d340e88aabf4efba75ebf2",
   "prototypeDigest": "sha256:879d43a9eeeff1af3d49d47b7654e6b248f53dfe6c88069b8b43d3997155b07a",
+  "recertification": {
+    "recertifiedAt": "2026-10-29T13:27:27.287Z",
+    "reason": "settings RELEASE_NOTES.features 新增兼容性说明，但当前 WXML 仅渲染 version 与 title",
+    "scope": "pages/settings/index",
+    "visibleChange": false,
+    "verification": "微信开发者工具重新编译并等待页面稳定后核对设置页；暗色布局、版本区与原证据一致，未出现白底；未替换原 17 路由截图",
+    "limitations": "本次为未渲染数据的证据再认证，不是新一轮真机、普通成员写链路或体验版验收"
+  },
   "devtoolsCapturedAt": "2026-10-29T08:46:07.691Z",
   "pagesCapturedAt": "2026-10-29T08:43:02.837Z",
   "mode": "real-cloud-readonly",
