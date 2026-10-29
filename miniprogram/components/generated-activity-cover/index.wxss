@@ -23,7 +23,7 @@
   width: 14rpx;
   height: 140%;
   transform: rotate(24deg);
-  background: var(--color-brand);
+  background: var(--color-brand-fill);
   box-shadow:
     34rpx 0 0 var(--color-surface),
     68rpx 0 0 var(--color-brand);
@@ -51,7 +51,7 @@
   padding: 6rpx 12rpx;
 }
 .generated-cover__level {
-  background: var(--color-brand);
+  background: var(--color-brand-fill);
   color: var(--color-on-brand);
 }
 .generated-cover__body {

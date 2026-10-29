@@ -1,16 +1,16 @@
 {
   "schemaVersion": 2,
-  "syncedThrough": "d81e2d9367c88d3947862d03487a50f25bf426a2",
-  "syncedAt": "2026-10-28T10:19:16.187Z",
+  "syncedThrough": "558e8664b01b8c671ec3cd0f8b50aa6cd317f775",
+  "syncedAt": "2026-10-29T08:49:50.073Z",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:cb0c04705f59847c350d7029d5efcb6f82ed412b84a654277cf29de72451bb8d"
+    "digest": "sha256:5a2543494c43581983ae74315ba5dc7b5806117d43d340e88aabf4efba75ebf2"
   },
   "prototype": {
-    "digest": "sha256:6652f7607ce97bcffc37aa6e050ab7fa2858f9fe104dbf09f57f98c2859e663c"
+    "digest": "sha256:879d43a9eeeff1af3d49d47b7654e6b248f53dfe6c88069b8b43d3997155b07a"
   },
   "routes": [
     {
@@ -83,7 +83,7 @@
     }
   ],
   "evidence": {
-    "directory": "docs/evidence/ui-sync/2026-10-28-scheme-b-v6",
+    "directory": "docs/evidence/ui-sync/2026-10-29-cinematic-dark",
     "viewport": {
       "width": 390,
       "height": 844
@@ -93,7 +93,7 @@
         "id": "activities",
         "devtools": "activities-devtools.png",
         "pages": "activities-pages.png",
-        "state": "真实云 1 场近期活动 · 摄影纵向列表",
+        "state": "真实云 1 场近期活动 · 电影暗色首卡",
         "data": "sanitized-runtime",
         "review": "differences",
         "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。真实活动与原型合成活动的标题、数量、照片与里程不同。照片与个人信息按 redaction-record.json 不透明遮挡。本轮仅完成只读视觉采集；公开骑友媒体完整验收、普通成员写链路和双物理设备仍未执行。"
@@ -156,7 +156,7 @@
         "id": "settings",
         "devtools": "settings-devtools.png",
         "pages": "settings-pages.png",
-        "state": "管理员 · 本地客户端 2026.10.28.3",
+        "state": "管理员 · 本地客户端 2026.10.29.6",
         "data": "sanitized-runtime",
         "review": "differences",
         "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。本地客户端版本及管理员入口与原型示例不同。照片与个人信息按 redaction-record.json 不透明遮挡。本轮仅完成只读视觉采集；公开骑友媒体完整验收、普通成员写链路和双物理设备仍未执行。"

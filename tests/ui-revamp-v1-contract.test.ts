@@ -44,7 +44,7 @@ describe('UI 改版 V1 原生契约', () => {
     expect(style).toContain('@media (prefers-reduced-motion: reduce)');
   });
 
-  it('首页保留 CTA 与首图 eager 策略，v6 使用宽幅封面和连续阅读摘要', () => {
+  it('首页保留 CTA 与首图 eager 策略，电影暗色版维持首屏信息密度与连续暗场', () => {
     const home = read('miniprogram/pages/activities/index.wxml');
     const homeStyle = read('miniprogram/pages/activities/index.wxss');
     const detailStyle = read('miniprogram/pages/activity-detail/index.wxss');
@@ -53,9 +53,8 @@ describe('UI 改版 V1 原生契约', () => {
     expect(read('miniprogram/pages/activities/index.ts')).toContain(
       '每一次转弯，都有值得记住的风景。',
     );
-    expect(homeStyle).toContain('padding-top: 62.5%');
-    expect(detailStyle).toContain('padding-top: 68.75%');
-    expect(detailStyle).toContain('.detail-page [data-v6-summary]');
+    expect(homeStyle).toContain('padding-top: 60%');
+    expect(detailStyle).toContain('aspect-ratio: 5 / 4');
     expect(detailStyle).toContain('margin: 0');
     expect(detailStyle).toContain('border-radius: 0');
     expect(detailStyle).toContain('box-shadow: none');

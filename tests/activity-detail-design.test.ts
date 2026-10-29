@@ -74,10 +74,10 @@ describe('活动详情设计与日期契约', () => {
       '下载 GPX',
       '一起出发的骑友',
       '活动群',
-      '活动路线',
+      '山路，有迹可循',
       '终点导航',
-      '行程安排',
-      '装备与须知',
+      '时间安排',
+      '行前约定',
       '费用说明',
     ])
       expect(template).toContain(marker);
@@ -173,7 +173,7 @@ describe('活动详情设计与日期契约', () => {
     expect(gradient.addColorStop).not.toHaveBeenCalled();
     expect(context.fillText).toHaveBeenCalledTimes(4);
     expect(context.arc).toHaveBeenCalledTimes(3);
-    expect(context.strokeStyle).toBe('#c0321f');
+    expect(context.strokeStyle).toBe('#d93636');
   });
 
   it('海拔数据过滤非法点并按里程排序', () => {

@@ -1,12 +1,13 @@
 <!-- 骑行影像志 · 编辑个人资料（1:1 对齐 docs/designs/2026-10-22-cycling-image-journal/pages/profile-edit.html） -->
-<view class="page profile-edit-page" data-v1-layout="form">
+<view class="page profile-edit-page cinema-page cinema-page--dark" data-v1-layout="form">
   <view wx:if="{{avatarBusy || photoBusy}}" class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{mediaProgress || (avatarBusy ? '正在更新头像…' : '正在处理背景图…')}}</view>
   <state-view loading="{{loading}}" error="{{!p ? error : ''}}" loading-title="正在读取个人资料" loading-copy="正在加载已保存的个人资料">
   <block wx:if="{{p}}">
     <view class="pageheading">
       <view class="eyebrow">此里 · 关于你</view>
       <view class="pageheading-title editorial">
-        <text class="pageheading-line">报名资料</text>
+        <text class="pageheading-line">让同行的人，</text>
+        <text class="pageheading-line">认出你。</text>
       </view>
       <view class="pageheading-sub">先选头像，再完善报名与联络资料。</view>
     </view>

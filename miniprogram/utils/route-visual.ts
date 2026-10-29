@@ -1,7 +1,13 @@
 import type { RouteCoordinate, RouteElevationPoint } from '../models/index';
+import { THEME_COLORS } from '../config/theme';
 
 export const ROUTE_VISUAL_STYLE = {
-  routeColor: '#c0321f',
+  routeColor: THEME_COLORS.action,
+  accentColor: THEME_COLORS.brand,
+  canvasBackground: THEME_COLORS.surface,
+  overlayColor: THEME_COLORS.raised,
+  selectedColor: THEME_COLORS.ink,
+  mutedColor: THEME_COLORS.muted,
   routeWidth: 6,
   routePadding: 16,
   maxOutlinePoints: 420,
@@ -257,7 +263,7 @@ export function drawRouteElevation(
   const y = (elevation: number) => top + ((maximum - elevation) / range) * chartHeight;
 
   if (overlay.segment) {
-    context.fillStyle = '#f3e6d0';
+    context.fillStyle = ROUTE_VISUAL_STYLE.overlayColor;
     context.fillRect(
       x(overlay.segment.startKm),
       top,
@@ -292,7 +298,7 @@ export function drawRouteElevation(
     (point, index, values) =>
       values.findIndex((item) => item.distanceKm === point.distanceKm) === index,
   );
-  context.fillStyle = '#e13b2b';
+  context.fillStyle = ROUTE_VISUAL_STYLE.accentColor;
   uniqueAnchors.forEach((point) => {
     context.beginPath();
     context.arc(x(point.distanceKm), y(point.elevationM), 3, 0, Math.PI * 2);
@@ -305,13 +311,13 @@ export function drawRouteElevation(
     context.moveTo(cursorX, top);
     context.lineTo(cursorX, top + chartHeight);
     context.setLineDash?.([4, 4]);
-    context.strokeStyle = '#211f1c';
+    context.strokeStyle = ROUTE_VISUAL_STYLE.selectedColor;
     context.lineWidth = 1;
     context.stroke();
     context.setLineDash?.([]);
   }
 
-  context.fillStyle = '#6f675d';
+  context.fillStyle = ROUTE_VISUAL_STYLE.mutedColor;
   context.font = ROUTE_VISUAL_STYLE.elevationFont;
   context.textAlign = 'left';
   context.fillText(`${Math.round(maximum)}m`, left, 12);

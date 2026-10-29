@@ -259,11 +259,7 @@
   right: 0;
   bottom: 0;
   height: 50%;
-  background: linear-gradient(
-    180deg,
-    var(--scrim-registration-cover-clear) 0%,
-    var(--scrim-registration-cover-strong) 100%
-  );
+  background: var(--gradient-ticket-cover);
   pointer-events: none;
 }
 .photo.ticketphoto generated-activity-cover,
@@ -495,99 +491,58 @@
   }
 }
 
-/* Scheme B v6: compact trip ledger -------------------------------------- */
-.registrations-page .content.tight {
-  gap: 24rpx;
+/* 2026-10-28 · Direction A / 暗场行程、炭黑票据 */
+.registrations-page {
+  background: var(--color-cinema-bg);
+  color: var(--color-cinema-text);
+}
+.registrations-page .custom-nav-title {
+  color: var(--color-cinema-text);
+}
+.registrations-page .pageheading {
+  padding: 40rpx 0 28rpx;
+}
+.registrations-page .pageheading .eyebrow {
+  color: var(--color-brand);
+}
+.registrations-page .pageheading-title,
+.registrations-page .chapterhead-title {
+  color: var(--color-cinema-text);
+}
+.registrations-page .pageheading-sub,
+.registrations-page .pageheading-meta,
+.registrations-page .chapterhead-aside,
+.registrations-page .refresh-note {
+  color: var(--color-cinema-muted);
+}
+.registrations-page .chapterhead-rule {
+  background: var(--color-cinema-line);
 }
 .registrations-page .trip-stats {
-  gap: 6rpx;
-  padding: 8rpx;
-  border-radius: 12rpx;
-}
-.registrations-page .trip-stat {
-  min-height: 76rpx;
-  justify-content: center;
-  padding: 4rpx 0;
-  border-radius: 8rpx;
-  background: var(--color-raised);
+  border-color: var(--color-cinema-line);
+  border-radius: 14rpx;
+  background: var(--color-cinema-panel);
 }
 .registrations-page .trip-stat__value {
-  font-family: var(--font-family-body);
-  font-size: 30rpx;
+  color: var(--color-cinema-text);
 }
 .registrations-page .trip-stat__label {
-  font-size: 20rpx;
-  letter-spacing: 1rpx;
+  color: var(--color-cinema-muted);
 }
-.registrations-page .section {
-  gap: 12rpx;
-}
-.registrations-page .trip-list {
-  gap: 14rpx;
-}
-.registrations-page .swipe-row,
 .registrations-page .ticket {
-  border-radius: 12rpx;
+  border-color: var(--color-border-strong);
+  border-radius: 18rpx;
+  box-shadow: var(--shadow-card);
 }
-.registrations-page .ticket.status-approved,
-.registrations-page .ticket.status-checked_in {
-  box-shadow: none;
+.registrations-page .trip-skeleton__card,
+.registrations-page .empty {
+  border-color: var(--color-cinema-line);
+  background: var(--color-cinema-panel);
+  color: var(--color-cinema-text);
 }
-.registrations-page .ticketbody {
-  gap: 10rpx;
-  padding: 18rpx;
-  border-top: 0;
+.registrations-page .empty-title {
+  color: var(--color-cinema-text);
 }
-.registrations-page .ticket-tag.tag {
-  padding: 3rpx 10rpx;
-  border-radius: 6rpx;
-  font-size: 20rpx;
-}
-.registrations-page .ticket-index {
-  font-size: 20rpx;
-}
-.registrations-page .ticket-title {
-  font-family: var(--font-family-body);
-  font-size: 30rpx;
-  line-height: 40rpx;
-}
-.registrations-page .club-identity {
-  font-size: 21rpx;
-}
-.registrations-page .club-avatar {
-  width: 32rpx;
-  height: 32rpx;
-}
-.registrations-page .row.ticket-row {
-  margin-top: 0;
-}
-.registrations-page .rowicon.rowicon--pin {
-  width: 32rpx;
-  height: 32rpx;
-  border-radius: 8rpx;
-}
-.registrations-page .row.ticket-row .em {
-  font-size: 25rpx;
-}
-.registrations-page .ticket-meta {
-  padding: 6rpx 10rpx;
-  border-radius: 8rpx;
-  font-size: 21rpx;
-}
-.registrations-page .status-guidance {
-  padding: 8rpx 10rpx;
-  border-radius: 6rpx;
-  background: var(--color-raised);
-  font-size: 21rpx;
-}
-.registrations-page .ticketfooter {
-  padding: 12rpx 18rpx;
-  background: var(--color-surface);
-}
-.registrations-page .ticketfooter .muted {
-  font-size: 20rpx;
-}
-.registrations-page .btn.tiny {
-  min-height: 64rpx;
-  border-radius: 8rpx;
+.registrations-page .empty-copy {
+  color: var(--color-cinema-muted);
 }

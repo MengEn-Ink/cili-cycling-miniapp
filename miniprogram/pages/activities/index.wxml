@@ -4,21 +4,15 @@
   - 真实业务保留：future/history 切换、day chips 日期筛选、沉浸/紧凑布局、分页 loadMore、refresh retry、无障碍 live region
   - WeChat 原生 brand-logo/系统胶囊，不渲染伪 statusbar / systemnav
 -->
-<view class="page activities-page" data-v1-layout="content" style="padding-top: {{navigationTopPx}}px">
+<view class="page activities-page cinema-page cinema-page--dark" data-v1-layout="content" style="padding-top: {{navigationTopPx}}px">
   <view class="custom-nav-title" style="top: {{navigationTopPx - 44}}px">活动</view>
   <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{refreshing ? '正在刷新活动' : loadingMore ? '正在加载更多活动' : ''}}</view>
   <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{refreshError}}</view>
 
   <view class="pageheading">
-    <view class="eyebrow">此里 · 骑行</view>
-    <view class="pageheading-title editorial">
-      <block wx:if="{{activeView === 'future' && layoutMode === 'card'}}"><blur-text text="把周末，" animate-by="letters" direction="bottom" delay="45" step-duration="320" /><blur-text text="交给山路。" animate-by="letters" direction="bottom" delay="45" step-duration="320" /></block>
-      <block wx:elif="{{activeView === 'future'}}"><text class="pageheading-line">紧凑浏览</text><text class="pageheading-line">按日期快速选择</text></block>
-      <block wx:else><text class="pageheading-line">往期影像</text><text class="pageheading-line">记录每一次出发</text></block>
-    </view>
-    <view class="pageheading-sub" wx:if="{{activeView === 'future' && layoutMode === 'card'}}">每一次转弯，都有值得记住的风景。</view>
-    <view class="pageheading-sub" wx:elif="{{activeView === 'future'}}">保留日期、路线、距离、爬升与剩余名额。</view>
-    <view class="pageheading-sub" wx:else>完成的骑行活动会出现在这里。</view>
+    <view class="eyebrow">此里 · 一起出发</view>
+    <view class="pageheading-title editorial">周末，交给山路。</view>
+    <view class="pageheading-sub">每一次转弯，都有值得记住的风景。</view>
   </view>
 
   <view class="segment" role="tablist" aria-label="活动时间">
@@ -37,6 +31,10 @@
     </scroll-view>
   </view>
 
+  <view class="list-toolbar" wx:if="{{items.length}}" aria-label="当前列表">
+    <view class="list-toolbar__title"><text class="chapterhead-title">{{activeView === 'history' ? '往期影像' : '近期活动'}}</text><text class="list-toolbar__count">共 {{items.length}} 场</text></view>
+  </view>
+
   <view class="refresh-note" wx:if="{{refreshing}}" aria-hidden="true">正在刷新活动…</view>
   <view class="refresh-note refresh-error" wx:if="{{refreshError}}" aria-hidden="true">{{refreshError}}</view>
 
@@ -49,32 +47,31 @@
     </view>
   </view>
 
-  <state-view wx:else loading="{{loading}}" error="{{error}}" empty="{{!items.length}}" empty-title="{{emptyTitle}}" empty-copy="{{emptyCopy}}" data-history-empty-copy="每一次转弯，都有值得记住的风景。" retryable="{{true}}" bind:retry="load">
+  <state-view wx:else loading="{{loading}}" error="{{error}}" empty="{{!items.length}}" empty-title="{{emptyTitle}}" empty-copy="{{emptyCopy}}" retryable="{{true}}" bind:retry="load">
     <block wx:if="{{layoutMode === 'card'}}">
       <view class="story-list" id="activity-list-panel" role="tabpanel" aria-label="摄影活动列表">
         <view class="story-shell" id="activity-index-{{index}}" wx:for="{{items}}" wx:key="id">
-          <view class="story" data-id="{{item.id}}" bindtap="open" hover-class="story--pressed" role="button" aria-label="查看活动：{{item.title}}">
-            <view class="photo photo--{{activeView}}">
+          <view class="story {{index === 0 ? 'story--opening' : ''}}" data-id="{{item.id}}" bindtap="open" hover-class="story--pressed" role="button" aria-label="查看活动：{{item.title}}">
+            <view class="photo">
               <image wx:if="{{item.coverImage}}" class="photo-image" src="{{item.coverImage}}" mode="aspectFill" lazy-load="{{index !== 0}}" aria-label="{{item.title}}活动封面"/>
               <generated-activity-cover wx:else item="{{item}}" variant="card" />
               <view class="shade"></view>
-              <view class="corner"><text class="tag tag--{{item.status}}">{{item.displayStatus}}</text></view>
+              <view class="corner"><text class="tag dark">{{item.displayStatus}}</text></view>
               <view class="caption">
                 <view class="eyebrow">{{item.displayDateLabel}} · {{item.displayTimeLabel}}</view>
                 <view class="story-title editorial">{{item.title}}</view>
-                <view class="story-sub">{{item.route.start || '集合地点待公布'}}{{item.route.level ? ' · ' + item.route.level : ''}}</view>
+                <view class="story-sub">{{item.clubIdentity.name}}</view>
               </view>
-              <view class="cover-count" wx:if="{{!item.registrationUnlimited}}">{{item.occupied}}/{{item.capacity}}</view>
             </view>
-            <view class="storyfacts" wx:if="{{activeView === 'future'}}">
+            <view class="storyfacts">
               <text class="em">{{item.route.distanceKm > 0 ? item.route.distanceKm : '—'}}{{item.route.distanceKm > 0 ? ' km' : ''}} <text>距离</text></text>
               <text class="em">{{item.route.elevationM > 0 ? item.route.elevationM : '—'}}{{item.route.elevationM > 0 ? ' m' : ''}} <text>爬升</text></text>
               <text class="em">{{item.estimatedRideTime || '—'}} <text>骑行</text></text>
             </view>
-            <view class="storymeta" wx:if="{{activeView === 'future'}}">
+            <view class="storymeta">
               <text class="storymeta-pin" aria-hidden="true">◉</text>
-              <view class="storymeta-main"><text class="storymeta-link">{{item.clubIdentity.name}}</text><text class="storymeta-copy">{{item.route.start || '集合地点待公布'}}</text></view>
-              <text class="storymeta-fee">{{item.fee || '免费'}}</text>
+              <text class="storymeta-main">{{item.route.start || '集合地点待公布'}}</text>
+              <text class="storymeta-link">查看活动 →</text>
             </view>
           </view>
         </view>
@@ -84,7 +81,7 @@
       <button class="compact-item" id="activity-index-{{index}}" wx:for="{{items}}" wx:key="id" data-id="{{item.id}}" bindtap="open" aria-label="查看活动：{{item.title}}">
         <view class="compact-item__date"><text>{{item.displayDateLabel}}</text><text>{{item.displayTimeLabel}}</text></view>
         <view class="compact-item__body"><text class="compact-item__title">{{item.title}}</text><text class="compact-item__route">{{item.route.start || '集合地点待公布'}}</text><text class="compact-item__metrics">{{item.route.distanceKm > 0 ? item.route.distanceKm + ' km' : '里程待公布'}} · {{item.route.elevationM > 0 ? '爬升 ' + item.route.elevationM + ' m' : '爬升待公布'}}{{item.route.level ? ' · ' + item.route.level : ''}}</text></view>
-        <view class="compact-item__status"><text class="tag tag--{{item.status}}">{{item.registrationUnlimited ? '不限' : item.occupied + '/' + item.capacity}}</text><text>{{item.fee || '免费'}}</text></view>
+        <view class="compact-item__status"><status-pill status="{{item.displayStatus}}"/><text class="compact-item__arrow">查看 ›</text></view>
       </button>
     </view>
   </state-view>

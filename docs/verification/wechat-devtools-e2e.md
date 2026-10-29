@@ -15,7 +15,7 @@
 ## 标准执行顺序
 
 1. `git fetch origin`，从最新 `origin/main` 建分支；先读高优清单，检查开放 PR，记录起点 SHA 与 Pages 工作流。
-2. 安装依赖并执行 `npm ci && npm run cloud:install`，然后 `npm run validate`、`npm run coverage`、`npm run audit:all`。UI 变化额外显式执行 `npm run test:design && npm run check:design`；前者锁定主题契约与门禁接线，后者机械复算 53 处颜色、1 处字体迁移、17 页原生外观和浅色对比度。
+2. 安装依赖并执行 `npm ci && npm run cloud:install`，然后 `npm run validate`、`npm run coverage`、`npm run audit:all`。UI 变化额外显式执行 `npm run test:design && npm run check:design`；前者锁定主题契约与门禁接线，后者机械复算 53 处历史颜色迁移账本、1 处字体迁移、17 页原生外观和当前主题对比度。
 3. 只在涉及函数、规则或索引时部署相应云资源并回读。确认小程序 AppID、运行云环境与测试账号匹配；禁止凭证进入截图或日志。
 4. 在登录的微信开发者工具运行只读 E2E，记录每个页面状态及运行时尺寸。tabBar 页面按 `app.json` 使用 `switchTab`，其他页面使用 `reLaunch`；两者都通过 `relaunchWhenReady` 每轮重新读取 `currentPage()`，同时等待请求 URL 对应路径和该当前页的 loading 状态，不信任导航 API 返回的旧页面句柄。只读路由命令首次丢失时可在总 30 秒预算内重发一次，第二次仍未就绪立即失败并保留报告；业务写入不得套用此重试。
 5. 同版本 Pages 使用 `?capture=viewport#<路由>`。标准设计视口 375×812；与模拟器对比时必须使用其实际 CSS 视口，差异写入记录。`?capture` 保留长页设计查看模式。

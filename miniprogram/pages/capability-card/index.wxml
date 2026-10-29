@@ -1,4 +1,4 @@
-<view class="capability-page" data-v1-layout="redirect">
+<view class="capability-page cinema-page cinema-page--dark" data-v1-layout="redirect">
   <state-view
     loading="{{!error}}"
     error="{{error}}"

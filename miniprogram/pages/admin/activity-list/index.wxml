@@ -8,7 +8,7 @@
     confirmDelete(左滑或主动删除)、cloneForm modal。
   - 本页已完成从旧过渡 heading 结构向设计稿 pageheading 的迁移。
 -->
-<view class="page activity-list-page" data-v1-layout="admin">
+<view class="page activity-list-page cinema-page cinema-page--dark" data-v1-layout="admin">
   <view class="skeleton" wx:if="{{loading}}"><view></view><view></view><view></view></view>
 
   <view class="empty" wx:elif="{{loadError}}" role="alert">
@@ -27,8 +27,8 @@
     <view class="pageheading">
       <view class="eyebrow">此里 · 组织一场出发</view>
       <view class="pageheading-title editorial">
-        <text class="pageheading-line">创建、编辑并</text>
-        <text class="pageheading-line">上下架你的活动。</text>
+        <text class="pageheading-line">山路上的事，</text>
+        <text class="pageheading-line">安排得明明白白。</text>
       </view>
       <view class="pageheading-sub">{{isAdmin ? '创建活动、维护信息、处理报名。' : '创建、编辑并上下架你的活动。'}}</view>
     </view>

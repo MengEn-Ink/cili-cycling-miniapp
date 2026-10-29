@@ -451,4 +451,12 @@ describe('Pages 全套 App 原型契约（单俱乐部收敛 · design-only 不�
     (data.plannedScreens ?? []).forEach((screen) => expect(ids.has(screen.id)).toBe(false));
     expect(manifest.routes).toHaveLength(17);
   });
+
+  it('20. Pages 在外链 CSS 返回前即提供不透明暗场启动画布', () => {
+    expect(indexSource).toContain('<meta name="theme-color" content="#0b0a0c" />');
+    expect(indexSource).toContain('<meta name="color-scheme" content="dark" />');
+    expect(indexSource).toMatch(
+      /<style id="critical-dark-canvas">[\s\S]*html,[\s\S]*body[\s\S]*background:\s*#0b0a0c[\s\S]*color-scheme:\s*dark/,
+    );
+  });
 });

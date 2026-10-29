@@ -96,7 +96,7 @@ describe('路线轮廓 Canvas', () => {
     expect(context.lineTo).toHaveBeenCalledOnce();
     expect(context.stroke).toHaveBeenCalledOnce();
     expect(context.lineWidth).toBe(6);
-    expect(context.strokeStyle).toBe('#c0321f');
+    expect(context.strokeStyle).toBe('#d93636');
     expect(context.arc).toHaveBeenCalledTimes(2);
     expect(context.arc).toHaveBeenNthCalledWith(
       1,

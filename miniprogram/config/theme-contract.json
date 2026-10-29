@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "sources": {
     "wxss": "miniprogram/app.wxss",
     "themeTs": "miniprogram/config/theme.ts",
@@ -11,44 +11,39 @@
     "expectedColorRows": 53,
     "expectedDirectRows": 49,
     "expectedFallbackRows": 4,
+    "migrationLedgerMode": "historical",
     "forbidColorFallbacksOutsideRoot": true,
     "forbidFontLiteralsOutsideRoot": true
   },
   "native": {
     "page": {
-      "navigationBarBackgroundColor": "#fbf5ea",
-      "navigationBarTextStyle": "black",
-      "backgroundColor": "#fbf5ea",
-      "backgroundColorTop": "#fbf5ea",
-      "backgroundColorBottom": "#fbf5ea"
+      "navigationBarBackgroundColor": "#0b0a0c",
+      "navigationBarTextStyle": "white",
+      "backgroundColor": "#0b0a0c",
+      "backgroundColorTop": "#0b0a0c",
+      "backgroundColorBottom": "#0b0a0c"
     },
     "appWindow": {
-      "navigationBarBackgroundColor": "#fbf5ea",
-      "navigationBarTextStyle": "black",
-      "backgroundColor": "#fbf5ea",
-      "backgroundColorTop": "#fbf5ea",
-      "backgroundColorBottom": "#fbf5ea"
+      "navigationBarBackgroundColor": "#0b0a0c",
+      "navigationBarTextStyle": "white",
+      "backgroundColor": "#0b0a0c",
+      "backgroundColorTop": "#0b0a0c",
+      "backgroundColorBottom": "#0b0a0c"
     },
     "appTabBar": {
-      "backgroundColor": "#ffffff",
-      "borderStyle": "white",
-      "color": "#6f675d",
-      "selectedColor": "#c0321f"
+      "backgroundColor": "#0b0a0c",
+      "borderStyle": "black",
+      "color": "#b8b3ba",
+      "selectedColor": "#e54242"
     },
     "runtimeTabBar": {
-      "backgroundColor": "#ffffff",
-      "borderStyle": "white",
-      "color": "#6f675d",
-      "selectedColor": "#211f1c"
+      "backgroundColor": "#0b0a0c",
+      "borderStyle": "black",
+      "color": "#b8b3ba",
+      "selectedColor": "#e54242"
     }
   },
-  "sourceSpecificDifferences": [
-    {
-      "role": "selectedColor",
-      "sources": ["appTabBar", "runtimeTabBar"],
-      "reason": "PR B preserves startup and runtime values; alignment requires a later visual slice"
-    }
-  ],
+  "sourceSpecificDifferences": [],
   "equivalentRoles": [
     {
       "role": "brand",
@@ -100,21 +95,27 @@
   ],
   "contrastPairs": [
     {
-      "name": "ink-on-paper",
+      "name": "text-on-canvas",
       "foreground": "--color-text",
       "background": "--color-bg",
       "minimum": 4.5
     },
     {
-      "name": "muted-on-paper",
+      "name": "muted-on-canvas",
       "foreground": "--color-muted",
       "background": "--color-bg",
       "minimum": 4.5
     },
     {
-      "name": "action-on-surface",
-      "foreground": "--color-action",
+      "name": "brand-on-surface",
+      "foreground": "--color-brand",
       "background": "--color-surface",
+      "minimum": 4.5
+    },
+    {
+      "name": "text-on-action",
+      "foreground": "--color-on-action",
+      "background": "--color-action",
       "minimum": 4.5
     }
   ]

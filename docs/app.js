@@ -74,6 +74,7 @@
   let currentRoute = 'activities';
   let currentState = '';
   let toastTimer;
+  let cinemaRevealObserver;
 
   const $ = (selector) => document.querySelector(selector);
   const container = $('#screen-container');
@@ -82,6 +83,106 @@
   const toast = $('#demo-toast');
   const demo = $('#demo');
   const overview = $('#overview-view');
+
+  const reduceCinemaMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+
+  function prepareCinemaMotion(pageRoot) {
+    cinemaRevealObserver?.disconnect();
+    cinemaRevealObserver = undefined;
+    if (!pageRoot) return;
+
+    const heading = pageRoot.querySelector('.pageheading h1');
+    if (heading) {
+      const lines = [];
+      let buffer = [];
+      [...heading.childNodes].forEach((node) => {
+        if (node.nodeName === 'BR') {
+          if (buffer.length) lines.push(buffer);
+          buffer = [];
+        } else {
+          buffer.push(node.cloneNode(true));
+        }
+      });
+      if (buffer.length) lines.push(buffer);
+      if (lines.length > 1) {
+        const titleDelayTokens = [
+          'var(--motion-delay-title)',
+          'var(--motion-delay-title-second)',
+          'var(--motion-delay-caption)',
+        ];
+        heading.replaceChildren(
+          ...lines.map((nodes, index) => {
+            const line = document.createElement('span');
+            line.className = 'cinema-title-line';
+            line.style.setProperty(
+              '--cinema-title-delay',
+              titleDelayTokens[Math.min(index, titleDelayTokens.length - 1)],
+            );
+            line.append(...nodes);
+            return line;
+          }),
+        );
+      } else {
+        heading.classList.add('cinema-title-line');
+        heading.style.setProperty('--cinema-title-delay', 'var(--motion-delay-title)');
+      }
+    }
+
+    const storyDelayTokens = [
+      'var(--motion-delay-story)',
+      'var(--motion-delay-story-second)',
+      'var(--motion-delay-story-third)',
+      'var(--motion-delay-story-fourth)',
+    ];
+    const storyTitles = [...pageRoot.querySelectorAll('.story-title, .story .caption h2')].slice(0, 4);
+    storyTitles.forEach((title, index) => {
+      title.classList.add('cinema-story-title');
+      title.style.setProperty('--cinema-story-delay', storyDelayTokens[index]);
+    });
+
+    const revealTargets = [
+      ...pageRoot.querySelectorAll(
+        ':scope > .card, :scope > .section, .content > .section, .content > .paper, .review-item, .trip-ticket, .club-center-events, .planned-privacy-card, .planned-noti-card, .planned-poster-stage',
+      ),
+    ].slice(0, 4);
+    if (!revealTargets.length || reduceCinemaMotion?.matches || !('IntersectionObserver' in window)) {
+      revealTargets.forEach((target) => target.classList.add('cinema-reveal', 'is-visible'));
+      return;
+    }
+    const revealDelayTokens = [
+      'var(--motion-delay-none)',
+      'var(--motion-stagger-step)',
+      'var(--motion-delay-short)',
+      'var(--motion-delay-title)',
+    ];
+    revealTargets.forEach((target, index) => {
+      target.classList.add('cinema-reveal');
+      target.style.setProperty('--cinema-reveal-delay', revealDelayTokens[index]);
+    });
+    pageRoot.classList.add('cinema-motion-ready');
+    cinemaRevealObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add('is-visible');
+          cinemaRevealObserver?.unobserve(entry.target);
+        });
+      },
+      { root: container, threshold: 0.12, rootMargin: '0px 0px -8% 0px' },
+    );
+    revealTargets.forEach((target) => cinemaRevealObserver.observe(target));
+  }
+
+  function syncCinemaScrollEdges() {
+    const phone = container.closest('.phone-inner');
+    if (!phone?.classList.contains('is-cinema-route')) return;
+    const maxScroll = Math.max(0, container.scrollHeight - container.clientHeight);
+    phone.classList.toggle('cinema-can-scroll', maxScroll > 8);
+    phone.classList.toggle('cinema-is-scrolled', container.scrollTop > 8);
+    phone.classList.toggle('cinema-at-end', maxScroll - container.scrollTop < 8);
+  }
+
+  container.addEventListener('scroll', syncCinemaScrollEdges, { passive: true });
 
   const queryParams = new URLSearchParams(window.location.search);
   if (queryParams.has('capture')) document.body.classList.add('capture');
@@ -791,24 +892,35 @@
             <div><h3>标签：中性 / 已通过 / 待审核 / 线框 / 已结束</h3><div class="chips"><span class="tag tag-neutral">默认</span><span class="tag tag-solid">已通过</span><span class="tag tag-pending">待审核</span><span class="tag tag-outline">已下架</span><span class="tag tag-muted">已结束</span></div></div>
             <div><h3>输入框：默认 / 聚焦 / 错误 / 禁用</h3><div class="input"><span class="ph">例如：周末环湖骑</span></div><div class="input is-focus"><span>云蒙山&amp;喇叭沟 RIDE<i class="caret"></i></span></div><div class="input is-error"><span class="ph">请填写活动标题</span></div><p class="field-msg is-error">请填写活动标题</p><div class="input is-disabled"><span>资料完整，欢迎参加</span></div></div>
           </div>
-          <h2>浅色对比度检查表</h2>
+          <h2>暗色对比度检查表</h2>
           <table class="overview-table"><thead><tr><th>用途</th><th>前景</th><th>背景</th><th>对比度</th><th>门槛</th><th>使用位置</th></tr></thead><tbody>${contrast}</tbody></table>
           <h2>影像志视觉验收</h2>
-          <p>当前 16 页统一使用暖米白画布、白卡、墨黑信息块、品牌红强调与深行动红主行动；影像标题采用宋体，历史主题问题已从当前原型说明中移除。</p>
+          <p>当前 17 条正式路由统一使用深黑画布、炭黑卡片、暖白正文、品牌红强调与深行动红主行动；影像标题采用宋体，表单、凭证和管理页也保持同一暗场层级。</p>
         </div>
       </details>`;
   }
 
   function renderNavigation() {
-    const groups = [...new Set(data.pages.map((page) => page.group))];
+    const cinemaOrder = (page) =>
+      Number(cinemaRouteMeta[page.id]?.index || data.pages.indexOf(page) + 1);
+    const groups = [...new Set(data.pages.map((page) => page.group))].sort((left, right) => {
+      const leftOrder = Math.min(
+        ...data.pages.filter((page) => page.group === left).map(cinemaOrder),
+      );
+      const rightOrder = Math.min(
+        ...data.pages.filter((page) => page.group === right).map(cinemaOrder),
+      );
+      return leftOrder - rightOrder;
+    });
     nav.innerHTML = groups
       .map(
         (group) => `<section><h3>${group}</h3>${data.pages
           .filter((page) => page.group === group)
           .filter((page) => page.id !== 'capability-card')
+          .sort((left, right) => cinemaOrder(left) - cinemaOrder(right))
           .map(
             (page) =>
-              `<button data-route="${page.id}"><span>${String(data.pages.indexOf(page) + 1).padStart(2, '0')}</span><b>${page.title}</b></button>`,
+              `<button data-route="${page.id}"><span>${String(cinemaOrder(page)).padStart(2, '0')}</span><b>${page.title}</b></button>`,
           )
           .join('')}</section>`,
       )
@@ -892,6 +1004,30 @@
 
   window.normalizePrototypeState = normalizePrototypeState;
 
+  const cinemaRouteMeta = Object.freeze({
+    activities: { label: '活动首页', index: '01', mode: 'dark' },
+    'activity-detail': { label: '活动详情', index: '02', mode: 'dark' },
+    'registration-form': { label: '填写报名', index: '03', mode: 'dark' },
+    credential: { label: '出发凭证', index: '04', mode: 'dark' },
+    registrations: { label: '我的行程', index: '05', mode: 'dark' },
+    'route-analysis': { label: '路线分析', index: '06', mode: 'dark' },
+    profile: { label: '个人中心', index: '07', mode: 'dark' },
+    'profile-edit': { label: '编辑资料', index: '08', mode: 'dark' },
+    settings: { label: '应用设置', index: '09', mode: 'dark' },
+    'club/center': { label: '俱乐部中心', index: '10', mode: 'dark' },
+    'admin-activity-list': { label: '活动管理', index: '11', mode: 'dark' },
+    'admin-activity-edit': { label: '编辑活动', index: '12', mode: 'dark' },
+    'admin-reviews': { label: '报名审核', index: '13', mode: 'dark' },
+    'admin-review-detail': { label: '审核详情', index: '14', mode: 'dark' },
+    'admin-club-applications': { label: '俱乐部管理', index: '15', mode: 'dark' },
+    'admin-club-application-detail': { label: '俱乐部资料', index: '16', mode: 'dark' },
+    'capability-card': { label: '历史入口', index: '17', mode: 'dark' },
+    'planned-privacy': { label: '隐私授权', index: '18', total: '21', mode: 'dark' },
+    'planned-notifications': { label: '通知中心', index: '19', total: '21', mode: 'dark' },
+    'planned-offline-error': { label: '网络状态', index: '20', total: '21', mode: 'dark' },
+    'planned-activity-share-poster': { label: '分享海报', index: '21', total: '21', mode: 'dark' },
+  });
+
   function showPage(route, options = {}) {
     if (route === 'overview') {
       showOverview();
@@ -907,8 +1043,22 @@
     currentState = normalizePrototypeState(stateIds, options.state);
     window.prototypeState = currentState;
     if (page.id === 'activity-detail') window.prototypeActivityId = options.activityId || '';
+    container.dataset.route = page.id;
+    const cinemaMeta = cinemaRouteMeta[page.id];
+    container.closest('.phone-inner')?.classList.toggle('is-cinema-route', Boolean(cinemaMeta));
     container.innerHTML = templates[page.id]();
+    const pageRoot = container.firstElementChild;
+    if (cinemaMeta && pageRoot) {
+      pageRoot.classList.add(
+        'cinema-flow-page',
+        `cinema-flow-page--${cinemaMeta.mode}`,
+        'cinema-enter',
+      );
+      container.dataset.cinemaMode = cinemaMeta.mode;
+    }
     container.scrollTop = 0;
+    prepareCinemaMotion(pageRoot);
+    window.requestAnimationFrame(syncCinemaScrollEdges);
     updateChrome(page);
     modal.hidden = true;
     const hash = currentState === page.states[0][0] ? `#${page.id}` : `#${page.id}/${currentState}`;
