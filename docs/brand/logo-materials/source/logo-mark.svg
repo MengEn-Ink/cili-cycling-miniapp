@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144" role="img" aria-label="CILI 路线环标志">
+  <title>CILI 路线环标志</title>
+
+  <g transform="translate(12 12) scale(1.25)" aria-label="CILI 路线环标志">
+    <rect width="96" height="96" rx="26" fill="#e13b2b"/>
+    <path d="M68 25 C56 20 44 23 42 33 C40 42 47 46 56 49 C65 52 68 58 66 66 C63 75 54 79 44 78 C35 77 29 72 25 65" fill="none" stroke="#ffffff" stroke-width="10.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
