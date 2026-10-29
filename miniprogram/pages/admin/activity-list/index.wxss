@@ -323,10 +323,10 @@
   display: inline-flex;
   align-items: center;
   padding: 4rpx 16rpx;
-  border: 2rpx solid var(--color-text);
+  border: 2rpx solid var(--color-status-success);
   border-radius: 999rpx;
-  background: var(--color-text);
-  color: var(--color-on-action);
+  background: var(--color-status-success-soft);
+  color: var(--color-status-success);
   font-size: 22rpx;
   letter-spacing: 1rpx;
 }

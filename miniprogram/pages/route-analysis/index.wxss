@@ -56,10 +56,10 @@
 
 /* --- ink + metrics ------------------------------------------------------- */
 .ink {
-  padding: 32rpx;
-  border: 2rpx solid var(--color-border);
-  border-radius: 28rpx;
-  background: var(--color-surface);
+  padding: 32rpx 0;
+  border-top: 2rpx solid var(--color-border);
+  border-bottom: 2rpx solid var(--color-border);
+  background: transparent;
 }
 .metrics {
   display: grid;
@@ -99,13 +99,13 @@
 .conclusion-panel {
   margin-top: 32rpx;
   padding: 32rpx;
-  border: 2rpx solid var(--color-text);
+  border: 2rpx solid var(--color-border-strong);
   border-radius: 28rpx;
-  background: var(--color-text);
-  color: var(--color-on-action);
+  background: var(--color-raised);
+  color: var(--color-text);
 }
 .conclusion-label {
-  color: var(--color-on-action);
+  color: var(--color-brand);
   font-family: var(--font-family-mono);
   font-size: 22rpx;
   letter-spacing: 2rpx;
@@ -394,9 +394,9 @@
   font-size: 22rpx;
 }
 .anchor-item.is-selected {
-  background: var(--color-text);
-  color: var(--color-on-action);
-  border-color: var(--color-text);
+  background: var(--color-raised);
+  color: var(--color-text);
+  border-color: var(--color-brand);
 }
 .anchor-computed {
   margin-left: 6rpx;
