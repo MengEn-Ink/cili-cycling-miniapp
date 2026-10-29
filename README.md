@@ -136,12 +136,14 @@ npm run deploy:miniprogram
 
 ## 体验版晋级与回退
 
-体验版不会随着开发版自动上传而自动更新。当前仓库采用受证据约束的两阶段人工晋级流程：
+微信 `miniprogram-ci` 只提供开发版上传和预览能力，没有公开的“选为体验版”接口。原生开发权限可用时，平台选版仍必须由发布负责人在微信公众平台完成；若开发权限已托管给第三方，公众平台版本管理会被禁用，开发版上传成功也不能证明体验版存在。第三方模式只能由持有授权平台凭据的一方调用微信开放平台 `commit` 接口上传代码并生成体验版，或由管理员恢复原生开发权限后走公众平台选版。
 
-1. 先确认目标提交仍是当前 `main`，且 `CI`、微信开发版上传与核心 smoke 均已成功。
-2. 手动运行 `.github/workflows/promote-miniprogram-experience.yml`，先生成 `candidate/promote` 候选清单。
-3. 由发布负责人在微信公众平台把同一开发版选为体验版，并回读版本、SHA 与入口。
-4. 以同一组参数运行 `verified/promote`，再把验证后的 manifest 固化到 [`docs/releases/experience/`](docs/releases/experience/README.md)。
+仓库把可安全自动化的步骤收敛为自动候选 + 单次确认：
+
+1. 当前 `main` 的 CI、核心 smoke 与微信开发版上传成功后，`.github/workflows/promote-miniprogram-experience.yml` 会读取不可变 upload/release receipt，自动生成 `candidate/promote`；纯文档安全跳过、receipt 缺失或上传后 `main` 已前进时不会晋级。
+2. 发布负责人先确认版本管理未被第三方托管；原生权限可用时，在微信公众平台把候选清单中的同一开发版选为体验版。若页面显示“开发管理已禁用”，必须停止 verified，转由授权第三方生成体验版或恢复原生权限。
+3. 手动运行同一工作流的 `verified/promote`，只填写 candidate run ID 与 `platform_evidence=CONFIRMED`；SHA、版本、CI、上传、smoke、入口和摘要全部从 candidate artifact 反推，任何额外填写的冲突值都会失败。
+4. 将验证后的 manifest 固化到 [`docs/releases/experience/`](docs/releases/experience/README.md)。若自动候选因平台瞬时故障失败，仍可用 `candidate/promote` 手动恢复，不会重新上传开发版。
 
 固定入口为 `pages/activities/index`。完整晋级、回退和长期审计规则见 [`docs/releases/experience/README.md`](docs/releases/experience/README.md)。
 
