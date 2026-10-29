@@ -1,13 +1,13 @@
 {
   "schemaVersion": 2,
-  "syncedThrough": "558e8664b01b8c671ec3cd0f8b50aa6cd317f775",
-  "syncedAt": "2026-10-29T08:49:50.073Z",
+  "syncedThrough": "0119e45e40eca72661754d3251709a527e5c4a87",
+  "syncedAt": "2026-10-29T13:27:27.287Z",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:5a2543494c43581983ae74315ba5dc7b5806117d43d340e88aabf4efba75ebf2"
+    "digest": "sha256:afa1f2548fcc28151a860d4e7e08a37b23740d8a31c8cbb65ebb0f4c7378d90d"
   },
   "prototype": {
     "digest": "sha256:879d43a9eeeff1af3d49d47b7654e6b248f53dfe6c88069b8b43d3997155b07a"
@@ -159,7 +159,7 @@
         "state": "管理员 · 本地客户端 2026.10.29.6",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "新采集并绑定当前摘要；DevTools 真实管理员只读，Pages 合成资料。本地客户端版本及管理员入口与原型示例不同。照片与个人信息按 redaction-record.json 不透明遮挡。本轮仅完成只读视觉采集；公开骑友媒体完整验收、普通成员写链路和双物理设备仍未执行。"
+        "note": "原截图采集后仅 RELEASE_NOTES.features 增加兼容性说明，当前 WXML 不渲染该字段；微信开发者工具重新编译并等待页面稳定后确认暗色布局、版本区与原证据一致且无白底，按 redaction-record.json 完成未渲染数据再认证。DevTools 真实管理员只读，Pages 合成资料；本地客户端版本及管理员入口与原型示例不同。照片与个人信息使用不透明遮挡。公开骑友媒体完整验收、普通成员写链路和双物理设备仍未执行。"
       },
       {
         "id": "capability-card",
