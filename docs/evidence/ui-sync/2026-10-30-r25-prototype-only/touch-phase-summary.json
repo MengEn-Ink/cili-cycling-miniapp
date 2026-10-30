@@ -1,0 +1,92 @@
+{
+  "kind": "r25-touch-phase-summary",
+  "generatedAt": "2026-10-30T02:55:26.165Z",
+  "headBinding": {
+    "branch": "fix/touch-package-budget-20261029",
+    "baseRef": "origin/main",
+    "note": "Phase A owns measurement; Phase B metadata preserves prior capture time and hash; no raw PNG in this committed index"
+  },
+  "matrixProfile": {
+    "type": "separate three-width DOM measurement for route-analysis only; independent from the single 390x844 Pages batch",
+    "widths": [
+      340,
+      375,
+      430
+    ]
+  },
+  "failures": [],
+  "phaseA": {
+    "name": "measurement-original-viewport：默认原型布局下测量 44px 命中盒、elementFromPoint 归属与 showPage 状态副作用；不含 capture 覆盖。",
+    "viewportWidths": [
+      340,
+      375,
+      430
+    ],
+    "layoutOverrideApplied": false,
+    "results": {
+      "340": {
+        "markerCount": 8,
+        "markerMinBoxPx": 44.66,
+        "controlCount": 19,
+        "overlapPairs": 0,
+        "ownerMatchedMarkerClicks": 8,
+        "markerClicksTotal": 8,
+        "statefulControlClicks": 8,
+        "claim": "real DOM elementFromPoint/click reachability in untouched prototype layout; not a native iOS/Android gesture test"
+      },
+      "375": {
+        "markerCount": 8,
+        "markerMinBoxPx": 50.05,
+        "controlCount": 19,
+        "overlapPairs": 0,
+        "ownerMatchedMarkerClicks": 8,
+        "markerClicksTotal": 8,
+        "statefulControlClicks": 8,
+        "claim": "real DOM elementFromPoint/click reachability in untouched prototype layout; not a native iOS/Android gesture test"
+      },
+      "430": {
+        "markerCount": 8,
+        "markerMinBoxPx": 52.36,
+        "controlCount": 19,
+        "overlapPairs": 0,
+        "ownerMatchedMarkerClicks": 8,
+        "markerClicksTotal": 8,
+        "statefulControlClicks": 8,
+        "claim": "real DOM elementFromPoint/click reachability in untouched prototype layout; not a native iOS/Android gesture test"
+      }
+    }
+  },
+  "phaseB": {
+    "name": "presentation-layout-override：测量完成后才展开滚动容器并强制动画可见，截图仅为 Pages 呈现证据，不是 native 运行时几何。",
+    "files": {
+      "340": {
+        "filename": "route-analysis-340.png",
+        "bytes": 69809,
+        "sha256": "c8da63bde66f91d332b53006ff29a9b20eac563378924731f16ad6c478f848bd",
+        "capturedAt": "2026-10-30T01:46:12.509Z",
+        "capturedAtSource": "既有 PNG 文件 mtime（未重写）",
+        "regenerated": false,
+        "geometryClaim": "截图为 Pages 呈现证据；覆盖后的容器高度/坐标不得回写为 native 或测量命中几何"
+      },
+      "375": {
+        "filename": "route-analysis-375.png",
+        "bytes": 71072,
+        "sha256": "56e114437b843dca7212c73aa8e4b88723c4e3f0a3ed57baa29961bda49ba3db",
+        "capturedAt": "2026-10-30T01:46:17.991Z",
+        "capturedAtSource": "既有 PNG 文件 mtime（未重写）",
+        "regenerated": false,
+        "geometryClaim": "截图为 Pages 呈现证据；覆盖后的容器高度/坐标不得回写为 native 或测量命中几何"
+      },
+      "430": {
+        "filename": "route-analysis-430.png",
+        "bytes": 80267,
+        "sha256": "8a3cb02eaffb16f71457558714b7932f99e834d976cbde82a147192c06d1e7ae",
+        "capturedAt": "2026-10-30T01:46:23.590Z",
+        "capturedAtSource": "既有 PNG 文件 mtime（未重写）",
+        "regenerated": false,
+        "geometryClaim": "截图为 Pages 呈现证据；覆盖后的容器高度/坐标不得回写为 native 或测量命中几何"
+      }
+    },
+    "claim": "three route-analysis presentation PNGs only; they do not cover the other 16 Pages routes and do not replace native screenshots"
+  }
+}

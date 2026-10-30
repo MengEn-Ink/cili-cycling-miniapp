@@ -151,7 +151,94 @@
 
 ### 9.4 未闭合阻塞（不得表述为全绿/可合并）
 
-1. **strict UI-sync 摘要门 FAIL**：祖先数据缺陷已修，但当前 Pages 原型摘要与清单不一致；需授权新证据后由正式 binder 更新，禁止手工写 digest 或复制旧截图。
+1. **strict UI-sync 摘要门 FAIL**：祖先数据缺陷已修；其中 Pages 原型摘要部分已在 §10 受控闭合，`source(ui)` 摘要仍未闭合，禁止手工写 digest 或复制旧截图。
 2. **native 真机 tap 矩阵 BLOCKED**：静态 50 例与 Playwright 原型证据不替代 iOS/Android 真机 computed 几何与业务回调。
 3. **普通成员完整写链路、体验版晋级与公开媒体 UAT**：沿用高优 P0/P1 独立验收行，本轮不关闭、不并入 UI 提交前置。
 4. PR 平台卡片仍待发布 MCP 创建/更新；本报告不伪造 PR URL。
+
+## 10. R25 Pages 原型摘要受控闭合（2026-10-30；状态 `PAGES_PROTOTYPE_DIGEST_CLOSED / SOURCE_UI_DIGEST_NATIVE_BLOCKED_NOT_MERGE_READY`；覆盖 §9.4 第 1 项的 Pages 部分，source/native 阻塞保留）
+
+### 10.1 授权边界与 docs 原型 diff 审计
+
+- 本轮授权范围限定为官方 binder 的 `prototype` 作用域：只更新 `docs/ui-sync-manifest.json` 的 `prototype.digest`；`source.digest`、`syncedThrough`、`syncedAt` 不得由本次 Pages 动作改写。未使用 legacy 全量 `--write`，未手填 hash，未复制旧 IDE 或 phase3 截图冒充当前新采集。
+- 以 `origin/main` 三点 diff 到 HEAD 的口径统计，`docs/styles.css` 与 `docs/templates.js` 分别为 `+15/-0`、`+15/-0`，合计 `+30/-0`；两文件当前 SHA-256 分别为 `22cd7db06328e4fc70362befaabf30eafd99a39725a8c2388f627a633b75df7c`、`0ce762725463120d124b669f5b0a05062af53fb2feec4d1a751437aeacaac5a6`。
+- 审计结论：新增内容仅为透明触控命中矩形、glyph `pointer-events: none` 归属与 `HIT_SIDE=15.4` / `hitOffsets` / `hitX/hitY` 事件承载层；未改颜色、字号、字重、背景、边框、圆角、glyph 坐标、label 坐标或数据切片。外部辅助审计：`/Users/bytedance/work/ride-event-miniprogram/artifacts/touch-package-delivery/package/analysis/docs-touch-semantic-aux-note.md`。
+
+### 10.2 受控 binder TDD 与写回字段
+
+| 项 | 事实 |
+| --- | --- |
+| 节点测试 | `npm run test:ui-sync` exit=0，31 tests / 31 pass / 0 fail；日志 `/Users/bytedance/work/ride-event-miniprogram/artifacts/touch-package-delivery/runtime/logs/r25/test-ui-sync.log` |
+| 新增守卫用例 | ① `--write --scope=prototype` 只改 `prototype.digest`；② `--scope=native` 在写文件前报错且 manifest 字节不变；③ 只读调用不修改 manifest |
+| 写回命令 | `node scripts/pages-visual-acceptance/sync-ui-digests.mjs --write --scope=prototype` |
+| 写回快照 | `/Users/bytedance/work/ride-event-miniprogram/artifacts/touch-package-delivery/package/analysis/pages-binder-write-snapshot-20261030.json` |
+| `prototype.digest` | `879d43a9…b07a` → `783e5d91…2f1`；清单值与当前计算值一致 |
+| `source.digest` | 保持 `sha256:afa1f2548fcc28151a860d4e7e08a37b23740d8a31c8cbb65ebb0f4c7378d90d` |
+| `syncedThrough` | 保持 `79bf1e0bec32f6fbe9c3f754da5052f15aca6451` |
+| `syncedAt` | 保持 `2026-10-29T13:27:27.287Z` |
+| legacy 全量 `--write` | 本轮未执行；其机械刷新 `source.digest` 与同步时间戳的行为不在 Pages 授权范围内 |
+
+### 10.3 17 条 Pages 路由本地 Chromium 证据
+
+- 采集报告：`/Users/bytedance/work/ride-event-miniprogram/artifacts/touch-package-delivery/runtime/pages-browser/final-20261030/report.json`；`capturedAt=2026-10-30T01:43:01.951Z`，视口宽 390；17 条路由 `overflow=0`、`pageErrors=0`，截图均为 390×844 非空 PNG。
+- 仓库内公开取证摘要（不含原始 PNG 二进制，含逐张文件名、字节、宽高、SHA-256、溢出与错误状态）：[`../evidence/ui-sync/2026-10-30-r25-prototype-only/pages-local-chromium-index.json`](../evidence/ui-sync/2026-10-30-r25-prototype-only/pages-local-chromium-index.json)；私有原始采集台账保留在 `/Users/bytedance/work/ride-event-miniprogram/artifacts/touch-package-delivery/package/analysis/pages-capture-evidence-index-20261030.json`。
+- 覆盖路由：`activities`、`activity-detail`、`route-analysis`、`registration-form`、`registrations`、`credential`、`profile`、`capability-card`、`settings`、`profile-edit`、`admin-activity-list`、`admin-activity-edit`、`admin-reviews`、`admin-review-detail`、`club/center`、`admin-club-applications`、`admin-club-application-detail`。
+- 证据边界：采集时隐藏 showcase 外壳并展开 `#screen-container` 以获得 fullPage 展示态；这些图是 Pages 原型展示证据，不是微信真机 viewport 几何、不是 iOS/Android tap 矩阵、不是普通成员写链路或 CloudBase 回读证据。
+
+### 10.4 触控证据两阶段分离
+
+| 阶段 | 口径 | 实测事实 | 索引 |
+| --- | --- | --- | --- |
+| Phase A measurement | 保持原运行时布局，不展开/不强制动画；`elementFromPoint`、原生 click 派发与 `showPage` 状态副作用 | 340/375/430 三宽度 marker 最小盒 `44.66/50.05/52.36px`；每宽度 19 个控件采样、0 相交重叠对、8 个 marker 可达且归属匹配；8 个带状态控件 click 有状态变化 | 仓库摘要：[`../evidence/ui-sync/2026-10-30-r25-prototype-only/touch-phase-summary.json`](../evidence/ui-sync/2026-10-30-r25-prototype-only/touch-phase-summary.json)；私有原始台账保留在外部 analysis 目录 |
+| Phase B presentation | 仅生成/复用展示态截图，单独记录文件 mtime、字节与 SHA-256，`regenerated=false` | `route-analysis-340/375/430.png` 三张；430px 展示放大后的坐标不得回写为手机运行时命中几何；既有 capturedAt、字节与 SHA-256 完整保留，未用报告运行时间冒充新截图 | 仓库摘要同上；私有权威报告 `/Users/bytedance/work/ride-event-miniprogram/artifacts/touch-package-delivery/runtime/touch-browser-evidence/browser-report.json` |
+| 静态触控契约 | `npm run test:touch-hit-area` | exit=0，50 tests / 6 suites / 50 pass / 0 fail；日志 `/Users/bytedance/work/ride-event-miniprogram/artifacts/touch-package-delivery/runtime/logs/r25/test-touch.log` | — |
+
+### 10.5 R25 组件门禁退出码
+
+| 门禁 | 退出码 | 说明与日志目录 `/Users/bytedance/work/ride-event-miniprogram/artifacts/touch-package-delivery/runtime/logs/r25/` |
+| --- | --- | --- |
+| `npm run format:check` | 0 | 全量格式检查通过 |
+| `npm run lint` | 0 | ESLint 通过 |
+| `npm run typecheck` | 0 | TypeScript 无错误 |
+| `npm run test:ui-sync` | 0 | 31/31；含 prototype scope 三个新守卫用例 |
+| `npm run test:touch-hit-area` | 0 | 50/50 |
+| `npm run test:design` / `check:design` | 0 / 0 | 设计契约与设计规则通过 |
+| `npm run test:ci-contract` | 0 | 45/45 |
+| `npm run check:governance` | 0 | 治理与源码模式通过 |
+| `npm run check:main-package` | 0 | 硬限额语义通过；committed 与脏工作树口径仍按 §9.3 分开，未跟踪 `shared.wxss` 不提交 |
+| `npm run check:ui-sync` | **1** | 失败点已不再是 prototype 摘要；剩余为 `source(ui)` 摘要不匹配 |
+| `npm run check:ui-sync --strict` | **1** | 同上，失败消息为“截图对应的 UI 内容摘要不匹配，请重新采集并核对双端证据”；不得改为 skip、豁免或绿标 |
+
+### 10.6 当前 source(ui) 摘要门精确记录
+
+仓库内机器可读记录：[`../evidence/ui-sync/2026-10-30-r25-prototype-only/source-ui-gate-block-record.json`](../evidence/ui-sync/2026-10-30-r25-prototype-only/source-ui-gate-block-record.json)。
+
+- 未闭合摘要字段：manifest `source.digest=sha256:afa1f2548fcc28151a860d4e7e08a37b23740d8a31c8cbb65ebb0f4c7378d90d`；当前计算 `source(ui)=sha256:4273274e99cbe82d0db21d75a7f2fc07ad2eda57ebbf871630b12db948f7d316`，`sourceMatches=false`。prototype 双值均为 `sha256:783e5d916b349b6db6e198df6f8393069f2d951483cc5ad3563b552eebe5e2f1`；`syncedThrough=79bf1e0bec32f6fbe9c3f754da5052f15aca6451` 与 `syncedAt=2026-10-29T13:27:27.287Z` 未被 prototype scope 改写。
+- 保值分类器规则：`scripts/theme-preservation-policy.mjs` 的 `classifyValuePreservingThemeMigration` 在 355-360 行先取 `miniprogram/**` 与 `cloudfunctions/**` 产品文件；只要存在既不是 `miniprogram/config/theme-contract.json`、也不匹配 `miniprogram/**.wxss` 的文件，即返回 `eligible=false`，原因 `product path outside the value-preserving theme whitelist`。本轮实测结果正是 `eligible=false`。
+- 当前按三点对比口径从 `origin/main` 到 HEAD 的 `miniprogram` diff 共 40 个路径：27 个修改、13 个删除；其中 11 个为 wxss 路径形状，29 个不在分类器早期白名单内。29 个非白名单路径又分为 19 个修改非 wxss/json/asset/wxml/ts 路径和 10 个删除非 wxss 路径。
+  - 19 个修改非白名单路径：`miniprogram/assets/brand/logo-share-500x400.png`、`miniprogram/pages/activities/index.json`、`miniprogram/pages/activities/timeline-state.ts`、`miniprogram/pages/activity-detail/index.json`、`miniprogram/pages/activity-detail/index.wxml`、`miniprogram/pages/admin/activity-edit/index.json`、`miniprogram/pages/admin/activity-edit/index.wxml`、`miniprogram/pages/admin/activity-list/index.json`、`miniprogram/pages/admin/activity-list/index.wxml`、`miniprogram/pages/admin/review-detail/index.json`、`miniprogram/pages/admin/reviews/index.json`、`miniprogram/pages/credential/index.wxml`、`miniprogram/pages/profile-edit/index.json`、`miniprogram/pages/profile/index.json`、`miniprogram/pages/registrations/index.wxml`、`miniprogram/pages/route-analysis/index.wxml`、`miniprogram/pages/settings/index.ts`、`miniprogram/repositories/persistent.ts`、`miniprogram/utils/date-time.ts`。
+  - 10 个删除非白名单路径：`miniprogram/components/activity-card/index.json`、`miniprogram/components/activity-card/index.ts`、`miniprogram/components/activity-card/index.wxml`、`miniprogram/components/blur-text/index.json`、`miniprogram/components/blur-text/index.ts`、`miniprogram/components/blur-text/index.wxml`、`miniprogram/components/metric-grid/index.json`、`miniprogram/components/metric-grid/index.ts`、`miniprogram/components/metric-grid/index.wxml`、`miniprogram/utils/registration.ts`。
+- 即使本地视觉比对等价，也不能替代分类器：分类器先按路径集合与保值谱系裁决，截图外观一致不会把 `wxml/ts/json/asset/组件删除` 路径纳入合法保值 lane。
+- 闭合 `source.digest` 字段的必要证据限定为：iOS 与 Android 微信真机各自覆盖 17 条路由的原生截图、实际 native tap/click 矩阵、computed 命中几何、tap 回调结果、选中/页面状态变化、设备型号、系统与微信版本、采集时间、逐图哈希与状态哈希；并将这些双端截图、点击矩阵和摘要比较绑定到同一最终 push head。另一条合法路径是后续 diff 严格落入分类器白名单并通过新增 `theme-contract.json`、token 保值、映射与消耗要求。普通成员写链路、CloudBase 回读、媒体解码和体验版晋级属于独立业务验收，不作为本摘要字段的直接输入。本地 Chromium 展示图、Phase A DOM 采样、旧 phase3/devtools/dark 截图均不得手填或冒充该输入。
+- PR 平台条件与摘要字段分开记录：用户历史合并授权继续保留，不再写成缺失；当前平台侧仍需最终 push head 的非作者 `Approve` 和必需 CI/check 收敛。本地 Draft 分支 push 不等于 merge。
+
+### 10.7 其他独立运行时阻塞（不作为 source 摘要门字段输入）
+
+- 普通成员完整写链路、CloudBase 集合/文档回读、公开骑友媒体解码、体验版晋级回读和双端真实手势权限验收，仍沿用清单中的独立 P0/P1 事项；它们影响整体业务验收，但不直接作为 `source.digest` 字段计算输入。
+- 这些事项不得被本轮 Pages 原型闭合、静态触控契约或主包预算结果覆盖为已完成。
+
+### 10.8 冻结台账与预算口径
+
+- 本地冻结台账由外部独立 JSON 承载，避免把本地截图、原始日志或临时取证目录提交进仓库：`/Users/bytedance/work/ride-event-miniprogram/artifacts/touch-package-delivery/env-prep/r25-final-integration-state.json`；最终门禁日志目录为 `/Users/bytedance/work/ride-event-miniprogram/artifacts/touch-package-delivery/runtime/logs/r26-final/`。
+- 主包预算按两个口径分别登记：committed `git archive HEAD miniprogram` 经官方 `mainPackageFiles()` 排除分包目录后为 93 文件、444619 B；工作树保守口径为 94 文件、444922 B；差额即未跟踪且不提交的 `miniprogram/styles/shared.wxss=303 B`，`444922 - 303 = 444619` 校验成立。明细：`/Users/bytedance/work/ride-event-miniprogram/artifacts/touch-package-delivery/package/analysis/r25-committed-budget-final.json`。
+- 本轮未执行 PR 创建/重试、合并、IDE 云写或生产云写；平台 PR 状态由发布 MCP 回读与维护。Pages 原型闭合只降低 prototype 摘要门禁失败，不把总体状态改写为可合并。
+
+### 10.9 绑定最终候选 head 的 validate / coverage / audit 实跑记录
+
+| 命令 | 退出码 | 事实与日志位置 |
+| --- | --- | --- |
+| `npm run validate` | **1** | 链上 `tool:install`、format、lint、typecheck、Vitest 94 文件 / 1417 tests、content 74、rights 31、strava 76、wxss 3、触控 50、phase3/dark、CI 契约 45、journey 130、bootstrap 156、deploy 65、release-notes 14、UI 节点 31、design 12、release-notes 检查与主包预算均已执行；链在 `check:ui-sync` 因 source 摘要不匹配停止。日志：`runtime/logs/r26-final/validate.log` |
+| `check:governance` / `test:cloud` / `verify:cloud-packages` / `build` | 0 / 0 / 0 / 0 | validate 链停止后的独立补跑，日志位于 `runtime/logs/r26-final/post-validate-segments.txt` 与对应命令日志 |
+| `npm run coverage` | 0 | Vitest 94 文件 / 1417 tests 通过；云覆盖率门禁 lines 91.63%、branches 89.27%、functions 96.60%、statements 90.62%；日志 `runtime/logs/r26-final/coverage.log` |
+| `npm run audit:all` | **1** | 根 `npm audit` 命中镜像源 `/-/npm/v1/security/* not implemented yet` 404，链在根审计停止；`scripts/audit-miniprogram-ci.mjs` 与 `cloudfunctions/shared` 分别为 0，其余函数 audit 段均为同一 registry endpoint 1，不得把该失败解释为已确认依赖漏洞，也不得标记为全绿。分段日志：`runtime/logs/r26-final/audit-segments/` |
+| `npm run check:ui-sync` / `--strict` | 1 / 1 | source 摘要不匹配；不 skip、不豁免、不改写为 green |

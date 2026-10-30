@@ -1,0 +1,317 @@
+{
+  "kind": "r25-source-ui-gate-block-record",
+  "generatedAt": "2026-10-30T02:55:29.593Z",
+  "headBinding": {
+    "branch": "fix/touch-package-budget-20261029",
+    "baseRef": "origin/main",
+    "baseHead": "202b72b5d8be60c9c0a9aa42f91b943d679fe059",
+    "originBranchHead": "d430de2402ae9cc65dfca74eee0aa60c7590b8f7",
+    "note": "mutable final commit SHA and gate exits are carried in external final state after commit"
+  },
+  "gateStatus": {
+    "checkUiSync": "exit=1; source(ui) digest mismatch remains authoritative",
+    "checkUiSyncStrict": "exit=1; not skipped, exempted, or relabeled green"
+  },
+  "digestFields": {
+    "manifestSourceDigest": "sha256:afa1f2548fcc28151a860d4e7e08a37b23740d8a31c8cbb65ebb0f4c7378d90d",
+    "computedSourceDigest": "sha256:4273274e99cbe82d0db21d75a7f2fc07ad2eda57ebbf871630b12db948f7d316",
+    "sourceMatches": false,
+    "manifestPrototypeDigest": "sha256:783e5d916b349b6db6e198df6f8393069f2d951483cc5ad3563b552eebe5e2f1",
+    "computedPrototypeDigest": "sha256:783e5d916b349b6db6e198df6f8393069f2d951483cc5ad3563b552eebe5e2f1",
+    "prototypeMatches": true,
+    "preservedAnchorFields": {
+      "syncedThrough": "79bf1e0bec32f6fbe9c3f754da5052f15aca6451",
+      "syncedAt": "2026-10-29T13:27:27.287Z",
+      "prototypeScopeMustNotRewrite": [
+        "source.digest",
+        "syncedThrough",
+        "syncedAt"
+      ]
+    }
+  },
+  "classifier": {
+    "script": "scripts/theme-preservation-policy.mjs",
+    "productPathRegex": "^(?:miniprogram|cloudfunctions)/",
+    "earlyRule": "productFiles.some(file => file !== THEME_CONTRACT_PATH && !WXSS_PATH.test(file))",
+    "earlyRuleLocation": "classifyValuePreservingThemeMigration lines 355-360",
+    "result": {
+      "eligible": false,
+      "reason": "product path outside the value-preserving theme whitelist"
+    },
+    "whyVisualEquivalenceIsNotSubstitute": "The classifier decides eligibility from changed paths and preservation lineage before visual comparison. A screenshot showing equivalent appearance cannot make non-whitelist wxml/ts/json/asset/component deletion paths eligible."
+  },
+  "miniprogramDiff": {
+    "total": 40,
+    "statusCounts": {
+      "M": 27,
+      "D": 13
+    },
+    "wxssEligiblePathShape": [
+      {
+        "status": "M",
+        "path": "miniprogram/app.wxss"
+      },
+      {
+        "status": "D",
+        "path": "miniprogram/components/activity-card/index.wxss"
+      },
+      {
+        "status": "D",
+        "path": "miniprogram/components/blur-text/index.wxss"
+      },
+      {
+        "status": "D",
+        "path": "miniprogram/components/metric-grid/index.wxss"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/activities/index.wxss"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/activity-detail/index.wxss"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/admin/activity-edit/index.wxss"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/admin/activity-list/index.wxss"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/credential/index.wxss"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/registrations/index.wxss"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/route-analysis/index.wxss"
+      }
+    ],
+    "nonWhitelistPaths": [
+      {
+        "status": "M",
+        "path": "miniprogram/assets/brand/logo-share-500x400.png"
+      },
+      {
+        "status": "D",
+        "path": "miniprogram/components/activity-card/index.json"
+      },
+      {
+        "status": "D",
+        "path": "miniprogram/components/activity-card/index.ts"
+      },
+      {
+        "status": "D",
+        "path": "miniprogram/components/activity-card/index.wxml"
+      },
+      {
+        "status": "D",
+        "path": "miniprogram/components/blur-text/index.json"
+      },
+      {
+        "status": "D",
+        "path": "miniprogram/components/blur-text/index.ts"
+      },
+      {
+        "status": "D",
+        "path": "miniprogram/components/blur-text/index.wxml"
+      },
+      {
+        "status": "D",
+        "path": "miniprogram/components/metric-grid/index.json"
+      },
+      {
+        "status": "D",
+        "path": "miniprogram/components/metric-grid/index.ts"
+      },
+      {
+        "status": "D",
+        "path": "miniprogram/components/metric-grid/index.wxml"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/activities/index.json"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/activities/timeline-state.ts"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/activity-detail/index.json"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/activity-detail/index.wxml"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/admin/activity-edit/index.json"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/admin/activity-edit/index.wxml"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/admin/activity-list/index.json"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/admin/activity-list/index.wxml"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/admin/review-detail/index.json"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/admin/reviews/index.json"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/credential/index.wxml"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/profile-edit/index.json"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/profile/index.json"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/registrations/index.wxml"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/route-analysis/index.wxml"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/settings/index.ts"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/repositories/persistent.ts"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/utils/date-time.ts"
+      },
+      {
+        "status": "D",
+        "path": "miniprogram/utils/registration.ts"
+      }
+    ],
+    "modifiedNonWxssPaths": [
+      {
+        "status": "M",
+        "path": "miniprogram/assets/brand/logo-share-500x400.png"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/activities/index.json"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/activities/timeline-state.ts"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/activity-detail/index.json"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/activity-detail/index.wxml"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/admin/activity-edit/index.json"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/admin/activity-edit/index.wxml"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/admin/activity-list/index.json"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/admin/activity-list/index.wxml"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/admin/review-detail/index.json"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/admin/reviews/index.json"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/credential/index.wxml"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/profile-edit/index.json"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/profile/index.json"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/registrations/index.wxml"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/route-analysis/index.wxml"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/pages/settings/index.ts"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/repositories/persistent.ts"
+      },
+      {
+        "status": "M",
+        "path": "miniprogram/utils/date-time.ts"
+      }
+    ]
+  },
+  "sourceFieldRequiredEvidence": [
+    {
+      "device": "iOS WeChat runtime",
+      "evidence": "native screenshots for all 17 bound routes plus the actual native tap/click matrix; record computed hit geometry, tap callback result, selected/page state mutation, device model, iOS/WeChat versions, capture time, per-route image hash and state hash."
+    },
+    {
+      "device": "Android WeChat runtime",
+      "evidence": "native screenshots for all 17 bound routes plus the actual native tap/click matrix; match iOS route coverage and record per-route divergence instead of substituting a browser screenshot."
+    },
+    {
+      "digestClosure": "native dual-end digest evidence",
+      "evidence": "bind the native screenshots, click matrix and resulting UI summary comparison to the same final push head; only this evidence or a valid whitelist preservation lineage may justify changing source.digest. Local Chromium and presentation screenshots are not source-digest inputs."
+    }
+  ],
+  "platformAcceptanceSeparateFromDigestField": {
+    "nonAuthorApproval": "attach a non-author reviewer Approve to the final pushed head.",
+    "ciConvergence": "required CI/check checks must be green or explicitly resolved on that head.",
+    "userMergeAuthorization": "historical user merge authorization remains recorded; this task performs only a Draft branch push and no merge."
+  },
+  "prohibitedActions": [
+    "hand-edit source.digest after visual-only review",
+    "copy old phase3/devtools/dark screenshots as new native evidence",
+    "treat expanded presentation screenshots as native runtime geometry",
+    "skip or annotate the failing strict source gate as exempt"
+  ]
+}

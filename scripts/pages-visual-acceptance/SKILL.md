@@ -43,18 +43,24 @@ node scripts/pages-visual-acceptance/capture-routes.mjs --route profile --width 
 # 仅打印当前 source(ui) 与 prototype 两个摘要
 node scripts/pages-visual-acceptance/sync-ui-digests.mjs
 
-# 写回 manifest（source.digest / prototype.digest / syncedThrough=HEAD / syncedAt）
+# 受控只写 Pages 原型摘要：source.digest、syncedThrough、syncedAt 保持不变
+node scripts/pages-visual-acceptance/sync-ui-digests.mjs --write --scope=prototype
+
+# 历史全量写回：source.digest / prototype.digest / syncedThrough=HEAD / syncedAt
 node scripts/pages-visual-acceptance/sync-ui-digests.mjs --write
 ```
 
 回算口径与 `scripts/check-ui-sync.mjs` 完全一致（`source`=`miniprogram/` UI 文件，
-`prototype`=六个 `docs/` 原型文件）。写回后再跑 `npm run check:ui-sync -- --strict` 应通过。
+`prototype`=六个 `docs/` 原型文件）。`prototype` 作用域只闭合 Pages 摘要差异；若小程序
+source 摘要仍与清单不同，strict 仍会在 source 证据门失败，不得据此声明业务验收通过。
 
 ## 重要边界
 
 - **回算摘要只让门禁与“当前内容”对齐，不等于已重新采集真机/双端截图证据。**
   真机（iOS/Android）、普通成员完整写链路、公开媒体与目标云回读仍需按
   [`docs/high-priority-issues.md`](../../docs/high-priority-issues.md) 独立留证，不得用本地截图冒充。
+- `--scope=prototype` 是 Pages 单作用域受控回写；它不计算或改写小程序 source 摘要，
+  也不把本地 Chromium 原型截图替换成 native 真机证据。
 - 模拟器/本地浏览器截图只证明对应内容的视觉同步，不能替代物理真机验收。
 - 不改后端能力与 17 条注册路由；视觉改版须保留所有 `data-action` / `data-route` 等交互接线。
 

@@ -12,13 +12,14 @@
 // 退出码：0 全过；1 存在命中失败；2 依赖/浏览器不可用（BLOCKED，非测试失败）。
 
 import { createServer } from 'node:http';
-import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { readFileSync, existsSync, mkdirSync, writeFileSync, statSync } from 'node:fs';
 import { join, resolve, extname, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 
 // 下列全局对象由 Playwright page.evaluate 注入到浏览器页面上下文执行，Node 侧不定义；
 // 仅声明给 ESLint，不改变运行时来源。
-/* global document, window, location */
+/* global document, window, location, requestAnimationFrame */
 
 // 正式门禁位于 scripts/touch-hit-area/；TOUCH_REPO_ROOT / TOUCH_EVIDENCE_DIR 供基线临时目录复用。
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
@@ -70,6 +71,52 @@ async function loadChromium() {
     }
   }
   return null;
+}
+
+// 复用 capture-routes.mjs 的采集布局：隐藏 showcase chrome、解除滚动容器固定高度/裁剪，
+// 并把未进入视口的入场动画强制落到可见态；只改取证呈现，不改产品模板与业务行为。
+const EXPAND_FOR_CAPTURE_JS = `(() => {
+  document.body.classList.add('capture', 'capture-viewport');
+  for (const sel of ['.site-header', '.screen-nav-panel', '.screen-notes', '.site-footer']) {
+    const el = document.querySelector(sel);
+    if (el) el.style.display = 'none';
+  }
+  const container = document.querySelector('#screen-container');
+  if (container) {
+    container.style.maxHeight = 'none';
+    container.style.height = 'auto';
+    container.style.overflow = 'visible';
+  }
+  document
+    .querySelectorAll('.cinema-reveal:not(.is-visible)')
+    .forEach((el) => el.classList.add('is-visible'));
+  return Boolean(container);
+})()`;
+
+// 采集内容自检：截图必须绑定真实路由 DOM（文本量 / SVG 命中盒 / 容器可见尺寸），不能只拍 chrome。
+async function captureContentProbe(page, route) {
+  return page.evaluate((targetRoute) => {
+    const container = document.querySelector('#screen-container');
+    const svg = document.querySelector('.ra-map-svg');
+    const hitRects = svg ? svg.querySelectorAll('rect.ra-mk-hit') : [];
+    const visibleRects = [...hitRects].filter((r) => {
+      const box = r.getBoundingClientRect();
+      return box.width > 0 && box.height > 0;
+    });
+    const box = container ? container.getBoundingClientRect() : null;
+    return {
+      containerPresent: Boolean(container),
+      bodyCaptureClass: document.body.classList.contains('capture-viewport'),
+      textLength: container ? container.innerText.trim().length : 0,
+      mapSvgPresent: Boolean(svg),
+      hitRectCount: hitRects.length,
+      visibleHitRectCount: visibleRects.length,
+      controls: document.querySelectorAll(`[data-route="${targetRoute}"]`).length,
+      containerBox: box ? { width: Math.round(box.width), height: Math.round(box.height) } : null,
+      scrollHeight: container ? container.scrollHeight : 0,
+      clientHeight: container ? container.clientHeight : 0,
+    };
+  }, route);
 }
 
 // 浏览器内执行：9 点采样 + 归属判定 + 邻近对相交检查（函数体由 Playwright 直接注入执行）。
@@ -295,22 +342,30 @@ async function main() {
 
   const server = await serveDocs(DOCS_ROOT, 63911);
   const browser = await chromium.launch({ headless: true });
-  const report = { generatedAt: new Date().toISOString(), minPx: MIN_PX, widths: {}, failures: [] };
+  const report = {
+    generatedAt: new Date().toISOString(),
+    minPx: MIN_PX,
+    phases: {
+      measurement:
+        'measurement-original-viewport：默认原型布局下测量 44px 命中盒、elementFromPoint 归属与 showPage 状态副作用；不含 capture 覆盖。',
+      presentation:
+        'presentation-layout-override：测量完成后才展开滚动容器并强制动画可见，截图仅为 Pages 呈现证据，不是 native 运行时几何。',
+    },
+    widths: {},
+    failures: [],
+  };
 
   for (const width of WIDTHS) {
     const page = await browser.newPage({ viewport: { width, height: 844 } });
     const consoleErrors = [];
     page.on('pageerror', (e) => consoleErrors.push(e.message));
+    // 阶段 A（measurement-original-viewport）：保持原型默认布局，不加载 capture 覆盖、不展开容器、
+    // 不强制动画可见；44px 命中盒、elementFromPoint 归属与 showPage 状态副作用只在这一阶段测量。
     await page.goto(`http://127.0.0.1:63911/index.html?bust=${Date.now()}#${ROUTE}`, {
       waitUntil: 'networkidle',
     });
+    await page.waitForSelector('#screen-container .pg', { timeout: 15000 }).catch(() => {});
     await page.waitForSelector('.ra-map-svg', { timeout: 15000 }).catch(() => {});
-    await page.evaluate(() => {
-      for (const sel of ['.site-header', '.screen-nav-panel', '.screen-notes', '.site-footer']) {
-        const el = document.querySelector(sel);
-        if (el) el.style.display = 'none';
-      }
-    });
 
     // 安装真实 click 监听（捕获阶段），随后对每个 marker 中心与控件中心派发原生 click。
     await page.evaluate(() => {
@@ -392,20 +447,58 @@ async function main() {
           stateBefore,
           stateAfter,
           stateChanged: stateBefore !== stateAfter,
+          stateChangeLabel: c.getAttribute('data-state')
+            ? stateBefore !== stateAfter
+              ? 'clicked：事件到达且 showPage 状态翻转'
+              : 'clicked：事件可达，但 showPage 状态未翻转（不记为状态变化）'
+            : 'clicked：同页自导航，无状态字段，仅记录事件可达',
           reachableOwner: el
             ? (el.closest('[data-route],[data-action]') || {}).className || null
             : null,
           evidenceKind: c.getAttribute('data-state')
-            ? 'app.js showPage 真实副作用：window.prototypeState 翻转'
+            ? 'app.js showPage 状态副作用；是否翻转以 stateChanged/stateChangeLabel 为准'
             : '同页自导航控件：仅记录事件可达与归属，不声称 selectedPoint 选中态',
         });
       }
       return out;
     });
 
-    await page.screenshot({ path: join(SHOT_DIR, `${ROUTE}-${width}.png`), fullPage: true });
+    // 阶段 B（presentation-layout-override）：测量完成后才展开滚动容器、强制入场动画可见并截图。
+    // 本阶段盒高/坐标仅用于页面呈现绑定，不作为 native 或测量阶段命中几何证据。
+    await page.evaluate(EXPAND_FOR_CAPTURE_JS);
+    await page.evaluate(
+      () =>
+        new Promise((resolvePromise) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(resolvePromise, 220))),
+        ),
+    );
+    const capture = await captureContentProbe(page, ROUTE);
+    if (!capture.containerPresent)
+      report.failures.push(`[${width}px] 呈现阶段 #screen-container 缺失，截图不能绑定真实页面`);
+    if (!capture.mapSvgPresent)
+      report.failures.push(`[${width}px] 呈现阶段 .ra-map-svg 未渲染，截图无路线内容`);
+    if (capture.textLength < 80)
+      report.failures.push(
+        `[${width}px] 呈现阶段路由正文文本仅 ${capture.textLength} 字符，疑似空壳截图`,
+      );
+    if (capture.visibleHitRectCount < 8)
+      report.failures.push(
+        `[${width}px] 呈现阶段可见命中矩形 ${capture.visibleHitRectCount}/8，截图缺关键点内容`,
+      );
+    if (capture.controls === 0)
+      report.failures.push(`[${width}px] 呈现阶段未找到 ${ROUTE} 发货控件`);
+
+    const shotPath = join(SHOT_DIR, `${ROUTE}-${width}.png`);
+    // TOUCH_KEEP_EXISTING_SHOTS=1 时只统计既有呈现截图，不重写图片；测量阶段仍在当前 head 重新执行。
+    const regenerated = process.env.TOUCH_KEEP_EXISTING_SHOTS !== '1';
+    if (regenerated) {
+      await page.screenshot({ path: shotPath, fullPage: true });
+    }
+    const shotStat = statSync(shotPath);
+    const shotHash = createHash('sha256').update(readFileSync(shotPath)).digest('hex');
 
     // 聚合失败：marker 缺命中盒 / 盒不足 44px / 任一点归属错误 / 背景命中 / 邻近对中点越权。
+    // 下列断言全部来自阶段 A 的 probe 与 clicks，不使用阶段 B 覆盖后的盒尺寸。
     for (const m of probe.markers) {
       if (m.missingHitRect) report.failures.push(`[${width}px] marker 缺命中矩形：${m.label}`);
       else if (m.box.min < MIN_PX - 0.5)
@@ -475,11 +568,13 @@ async function main() {
     if (consoleErrors.length)
       report.failures.push(`[${width}px] 页面脚本错误：${consoleErrors.join('; ')}`);
 
+    const markerMinBox = Math.min(
+      ...probe.markers.filter((m) => !m.missingHitRect).map((m) => m.box.min),
+    );
+    // 顶层字段保持向后兼容，来源固定为阶段 A 测量结果；阶段 B 仅落在 presentation.capture。
     report.widths[width] = {
       markerCount: probe.markers.length,
-      markerMinBox: Math.min(
-        ...probe.markers.filter((m) => !m.missingHitRect).map((m) => m.box.min),
-      ),
+      markerMinBox,
       controlCount: probe.controls.length,
       controlIdentity: probe.controlIdentity,
       disabledExcluded: probe.disabledExcluded,
@@ -488,6 +583,34 @@ async function main() {
       negativeNeighbors: probe.negativeNeighbors,
       clicks,
       probe,
+      measurement: {
+        phase: 'measurement-original-viewport',
+        layoutOverrideApplied: false,
+        markerCount: probe.markers.length,
+        markerMinBox,
+        controlCount: probe.controls.length,
+        clicks,
+        probeSummary: {
+          background: probe.background,
+          overlapPairs: probe.overlapPairs,
+          negativeNeighbors: probe.negativeNeighbors,
+        },
+      },
+      presentation: {
+        phase: 'presentation-layout-override',
+        geometryClaim:
+          '截图为 Pages 呈现证据；覆盖后的容器高度/坐标不得回写为 native 或测量命中几何',
+        ...capture,
+        screenshot: {
+          file: `${ROUTE}-${width}.png`,
+          bytes: shotStat.size,
+          sha256: shotHash,
+          // 时间取真实文件 mtime；保留既有截图时不得用本次报告运行时间冒充拍摄时间。
+          capturedAt: shotStat.mtime.toISOString(),
+          regenerated,
+          capturedAtSource: regenerated ? '本次截图写入时间' : '既有 PNG 文件 mtime（未重写）',
+        },
+      },
     };
     await page.close();
   }

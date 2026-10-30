@@ -43,7 +43,7 @@
     "check:release-notes": "node scripts/check-release-notes.mjs",
     "check:main-package": "node scripts/check-main-package-size.mjs",
     "test:release-notes": "node --test scripts/check-release-notes.node-test.mjs",
-    "test:ui-sync": "node --test scripts/ui-sync-policy.node-test.mjs scripts/check-ui-sync.node-test.mjs",
+    "test:ui-sync": "node --test scripts/ui-sync-policy.node-test.mjs scripts/check-ui-sync.node-test.mjs scripts/pages-visual-acceptance/sync-ui-digests.node-test.mjs",
     "test:design": "node --test scripts/check-design.node-test.mjs",
     "deploy:miniprogram": "node scripts/upload-miniprogram-ci.mjs",
     "check:design": "node scripts/check-design.mjs",

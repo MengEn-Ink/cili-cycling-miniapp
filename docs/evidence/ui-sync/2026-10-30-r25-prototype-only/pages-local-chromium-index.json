@@ -1,0 +1,417 @@
+{
+  "kind": "r25-local-chromium-pages-index",
+  "generatedAt": "2026-10-30T02:55:26.161Z",
+  "headBinding": {
+    "branch": "fix/touch-package-budget-20261029",
+    "baseRef": "origin/main",
+    "mergeBase": "202b72b5d8be60c9c0a9aa42f91b943d679fe059",
+    "originBranchHead": "d430de2402ae9cc65dfca74eee0aa60c7590b8f7",
+    "note": "metadata only; raw PNGs remain private local artifact and are not committed; mutable commit SHA is carried in external final state after the single local commit"
+  },
+  "captureProfile": {
+    "type": "single local Chromium 390x844 presentation batch; not the three-width touch hit matrix",
+    "capturedAt": "2026-10-30T01:43:01.951Z",
+    "browser": "local headless Chromium",
+    "routeCount": 17
+  },
+  "evidenceBoundary": {
+    "runtime": "local headless Chromium on 390x844 prototype shell",
+    "notNative": true,
+    "notDeviceTap": true,
+    "notMemberWriteLink": true,
+    "notCloudReadback": true,
+    "phaseA": "none for this index; producer touch-browser phase A owns 44px measurement",
+    "phaseB": "showcase chrome hidden and #screen-container expanded for full-page presentation; coordinates/box heights are not native runtime geometry"
+  },
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "sourceFilesHashDigests": {
+    "index.html": {
+      "bytes": 7394,
+      "sha256": "c5da2281de8c2a696cca27a08b6d59d1e478598f3d2aaf45b4479afe3efffb5b"
+    },
+    "styles.css": {
+      "bytes": 294705,
+      "sha256": "22cd7db06328e4fc70362befaabf30eafd99a39725a8c2388f627a633b75df7c"
+    },
+    "app.js": {
+      "bytes": 89694,
+      "sha256": "80f321fe4a4d3d8ad5413c386a26015344c15033e70e06569ac174d154cf0585"
+    },
+    "delivery-center.js": {
+      "bytes": 49330,
+      "sha256": "00a3cf3f06ae77a2057817034401d137bce99a21aff0f0e0cb82fd6f93529efd"
+    },
+    "schema.js": {
+      "bytes": 60808,
+      "sha256": "019f62b7c01ee36baa51badb82b6c0ae3939dc879508e798a25de0afdb531802"
+    },
+    "templates.js": {
+      "bytes": 157200,
+      "sha256": "0ce762725463120d124b669f5b0a05062af53fb2feec4d1a751437aeacaac5a6"
+    }
+  },
+  "digestSummary": {
+    "prototype": {
+      "manifest": "sha256:783e5d916b349b6db6e198df6f8393069f2d951483cc5ad3563b552eebe5e2f1",
+      "computedCurrent": "sha256:783e5d916b349b6db6e198df6f8393069f2d951483cc5ad3563b552eebe5e2f1",
+      "matchesManifest": true
+    },
+    "source": {
+      "manifest": "sha256:afa1f2548fcc28151a860d4e7e08a37b23740d8a31c8cbb65ebb0f4c7378d90d",
+      "computedCurrent": "sha256:4273274e99cbe82d0db21d75a7f2fc07ad2eda57ebbf871630b12db948f7d316",
+      "matchesManifest": false,
+      "note": "not rewritten by prototype binder; strict source gate remains authoritative"
+    }
+  },
+  "aggregate": {
+    "routeCount": 17,
+    "allOverflowFalse": true,
+    "allPageErrorsEmpty": true,
+    "allDimensionsMatchViewport": true
+  },
+  "results": [
+    {
+      "route": "activities",
+      "filename": "activities.png",
+      "pngBytes": 265958,
+      "pngWidth": 390,
+      "pngHeight": 844,
+      "pngSha256": "0af07f58bf2a05d5bcc492f3ee21a4aae916b37f6b7e898f813d7bd406d55227",
+      "capturedAt": "2026-10-30T01:43:01.951Z",
+      "state": {
+        "overflow": false,
+        "pageErrors": [],
+        "visualContentReviewed": true,
+        "contentReviewNote": "real page rendering inspected; two sampled pages checked for non-empty content and recognizable layout"
+      },
+      "redaction": {
+        "performed": false,
+        "note": "private raw screenshots retained outside VCS; this committed metadata asserts no personal-data acceptance status"
+      },
+      "status": "LOCAL_CHROMIUM_PAGES_PROTOTYPE_ONLY_NOT_NATIVE"
+    },
+    {
+      "route": "activity-detail",
+      "filename": "activity-detail.png",
+      "pngBytes": 183422,
+      "pngWidth": 390,
+      "pngHeight": 844,
+      "pngSha256": "c9e59f8ffe82c061a2d124a81d8256ebf602cbd31ef29e4f06a946f9730b76b2",
+      "capturedAt": "2026-10-30T01:43:01.951Z",
+      "state": {
+        "overflow": false,
+        "pageErrors": [],
+        "visualContentReviewed": true,
+        "contentReviewNote": "real page rendering inspected; two sampled pages checked for non-empty content and recognizable layout"
+      },
+      "redaction": {
+        "performed": false,
+        "note": "private raw screenshots retained outside VCS; this committed metadata asserts no personal-data acceptance status"
+      },
+      "status": "LOCAL_CHROMIUM_PAGES_PROTOTYPE_ONLY_NOT_NATIVE"
+    },
+    {
+      "route": "route-analysis",
+      "filename": "route-analysis.png",
+      "pngBytes": 76148,
+      "pngWidth": 390,
+      "pngHeight": 844,
+      "pngSha256": "87d9169c236af9c7e65fc99dedde4cbe4edb0b4baa45fdbd3dec9581be50304b",
+      "capturedAt": "2026-10-30T01:43:01.951Z",
+      "state": {
+        "overflow": false,
+        "pageErrors": [],
+        "visualContentReviewed": true,
+        "contentReviewNote": "real page rendering inspected; two sampled pages checked for non-empty content and recognizable layout"
+      },
+      "redaction": {
+        "performed": false,
+        "note": "private raw screenshots retained outside VCS; this committed metadata asserts no personal-data acceptance status"
+      },
+      "status": "LOCAL_CHROMIUM_PAGES_PROTOTYPE_ONLY_NOT_NATIVE"
+    },
+    {
+      "route": "registration-form",
+      "filename": "registration-form.png",
+      "pngBytes": 63434,
+      "pngWidth": 390,
+      "pngHeight": 844,
+      "pngSha256": "53d751602401fcfe2f7d1987fe1593326e28a4cdc92a27145c17de75c7165bd9",
+      "capturedAt": "2026-10-30T01:43:01.951Z",
+      "state": {
+        "overflow": false,
+        "pageErrors": [],
+        "visualContentReviewed": true,
+        "contentReviewNote": "real page rendering inspected; two sampled pages checked for non-empty content and recognizable layout"
+      },
+      "redaction": {
+        "performed": false,
+        "note": "private raw screenshots retained outside VCS; this committed metadata asserts no personal-data acceptance status"
+      },
+      "status": "LOCAL_CHROMIUM_PAGES_PROTOTYPE_ONLY_NOT_NATIVE"
+    },
+    {
+      "route": "registrations",
+      "filename": "registrations.png",
+      "pngBytes": 58905,
+      "pngWidth": 390,
+      "pngHeight": 844,
+      "pngSha256": "7dcf48374a77a268fed37849b7998f7684097005e7ce403c29803f35a75a6ddd",
+      "capturedAt": "2026-10-30T01:43:01.951Z",
+      "state": {
+        "overflow": false,
+        "pageErrors": [],
+        "visualContentReviewed": true,
+        "contentReviewNote": "real page rendering inspected; two sampled pages checked for non-empty content and recognizable layout"
+      },
+      "redaction": {
+        "performed": false,
+        "note": "private raw screenshots retained outside VCS; this committed metadata asserts no personal-data acceptance status"
+      },
+      "status": "LOCAL_CHROMIUM_PAGES_PROTOTYPE_ONLY_NOT_NATIVE"
+    },
+    {
+      "route": "credential",
+      "filename": "credential.png",
+      "pngBytes": 58567,
+      "pngWidth": 390,
+      "pngHeight": 844,
+      "pngSha256": "f7da4f0afc79cc812e49def0999aba6a84b3960df4d9d4619603fb49427d6798",
+      "capturedAt": "2026-10-30T01:43:01.951Z",
+      "state": {
+        "overflow": false,
+        "pageErrors": [],
+        "visualContentReviewed": true,
+        "contentReviewNote": "real page rendering inspected; two sampled pages checked for non-empty content and recognizable layout"
+      },
+      "redaction": {
+        "performed": false,
+        "note": "private raw screenshots retained outside VCS; this committed metadata asserts no personal-data acceptance status"
+      },
+      "status": "LOCAL_CHROMIUM_PAGES_PROTOTYPE_ONLY_NOT_NATIVE"
+    },
+    {
+      "route": "profile",
+      "filename": "profile.png",
+      "pngBytes": 212537,
+      "pngWidth": 390,
+      "pngHeight": 844,
+      "pngSha256": "8e4f9442c223091c711551f9917b73b73b5d0db0261493818a3d60bddb9905b6",
+      "capturedAt": "2026-10-30T01:43:01.951Z",
+      "state": {
+        "overflow": false,
+        "pageErrors": [],
+        "visualContentReviewed": true,
+        "contentReviewNote": "real page rendering inspected; two sampled pages checked for non-empty content and recognizable layout"
+      },
+      "redaction": {
+        "performed": false,
+        "note": "private raw screenshots retained outside VCS; this committed metadata asserts no personal-data acceptance status"
+      },
+      "status": "LOCAL_CHROMIUM_PAGES_PROTOTYPE_ONLY_NOT_NATIVE"
+    },
+    {
+      "route": "capability-card",
+      "filename": "capability-card.png",
+      "pngBytes": 211642,
+      "pngWidth": 390,
+      "pngHeight": 844,
+      "pngSha256": "624d58376bc4ab77a6454312ba10c61b01e4f7fa900e9b413208fed49adf3928",
+      "capturedAt": "2026-10-30T01:43:01.951Z",
+      "state": {
+        "overflow": false,
+        "pageErrors": [],
+        "visualContentReviewed": true,
+        "contentReviewNote": "real page rendering inspected; two sampled pages checked for non-empty content and recognizable layout"
+      },
+      "redaction": {
+        "performed": false,
+        "note": "private raw screenshots retained outside VCS; this committed metadata asserts no personal-data acceptance status"
+      },
+      "status": "LOCAL_CHROMIUM_PAGES_PROTOTYPE_ONLY_NOT_NATIVE"
+    },
+    {
+      "route": "settings",
+      "filename": "settings.png",
+      "pngBytes": 93957,
+      "pngWidth": 390,
+      "pngHeight": 844,
+      "pngSha256": "5ae829ed59067bc12060106f4026a0d875025bb8b348dfe51c7389b0a8f6daf1",
+      "capturedAt": "2026-10-30T01:43:01.951Z",
+      "state": {
+        "overflow": false,
+        "pageErrors": [],
+        "visualContentReviewed": true,
+        "contentReviewNote": "real page rendering inspected; two sampled pages checked for non-empty content and recognizable layout"
+      },
+      "redaction": {
+        "performed": false,
+        "note": "private raw screenshots retained outside VCS; this committed metadata asserts no personal-data acceptance status"
+      },
+      "status": "LOCAL_CHROMIUM_PAGES_PROTOTYPE_ONLY_NOT_NATIVE"
+    },
+    {
+      "route": "profile-edit",
+      "filename": "profile-edit.png",
+      "pngBytes": 53074,
+      "pngWidth": 390,
+      "pngHeight": 844,
+      "pngSha256": "652a8cccc7acf438176a0a4ae0ecb8bfa4cf6ff0da4e60eabaed313db9ca822a",
+      "capturedAt": "2026-10-30T01:43:01.951Z",
+      "state": {
+        "overflow": false,
+        "pageErrors": [],
+        "visualContentReviewed": true,
+        "contentReviewNote": "real page rendering inspected; two sampled pages checked for non-empty content and recognizable layout"
+      },
+      "redaction": {
+        "performed": false,
+        "note": "private raw screenshots retained outside VCS; this committed metadata asserts no personal-data acceptance status"
+      },
+      "status": "LOCAL_CHROMIUM_PAGES_PROTOTYPE_ONLY_NOT_NATIVE"
+    },
+    {
+      "route": "admin-activity-list",
+      "filename": "admin-activity-list.png",
+      "pngBytes": 71214,
+      "pngWidth": 390,
+      "pngHeight": 844,
+      "pngSha256": "060cacba3002741e328b6c4d7c0091139de0e30b4dc585edf7af6e15f8cb5edb",
+      "capturedAt": "2026-10-30T01:43:01.951Z",
+      "state": {
+        "overflow": false,
+        "pageErrors": [],
+        "visualContentReviewed": true,
+        "contentReviewNote": "real page rendering inspected; two sampled pages checked for non-empty content and recognizable layout"
+      },
+      "redaction": {
+        "performed": false,
+        "note": "private raw screenshots retained outside VCS; this committed metadata asserts no personal-data acceptance status"
+      },
+      "status": "LOCAL_CHROMIUM_PAGES_PROTOTYPE_ONLY_NOT_NATIVE"
+    },
+    {
+      "route": "admin-activity-edit",
+      "filename": "admin-activity-edit.png",
+      "pngBytes": 62893,
+      "pngWidth": 390,
+      "pngHeight": 844,
+      "pngSha256": "61a7357ee8d8384deb6843ffbca08ca850a6ab1a25dd1e2c310272faf9693b2b",
+      "capturedAt": "2026-10-30T01:43:01.951Z",
+      "state": {
+        "overflow": false,
+        "pageErrors": [],
+        "visualContentReviewed": true,
+        "contentReviewNote": "real page rendering inspected; two sampled pages checked for non-empty content and recognizable layout"
+      },
+      "redaction": {
+        "performed": false,
+        "note": "private raw screenshots retained outside VCS; this committed metadata asserts no personal-data acceptance status"
+      },
+      "status": "LOCAL_CHROMIUM_PAGES_PROTOTYPE_ONLY_NOT_NATIVE"
+    },
+    {
+      "route": "admin-reviews",
+      "filename": "admin-reviews.png",
+      "pngBytes": 67388,
+      "pngWidth": 390,
+      "pngHeight": 844,
+      "pngSha256": "2535a6a886bbeaa640a2fb89dffd988a8d492a8d234fd43105ca6f70e36ff462",
+      "capturedAt": "2026-10-30T01:43:01.951Z",
+      "state": {
+        "overflow": false,
+        "pageErrors": [],
+        "visualContentReviewed": true,
+        "contentReviewNote": "real page rendering inspected; two sampled pages checked for non-empty content and recognizable layout"
+      },
+      "redaction": {
+        "performed": false,
+        "note": "private raw screenshots retained outside VCS; this committed metadata asserts no personal-data acceptance status"
+      },
+      "status": "LOCAL_CHROMIUM_PAGES_PROTOTYPE_ONLY_NOT_NATIVE"
+    },
+    {
+      "route": "admin-review-detail",
+      "filename": "admin-review-detail.png",
+      "pngBytes": 57963,
+      "pngWidth": 390,
+      "pngHeight": 844,
+      "pngSha256": "a9e68d4e427735add4e65d018d35275e8b542ead7e119123ed67c3ed6f671e3e",
+      "capturedAt": "2026-10-30T01:43:01.951Z",
+      "state": {
+        "overflow": false,
+        "pageErrors": [],
+        "visualContentReviewed": true,
+        "contentReviewNote": "real page rendering inspected; two sampled pages checked for non-empty content and recognizable layout"
+      },
+      "redaction": {
+        "performed": false,
+        "note": "private raw screenshots retained outside VCS; this committed metadata asserts no personal-data acceptance status"
+      },
+      "status": "LOCAL_CHROMIUM_PAGES_PROTOTYPE_ONLY_NOT_NATIVE"
+    },
+    {
+      "route": "club/center",
+      "filename": "club-center.png",
+      "pngBytes": 241199,
+      "pngWidth": 390,
+      "pngHeight": 844,
+      "pngSha256": "9a07ba8e61fbffe8c9712b71a26ca704334b98fb266d343d15b3f265ec6e1833",
+      "capturedAt": "2026-10-30T01:43:01.951Z",
+      "state": {
+        "overflow": false,
+        "pageErrors": [],
+        "visualContentReviewed": true,
+        "contentReviewNote": "real page rendering inspected; two sampled pages checked for non-empty content and recognizable layout"
+      },
+      "redaction": {
+        "performed": false,
+        "note": "private raw screenshots retained outside VCS; this committed metadata asserts no personal-data acceptance status"
+      },
+      "status": "LOCAL_CHROMIUM_PAGES_PROTOTYPE_ONLY_NOT_NATIVE"
+    },
+    {
+      "route": "admin-club-applications",
+      "filename": "admin-club-applications.png",
+      "pngBytes": 52015,
+      "pngWidth": 390,
+      "pngHeight": 844,
+      "pngSha256": "beaad2f69002d1d7fe03e6c48fe81c27050152138f8baf5a7e47071e01a8c424",
+      "capturedAt": "2026-10-30T01:43:01.951Z",
+      "state": {
+        "overflow": false,
+        "pageErrors": [],
+        "visualContentReviewed": true,
+        "contentReviewNote": "real page rendering inspected; two sampled pages checked for non-empty content and recognizable layout"
+      },
+      "redaction": {
+        "performed": false,
+        "note": "private raw screenshots retained outside VCS; this committed metadata asserts no personal-data acceptance status"
+      },
+      "status": "LOCAL_CHROMIUM_PAGES_PROTOTYPE_ONLY_NOT_NATIVE"
+    },
+    {
+      "route": "admin-club-application-detail",
+      "filename": "admin-club-application-detail.png",
+      "pngBytes": 211292,
+      "pngWidth": 390,
+      "pngHeight": 844,
+      "pngSha256": "66556350f73d337e2e6b925d2857f46e29f4ca64bad88fda754b0ee0efe617c8",
+      "capturedAt": "2026-10-30T01:43:01.951Z",
+      "state": {
+        "overflow": false,
+        "pageErrors": [],
+        "visualContentReviewed": true,
+        "contentReviewNote": "real page rendering inspected; two sampled pages checked for non-empty content and recognizable layout"
+      },
+      "redaction": {
+        "performed": false,
+        "note": "private raw screenshots retained outside VCS; this committed metadata asserts no personal-data acceptance status"
+      },
+      "status": "LOCAL_CHROMIUM_PAGES_PROTOTYPE_ONLY_NOT_NATIVE"
+    }
+  ]
+}
