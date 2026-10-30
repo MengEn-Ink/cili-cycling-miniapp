@@ -6,7 +6,7 @@ const read = (path: string) => readFileSync(path, 'utf8');
 
 const models = read('miniprogram/models/index.ts');
 const repository = read('miniprogram/repositories/cloud.ts');
-const activityCard = read('miniprogram/components/activity-card/index.wxml');
+const activities = read('miniprogram/pages/activities/index.wxml');
 const activityDetail = read('miniprogram/pages/activity-detail/index.wxml');
 const registrations = read('miniprogram/pages/registrations/index.wxml');
 const credential = read('miniprogram/pages/credential/index.wxml');
@@ -37,7 +37,7 @@ describe('M0 俱乐部身份生产契约', () => {
   });
 
   it('活动列表、详情、行程与凭证均展示活动归属', () => {
-    expect(activityCard).toContain('item.clubIdentity.name');
+    expect(activities).toContain('item.clubIdentity.name');
     expect(activityDetail).toContain('item.clubIdentity.name');
     expect(registrations).toContain('item.activity.clubIdentity.name');
     expect(credential).toContain('activity.clubIdentity.name');

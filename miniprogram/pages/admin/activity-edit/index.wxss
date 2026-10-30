@@ -288,7 +288,7 @@ page {
   padding: 4rpx 12rpx;
   border: 0;
   border-radius: var(--radius-xs);
-  background: var(--surface-media-index);
+  background: var(--surface-media-action);
   color: var(--color-on-media);
   font-size: 22rpx;
   line-height: 36rpx;

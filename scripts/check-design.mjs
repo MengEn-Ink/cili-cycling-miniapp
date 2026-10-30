@@ -7,6 +7,7 @@ import { pathToFileURL } from 'node:url';
 const COLOR_LITERAL_PATTERN = /#[0-9a-fA-F]{3,8}\b|rgba?\([^)]*\)/g;
 const FONT_DECLARATION_PATTERN = /font-family\s*:\s*([^;]+);/g;
 const TOKEN_PATTERN = /((--[\w-]+)\s*:\s*([^;]+);)/g;
+const TOKEN_REFERENCE_PATTERN = /var\(\s*(--[\w-]+)/g;
 const DEFAULT_ALLOWED_LITERAL_FILES = new Set(['miniprogram/app.wxss']);
 
 function normalizePath(path) {
@@ -113,9 +114,88 @@ export function parseWxssTokens(source) {
   if (!pageBlock) return {};
   const tokens = {};
   for (const match of pageBlock[1].matchAll(TOKEN_PATTERN)) {
+    if (Object.prototype.hasOwnProperty.call(tokens, match[2])) {
+      throw new Error(`duplicate root token: ${match[2]}`);
+    }
     tokens[match[2]] = normalizeValue(match[3]);
   }
   return tokens;
+}
+
+function declaredTokenNames(source) {
+  return new Set([...source.matchAll(TOKEN_PATTERN)].map((match) => match[2]));
+}
+
+export function collectTokenReferenceIssues(entries, globalTokens) {
+  const globals = new Set(Object.keys(globalTokens));
+  const issues = [];
+  for (const [rawPath, source] of entries) {
+    const path = normalizePath(rawPath);
+    const localTokens = declaredTokenNames(source);
+    for (const match of source.matchAll(TOKEN_REFERENCE_PATTERN)) {
+      const token = match[1];
+      if (globals.has(token) || localTokens.has(token)) continue;
+      issues.push({ path, token, ...locate(source, match.index) });
+    }
+  }
+  return issues;
+}
+
+function architectureComponentTokens(componentGroups) {
+  return (componentGroups || []).flatMap((group) => [
+    ...(group.tokens || []),
+    ...Object.values(group.states || {}).flat(),
+  ]);
+}
+
+export function validateTokenArchitecture({ architecture, tokens, styleEntries, documentText }) {
+  const errors = [];
+  if (!architecture?.document) errors.push('token architecture: document is required');
+
+  const requiredTokens = [
+    ...(architecture?.primitive || []),
+    ...(architecture?.semantic || []),
+    ...architectureComponentTokens(architecture?.components),
+  ];
+  const seen = new Set();
+  for (const token of requiredTokens) {
+    if (seen.has(token)) errors.push(`token architecture: duplicate required token ${token}`);
+    seen.add(token);
+    if (tokenValue(tokens, token) === undefined) {
+      errors.push(`token architecture: missing ${token}`);
+      continue;
+    }
+    try {
+      if (resolvedTokenValue(tokens, token) === undefined) {
+        errors.push(`token architecture: unresolved ${token}`);
+      }
+    } catch (error) {
+      errors.push(`token architecture: ${error.message}`);
+    }
+  }
+
+  const styleText = (styleEntries || []).map(([, source]) => source).join('\n');
+  for (const token of architectureComponentTokens(architecture?.components)) {
+    const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (!new RegExp(`var\\(\\s*${escaped}(?:\\s*[,)]|\\s*$)`).test(styleText)) {
+      errors.push(`token architecture: component token is not consumed ${token}`);
+    }
+  }
+
+  for (const match of String(documentText || '').matchAll(TOKEN_REFERENCE_PATTERN)) {
+    const token = match[1];
+    if (tokenValue(tokens, token) === undefined) {
+      errors.push(`design document: undefined token ${token}`);
+      continue;
+    }
+    try {
+      resolvedTokenValue(tokens, token);
+    } catch (error) {
+      errors.push(`design document: ${error.message}`);
+    }
+  }
+
+  if (errors.length) throw new Error(errors.join('\n'));
 }
 
 export function collectStyleLiteralViolations(
@@ -269,8 +349,8 @@ export function validateFontContract(rows, fonts, tokens) {
 
 export function validateContractSnapshot({ contract, appJson, pageJsons, themeSource, tokens }) {
   const errors = [];
-  if (![2, 3].includes(contract.schemaVersion)) {
-    errors.push('contract: schemaVersion must be 2 or 3');
+  if (![2, 3, 4].includes(contract.schemaVersion)) {
+    errors.push('contract: schemaVersion must be 2, 3 or 4');
   }
 
   for (const [key, expected] of Object.entries(contract.native.appWindow || {})) {
@@ -393,6 +473,19 @@ export function runRepositoryCheck(root = process.cwd()) {
     normalizePath(relative(root, path)),
     readFileSync(path, 'utf8'),
   ]);
+  const tokenReferenceIssues = collectTokenReferenceIssues(styleEntries, snapshot.tokens);
+  const designDocumentPath = contract.tokenArchitecture?.document;
+  if (!designDocumentPath) throw new Error('token architecture document missing from contract');
+  const absoluteDesignDocumentPath = join(root, designDocumentPath);
+  if (!existsSync(absoluteDesignDocumentPath)) {
+    throw new Error(`design document missing: ${designDocumentPath}`);
+  }
+  validateTokenArchitecture({
+    architecture: contract.tokenArchitecture,
+    tokens: snapshot.tokens,
+    styleEntries,
+    documentText: readFileSync(absoluteDesignDocumentPath, 'utf8'),
+  });
   const literalIssues = collectStyleLiteralViolations(
     styleEntries,
     new Set(contract.literalPolicy.allowedWxssLiteralFiles),
@@ -445,17 +538,26 @@ export function runRepositoryCheck(root = process.cwd()) {
     }
   }
 
-  if (literalIssues.length || scriptIssues.length || contrastIssues.length) {
+  if (
+    literalIssues.length ||
+    tokenReferenceIssues.length ||
+    scriptIssues.length ||
+    contrastIssues.length
+  ) {
     const issueLines = literalIssues
       .map(
         (issue) =>
           `${issue.path}:${issue.line}:${issue.column} ${issue.kind} literal ${issue.literal}`,
       )
       .sort();
+    const tokenIssueLines = tokenReferenceIssues
+      .map((issue) => `${issue.path}:${issue.line}:${issue.column} undefined token ${issue.token}`)
+      .sort();
     throw new Error(
       [
         `design contract failed: ${colorIssues.length} color literals, ${fontIssues.length} font-family literals`,
         ...issueLines,
+        ...tokenIssueLines,
         ...scriptIssues.sort(),
         ...contrastIssues.sort(),
       ].join('\n'),
@@ -467,6 +569,8 @@ export function runRepositoryCheck(root = process.cwd()) {
     fontLiteralCount: 0,
     migrationRows: rows.length,
     nativePageConfigs: snapshot.pageJsons.length,
+    requiredComponentTokens: architectureComponentTokens(contract.tokenArchitecture.components)
+      .length,
   };
 }
 
@@ -474,7 +578,7 @@ function runCli() {
   try {
     const result = runRepositoryCheck();
     console.log(
-      `设计契约校验通过：${result.migrationRows} 条历史颜色迁移账本、${result.nativePageConfigs} 个页面原生配置、0 个页面颜色/字体字面量`,
+      `设计契约校验通过：${result.migrationRows} 条历史颜色迁移账本、${result.nativePageConfigs} 个页面原生配置、${result.requiredComponentTokens} 个核心组件 token、0 个未定义 token、0 个页面颜色/字体字面量`,
     );
   } catch (error) {
     console.error(error.message);

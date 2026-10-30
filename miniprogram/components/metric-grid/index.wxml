@@ -1,6 +1,0 @@
-<view class="metric-grid metric-grid--{{columns}} metric-grid--narrow-{{narrowColumns}}" aria-label="{{ariaLabel}}">
-  <view class="metric-grid__item" wx:for="{{items}}" wx:key="label">
-    <view class="metric-grid__reading"><text class="metric-grid__value">{{item.value}}</text><text class="metric-grid__unit" wx:if="{{item.unit}}">{{item.unit}}</text></view>
-    <view class="metric-grid__label">{{item.label}}</view>
-  </view>
-</view>

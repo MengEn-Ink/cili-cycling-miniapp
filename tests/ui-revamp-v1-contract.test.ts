@@ -30,18 +30,14 @@ describe('UI 改版 V1 原生契约', () => {
     expect(changedPresentation).not.toMatch(/wx\.cloud|callFunction|repository|rideService/);
   });
 
-  it('blur-text 提供等价 API、重放、完成事件与降级', () => {
-    const script = read('miniprogram/components/blur-text/index.ts');
-    const template = read('miniprogram/components/blur-text/index.wxml');
-    const style = read('miniprogram/components/blur-text/index.wxss');
-    for (const api of ['text', 'animateBy', 'direction', 'delay', 'stepDuration', 'trigger']) {
-      expect(script).toContain(`${api}:`);
-    }
-    expect(script).toContain('replay()');
-    expect(script).toContain("triggerEvent('complete')");
-    expect(script).toContain('reducedMotion');
-    expect(template).toContain('aria-label="{{text}}"');
-    expect(style).toContain('@media (prefers-reduced-motion: reduce)');
+  it('入场动效由全局 cinema 样式承载并提供降级，不注册已退役组件', () => {
+    const appStyle = read('miniprogram/app.wxss');
+    const activitiesJson = read('miniprogram/pages/activities/index.json');
+    const detailJson = read('miniprogram/pages/activity-detail/index.json');
+    expect(appStyle).toContain('.cinema-page .pageheading-line');
+    expect(appStyle).toContain('animation: cinema-blur-in');
+    expect(appStyle).toContain('@media (prefers-reduced-motion: reduce)');
+    expect(`${activitiesJson}\n${detailJson}`).not.toContain('blur-text');
   });
 
   it('首页保留 CTA 与首图 eager 策略，电影暗色版维持首屏信息密度与连续暗场', () => {

@@ -93,11 +93,11 @@ describe('统一 Logo 物料与页面接入契约', () => {
   });
 
   it('活动空态复用 brand-logo，旧名片路由只做兼容跳转且不重复绘制导航', () => {
-    const activityCard = read('miniprogram/components/activity-card/index.wxml');
+    const activities = read('miniprogram/pages/activities/index.wxml');
     const capabilityCard = read('miniprogram/pages/capability-card/index.wxml');
     const reviewDetail = read('miniprogram/pages/admin/review-detail/index.wxml');
 
-    expect(activityCard).toContain('<generated-activity-cover');
+    expect(activities).toContain('<generated-activity-cover');
     expect(read('miniprogram/components/generated-activity-cover/index.wxml')).toContain(
       '<brand-logo compact="{{true}}"',
     );
@@ -107,7 +107,7 @@ describe('统一 Logo 物料与页面接入契约', () => {
       "url: '/pages/profile/index'",
     );
     expect(reviewDetail).toContain('<brand-logo compact="{{true}}" meta="审批详情" />');
-    expect(activityCard).not.toMatch(/>CILI<|骑有此里/);
+    expect(activities).not.toMatch(/>CILI<|骑有此里/);
     expect(capabilityCard).not.toContain('class="cinema-slate"');
     expect(reviewDetail).not.toContain('class="cinema-slate"');
     expect(`${capabilityCard}\n${reviewDetail}`).not.toContain('骑有此里');

@@ -22,11 +22,13 @@
 node scripts/pages-visual-acceptance/capture-routes.mjs --out /tmp/cili-pages-shots
 
 # 只看单页 + 指定窄屏宽度（验收 340/375/430 时很有用）
-node scripts/pages-visual-acceptance/capture-routes.mjs --route profile --width 340 --out /tmp/shots-340
+node scripts/pages-visual-acceptance/capture-routes.mjs \
+  --route profile --width 340 --height 780 --out /tmp/shots-340
 ```
 
-参数：`--port`（默认 63742）、`--width`（默认 390）、`--out`（默认 `/tmp/cili-pages-shots`）、
-`--route`（留空=全部 17 路由）、`--docs`（默认 `docs`）。
+参数：`--port`（默认 63742）、`--width`（默认 390）、`--height`（默认 844）、
+`--out`（默认 `/tmp/cili-pages-shots`）、`--route`（留空=全部 17 路由）、
+`--docs`（默认 `docs`）。
 
 行为：
 

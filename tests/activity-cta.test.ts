@@ -134,8 +134,8 @@ describe('活动 CTA 九分支', () => {
     ).toBe('报名待开放');
   });
 
-  it('活动卡以路线决策指标替代不稳定的容量摘要', () => {
-    const template = readFileSync('miniprogram/components/activity-card/index.wxml', 'utf8');
+  it('活动列表以路线决策指标替代不稳定的容量摘要', () => {
+    const template = readFileSync('miniprogram/pages/activities/index.wxml', 'utf8');
     expect(template).toContain("item.route.distanceKm > 0 ? item.route.distanceKm : '—'");
     expect(template).toContain("item.route.elevationM > 0 ? item.route.elevationM : '—'");
     expect(template).toContain("item.estimatedRideTime || '—'");

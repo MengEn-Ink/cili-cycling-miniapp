@@ -1,8 +1,0 @@
-{
-  "component": true,
-  "usingComponents": {
-    "brand-logo": "/components/brand-logo/index",
-    "generated-activity-cover": "/components/generated-activity-cover/index",
-    "status-pill": "/components/status-pill/index"
-  }
-}

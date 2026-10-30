@@ -1,9 +1,0 @@
-<view class="blur-text {{playing ? 'blur-text--playing' : ''}} {{reduced ? 'blur-text--reduced' : ''}}" role="text" aria-label="{{text}}">
-  <text
-    class="blur-text__segment blur-text__segment--{{direction}}"
-    wx:for="{{segments}}"
-    wx:key="key"
-    style="transition-delay: {{item.delay}}ms; transition-duration: {{stepDuration}}ms"
-    aria-hidden="true"
-  >{{item.value}}</text>
-</view>

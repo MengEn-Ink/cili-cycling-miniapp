@@ -1125,3 +1125,30 @@ picker[disabled] {
     min-height: var(--segment-height);
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .cinema-page .pageheading .eyebrow,
+  .cinema-page .profile-hero,
+  .cinema-page .info-bar,
+  .cinema-page .pageheading-line,
+  .review-detail-page .pageheading-title,
+  .cinema-page .pageheading-sub,
+  .cinema-page .pageheading-meta,
+  .cinema-page > .content,
+  .cinema-page > state-view,
+  .cinema-page .content.tight,
+  .cinema-page .content > .section > .chapterhead,
+  .cinema-page .profile-background-image,
+  .cinema-page .photo.hero image,
+  .cinema-page .club-cover-image,
+  .cinema-page .story-title,
+  .cinema-page .hero-title {
+    animation: none;
+  }
+  .cinema-page button,
+  .cinema-page .chev,
+  .cinema-page .storymeta-link,
+  .cinema-page .compact-item__arrow {
+    transition: none;
+  }
+}

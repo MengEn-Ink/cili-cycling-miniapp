@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CachingRepository } from '../miniprogram/repositories/cached';
-import { MemoryCacheStorage } from '../miniprogram/repositories/persistent';
+import { MemoryCacheStorage } from './support/memory-cache-storage';
 import type { PersonalCapabilityCard, Profile } from '../miniprogram/models';
 
 const pageService = vi.hoisted(() => ({

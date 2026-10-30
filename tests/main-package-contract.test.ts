@@ -1,5 +1,5 @@
 // @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { expandAppRoutes, type MiniProgramAppConfig } from './helpers/app-routes';
 // @ts-expect-error Node ESM script is exercised directly by Vitest.
@@ -76,6 +76,24 @@ describe('按需分包与主包字节契约', () => {
     expect(mainFiles.some((file: string) => file.endsWith('/.DS_Store'))).toBe(false);
     expect(mainFiles).not.toContain('miniprogram/repositories/mock.ts');
     expect(mainFiles.some((file: string) => file.startsWith('miniprogram/mock/'))).toBe(false);
+  });
+
+  it('退役组件和测试替身不回流生产源码或页面注册', () => {
+    const retiredPaths = [
+      'miniprogram/components/activity-card/index.wxml',
+      'miniprogram/components/blur-text/index.wxml',
+      'miniprogram/components/metric-grid/index.wxml',
+      'miniprogram/utils/registration.ts',
+    ];
+    for (const path of retiredPaths) expect(existsSync(path), path).toBe(false);
+
+    const pageConfigs = expandAppRoutes(appConfig)
+      .map((route) => readFileSync(`miniprogram/${route}.json`, 'utf8'))
+      .join('\n');
+    expect(pageConfigs).not.toMatch(/activity-card|blur-text|metric-grid/);
+    expect(readFileSync('miniprogram/repositories/persistent.ts', 'utf8')).not.toContain(
+      'MemoryCacheStorage',
+    );
   });
 
   it('保留 80 KiB 减量硬门禁，并在接近限额时给出余量预警', () => {
