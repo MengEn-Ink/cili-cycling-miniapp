@@ -1,7 +1,9 @@
+// @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { Activity } from '../miniprogram/models';
 import { describeActivityDay } from '../miniprogram/utils/date-time';
-import { buildTimelineRows } from '../miniprogram/pages/activities/timeline-state';
+import { buildTimelineRows } from './support/timeline-rows';
 
 // 固定“现在”：2026-10-11 12:00 中国时间（UTC 04:00），保证相对称谓与日界确定性。
 const NOW = '2026-10-11T04:00:00.000Z';
@@ -108,5 +110,13 @@ describe('buildTimelineRows 首页行序列', () => {
     expect(rows.every((row) => row.kind === 'item')).toBe(true);
     expect(rows[1]).toMatchObject({ showFollowing: true });
     expect(dayChips).toEqual([]);
+  });
+});
+
+describe('生产代码不引用测试专用行序列实现（外置反例锁定）', () => {
+  it('timeline-state.ts 不导入也不调用 tests/support 的 buildTimelineRows', () => {
+    const source = readFileSync('miniprogram/pages/activities/timeline-state.ts', 'utf8');
+    expect(source).not.toContain('buildTimelineRows');
+    expect(source).not.toMatch(/support[\\/]timeline-rows/);
   });
 });

@@ -1,12 +1,12 @@
 {
-  "base": "http://127.0.0.1:64879",
+  "base": "http://127.0.0.1:49694",
   "pages": 16,
   "widths": [
     340,
     375,
     430
   ],
-  "generatedAt": "2026-10-29T09:08:11.500Z",
+  "generatedAt": "2026-10-30T01:01:21.772Z",
   "results": [
     {
       "slug": "activities",
@@ -22,6 +22,8 @@
           "buttons": 10,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/activities-340.png",
           "consoleErrors": []
         },
@@ -36,6 +38,8 @@
           "buttons": 10,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/activities-375.png",
           "consoleErrors": []
         },
@@ -50,6 +54,8 @@
           "buttons": 10,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/activities-430.png",
           "consoleErrors": []
         }
@@ -69,6 +75,8 @@
           "buttons": 6,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/activity-detail-340.png",
           "consoleErrors": []
         },
@@ -83,6 +91,8 @@
           "buttons": 6,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/activity-detail-375.png",
           "consoleErrors": []
         },
@@ -97,6 +107,8 @@
           "buttons": 6,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/activity-detail-430.png",
           "consoleErrors": []
         }
@@ -116,6 +128,8 @@
           "buttons": 2,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/route-analysis-340.png",
           "consoleErrors": []
         },
@@ -130,6 +144,8 @@
           "buttons": 2,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/route-analysis-375.png",
           "consoleErrors": []
         },
@@ -144,6 +160,8 @@
           "buttons": 2,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/route-analysis-430.png",
           "consoleErrors": []
         }
@@ -163,6 +181,8 @@
           "buttons": 7,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/registration-form-340.png",
           "consoleErrors": []
         },
@@ -177,6 +197,8 @@
           "buttons": 7,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/registration-form-375.png",
           "consoleErrors": []
         },
@@ -191,6 +213,8 @@
           "buttons": 7,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/registration-form-430.png",
           "consoleErrors": []
         }
@@ -210,6 +234,8 @@
           "buttons": 7,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/registrations-340.png",
           "consoleErrors": []
         },
@@ -224,6 +250,8 @@
           "buttons": 7,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/registrations-375.png",
           "consoleErrors": []
         },
@@ -238,6 +266,8 @@
           "buttons": 7,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/registrations-430.png",
           "consoleErrors": []
         }
@@ -257,6 +287,8 @@
           "buttons": 7,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/credential-340.png",
           "consoleErrors": []
         },
@@ -271,6 +303,8 @@
           "buttons": 7,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/credential-375.png",
           "consoleErrors": []
         },
@@ -285,6 +319,8 @@
           "buttons": 7,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/credential-430.png",
           "consoleErrors": []
         }
@@ -304,6 +340,8 @@
           "buttons": 11,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/profile-340.png",
           "consoleErrors": []
         },
@@ -318,6 +356,8 @@
           "buttons": 11,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/profile-375.png",
           "consoleErrors": []
         },
@@ -332,6 +372,8 @@
           "buttons": 11,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/profile-430.png",
           "consoleErrors": []
         }
@@ -351,6 +393,8 @@
           "buttons": 10,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/profile-edit-340.png",
           "consoleErrors": []
         },
@@ -365,6 +409,8 @@
           "buttons": 10,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/profile-edit-375.png",
           "consoleErrors": []
         },
@@ -379,6 +425,8 @@
           "buttons": 10,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/profile-edit-430.png",
           "consoleErrors": []
         }
@@ -398,6 +446,8 @@
           "buttons": 9,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/settings-340.png",
           "consoleErrors": []
         },
@@ -412,6 +462,8 @@
           "buttons": 9,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/settings-375.png",
           "consoleErrors": []
         },
@@ -426,6 +478,8 @@
           "buttons": 9,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/settings-430.png",
           "consoleErrors": []
         }
@@ -445,6 +499,8 @@
           "buttons": 4,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/club-center-340.png",
           "consoleErrors": []
         },
@@ -459,6 +515,8 @@
           "buttons": 4,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/club-center-375.png",
           "consoleErrors": []
         },
@@ -473,6 +531,8 @@
           "buttons": 4,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/club-center-430.png",
           "consoleErrors": []
         }
@@ -492,6 +552,8 @@
           "buttons": 6,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/admin-activity-list-340.png",
           "consoleErrors": []
         },
@@ -506,6 +568,8 @@
           "buttons": 6,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/admin-activity-list-375.png",
           "consoleErrors": []
         },
@@ -520,6 +584,8 @@
           "buttons": 6,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/admin-activity-list-430.png",
           "consoleErrors": []
         }
@@ -539,6 +605,14 @@
           "buttons": 15,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [
+            {
+              "tag": "button",
+              "className": "btn",
+              "reason": "disabled/loading/pointer-events:none 锁定态，不计入 44px 门禁"
+            }
+          ],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/admin-activity-edit-340.png",
           "consoleErrors": []
         },
@@ -553,6 +627,14 @@
           "buttons": 15,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [
+            {
+              "tag": "button",
+              "className": "btn",
+              "reason": "disabled/loading/pointer-events:none 锁定态，不计入 44px 门禁"
+            }
+          ],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/admin-activity-edit-375.png",
           "consoleErrors": []
         },
@@ -567,6 +649,14 @@
           "buttons": 15,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [
+            {
+              "tag": "button",
+              "className": "btn",
+              "reason": "disabled/loading/pointer-events:none 锁定态，不计入 44px 门禁"
+            }
+          ],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/admin-activity-edit-430.png",
           "consoleErrors": []
         }
@@ -586,6 +676,8 @@
           "buttons": 11,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/admin-reviews-340.png",
           "consoleErrors": []
         },
@@ -600,6 +692,8 @@
           "buttons": 11,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/admin-reviews-375.png",
           "consoleErrors": []
         },
@@ -614,6 +708,8 @@
           "buttons": 11,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/admin-reviews-430.png",
           "consoleErrors": []
         }
@@ -633,6 +729,8 @@
           "buttons": 5,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/admin-review-detail-340.png",
           "consoleErrors": []
         },
@@ -647,6 +745,8 @@
           "buttons": 5,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/admin-review-detail-375.png",
           "consoleErrors": []
         },
@@ -661,6 +761,8 @@
           "buttons": 5,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/admin-review-detail-430.png",
           "consoleErrors": []
         }
@@ -680,6 +782,8 @@
           "buttons": 4,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/admin-club-management-340.png",
           "consoleErrors": []
         },
@@ -694,6 +798,8 @@
           "buttons": 4,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/admin-club-management-375.png",
           "consoleErrors": []
         },
@@ -708,6 +814,8 @@
           "buttons": 4,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/admin-club-management-430.png",
           "consoleErrors": []
         }
@@ -727,6 +835,8 @@
           "buttons": 7,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/admin-club-profile-340.png",
           "consoleErrors": []
         },
@@ -741,6 +851,8 @@
           "buttons": 7,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/admin-club-profile-375.png",
           "consoleErrors": []
         },
@@ -755,6 +867,8 @@
           "buttons": 7,
           "smallTouchTargets": [],
           "invalidSmallTouchTargets": [],
+          "disabledExcluded": [],
+          "hitOwnershipFailures": [],
           "screenshot": "docs/evidence/phase3-three-width/admin-club-profile-430.png",
           "consoleErrors": []
         }

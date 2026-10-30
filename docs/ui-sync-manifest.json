@@ -1,10 +1,35 @@
 {
   "schemaVersion": 2,
-  "syncedThrough": "0119e45e40eca72661754d3251709a527e5c4a87",
+  "syncedThrough": "79bf1e0bec32f6fbe9c3f754da5052f15aca6451",
   "syncedAt": "2026-10-29T13:27:27.287Z",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
+  },
+  "anchorProvenance": {
+    "kind": "squash-anchor-rebind",
+    "pullRequest": "#408",
+    "replacedTopicSha": "0119e45e40eca72661754d3251709a527e5c4a87",
+    "mergedCommitSha": "79bf1e0bec32f6fbe9c3f754da5052f15aca6451",
+    "commonParentSha": "754268426df3134e93880483d9f1ca9840740f7f",
+    "gatedRawAudit": {
+      "equalFileCount": 131,
+      "mismatchedCount": 0,
+      "scope": [
+        "miniprogram/app.json",
+        "miniprogram/app.wxss",
+        "miniprogram/pages",
+        "miniprogram/components",
+        "miniprogram/assets",
+        "docs/index.html",
+        "docs/styles.css",
+        "docs/app.js",
+        "docs/delivery-center.js",
+        "docs/schema.js",
+        "docs/templates.js"
+      ]
+    },
+    "note": "仅把祖先锚点由被合并替换且不可达的 topic SHA 重绑到真实合并提交；source/prototype 摘要未改写，当前内容摘要漂移仍由摘要门如实判定，不代表重新采集双端或真机证据。"
   },
   "source": {
     "digest": "sha256:afa1f2548fcc28151a860d4e7e08a37b23740d8a31c8cbb65ebb0f4c7378d90d"

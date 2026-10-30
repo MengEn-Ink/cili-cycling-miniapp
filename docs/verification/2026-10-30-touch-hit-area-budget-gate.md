@@ -116,3 +116,42 @@
 ## 8. 最终结论
 
 不满足合并条件（NOT MERGE-READY；独立只读审查 `verification.json` 结论 `FAIL`、`mergeDecision.allowed=false`、`draftOnly=true`）。本轮可确认成果：触控静态 43 用例 GREEN、原型三宽度每宽度 marker 72/72 与控件 95/95 GREEN、phase3 设计壳 GREEN、C2 无损资产经两次独立解码确认一致、format/lint/typecheck/design/governance/release-notes/硬限额体积/公开 registry 全链审计 GREEN、全量 1403/1404 用例通过。真实剩余阻塞：①预算预警线 FAIL（合并树 457511 B，本需求未达标，非外部已知项）；②`coverage` 未闭环（`coverage-final.json` 缺失）；③strict UI-sync 基线红保留；④native 真机 tap 矩阵与普通成员完整写链路 BLOCKED；⑤§5.1 运行时 computed 证据、README 计数同步、browser 脚本收敛等 OPEN/FOLLOWUP 项。Draft PR 按真实 FAIL/BLOCKED 状态提交，结论不得写“可合并”、不得表述为需求全部完成；P0 行不关闭；需求交付以阻塞项逐项闭合和全链绿为准。
+
+## 9. F8 冻结补充记录（2026-10-30 最终集成轮，覆盖本节之前的 F5 旧计数）
+
+> 本节为最终集成冻结事实；§1–§8 保留 F5 历史证据，其中 43 用例、1403/1404、457511 B、coverage 缺失与祖先门报错等旧表述以本节为准。
+
+### 9.1 本轮实际范围
+
+- 触控静态契约冻结为 **50/50/0**：在既有 E4 spacing/position/视觉保护映射之外，补充 `letter-spacing` 负例；README 同步为 50/50；产品颜色、字号、44px 令牌、主题字段与资产字节未改。
+- 删除经五维审计确认零渲染的 `activity-card`、`blur-text` 共 8 个文件，并清理 8 处注册 JSON；存活组件 `state-view`、`generated-activity-cover`、`status-pill`、`brand-logo`、`cili-avatar` 完整保留。
+- 集成侧受控完成 `#408` 祖先锚点数据修复（`syncedThrough` 绑定可达 merged commit `79bf1e0b…`，新增 `anchorProvenance`；两个 digest 原样保留，未跑 binder `--write`、未复制截图）与受控 `@import` 解析器（6 个正/负例）。
+- `miniprogram/styles/shared.wxss`（303 B）不在本轮授权删除/提交范围，保持未跟踪；脏工作树主包计量保守计入该文件，最终 committed 快照单独排除并在外部 JSON 记录差值。
+
+### 9.2 真实门禁退出码
+
+| 门禁 | 退出码 | 事实与日志 |
+| --- | --- | --- |
+| `npm run validate` | **exit=1** | `artifacts/touch-package-delivery/runtime/logs/f8-validate-full-final.log`；`format:check`/`lint`/`typecheck`、94 文件 1417 用例、phase3 16 页 ×3 宽度、暗场 3 宽度 ×3 轮、CI/journey/bootstrap/deploy/发布说明/UI 节点测试/设计节点测试/`check:design`/`check:release-notes`/`check:main-package` 均到达并通过；链在非 strict `check:ui-sync` 原型摘要不匹配处停止，后续治理/云测试/build 已单独补跑 |
+| `npm test`（validate 内 vitest） | exit=0 | 94 files / 1417 tests passed / 0 failed（同一日志第 887–888 行） |
+| `npm run coverage` | exit=0 | `f8-coverage-final.log`；`coverage/coverage-final.json` 已产出；云覆盖率 lines 91.63%、branches 89.27%、functions 96.60%、statements 90.62% |
+| `npm run audit:all`（官方 registry） | exit=0 | `f8-audit-official-final.log`；`npm_config_registry=https://registry.npmjs.org/` 下根目录 0 high、上传工具 4 条已评估例外至 2027-01-15、13 个云函数 high 链通过；`qs` 仅 moderate，不阻断 high 门槛。npmmirror 未实现 audit 端点的失败留痕为 `f8-audit-all-final.log`，不作为最终审计结果 |
+| `npm run check:governance` | exit=0 | `f8-governance-final.log`；17 页面、README 引用、媒体上传、源码模式与 Actions 安全基线通过 |
+| `npm run check:design` | exit=0 | validate 链内执行；53 条颜色账本、17 页面配置、0 颜色/字体字面量 |
+| 云测试/云包校验/build | exit=0 | `f8-validate-remaining-supplement.log`：13 个云函数测试 102 pass、部署包自包含校验通过、`tsc -p tsconfig.build.json` 与源码完整性校验通过 |
+| `npm run check:ui-sync --strict` | **exit=1** | `f8-ui-sync-strict-final.log`；#408 祖先门已闭合，剩余失败为 Pages 原型摘要：manifest `879d43a9…` vs 当前 `783e5d91…`；未改 digest、未加豁免、未补旧截图 |
+| 死组件守卫 | exit=0 | `deadcomponents-guard-after-owner-delete.log`：5/5 通过；目录缺失、无注册、无标签、存活目录完整、注册路径可解析 |
+| `git diff --check` | exit=0 | 无空白错误与冲突标记 |
+
+### 9.3 主包计量口径
+
+- 脏工作树（含未跟踪 `shared.wxss=303 B`）：94 文件、444922 B，低于预警线 450560 B，硬限额 459315 B 余量 14393 B；该数字是保守 on-disk 口径。
+- 最终 committed HEAD 由 `git archive HEAD miniprogram` 生成，93 文件、**444619 B**，不含未跟踪 `shared.wxss`；`444922 - 303 = 444619` 校验成立。相对 `202b72b5…` committed 主包净减 14532 B，低于预警线 5941 B，距硬限额 14696 B；最终 HEAD SHA 以提交后 `git rev-parse HEAD` 与 PR 台账为准。逐文件明细在 `artifacts/touch-package-delivery/package/analysis/f8-committed-budget-final.json`，对账摘要并入 `deadcomponents-final-accounting.json`。
+- 预算常量、分包排除规则、阈值与主包脚本零改动；禁止用仓库总净字节、旧 base `7542684` 投影或未跟踪文件冒充 committed 主包结论。
+
+### 9.4 未闭合阻塞（不得表述为全绿/可合并）
+
+1. **strict UI-sync 摘要门 FAIL**：祖先数据缺陷已修，但当前 Pages 原型摘要与清单不一致；需授权新证据后由正式 binder 更新，禁止手工写 digest 或复制旧截图。
+2. **native 真机 tap 矩阵 BLOCKED**：静态 50 例与 Playwright 原型证据不替代 iOS/Android 真机 computed 几何与业务回调。
+3. **普通成员完整写链路、体验版晋级与公开媒体 UAT**：沿用高优 P0/P1 独立验收行，本轮不关闭、不并入 UI 提交前置。
+4. PR 平台卡片仍待发布 MCP 创建/更新；本报告不伪造 PR URL。

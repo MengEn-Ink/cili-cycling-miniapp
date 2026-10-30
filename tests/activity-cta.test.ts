@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import type { Activity, Registration, RegistrationStatus } from '../miniprogram/models';
 import { activityDisplayStatus, resolveActivityAction } from '../miniprogram/utils/activity';
 
@@ -134,13 +134,8 @@ describe('活动 CTA 九分支', () => {
     ).toBe('报名待开放');
   });
 
-  it('活动卡以路线决策指标替代不稳定的容量摘要', () => {
-    const template = readFileSync('miniprogram/components/activity-card/index.wxml', 'utf8');
-    expect(template).toContain("item.route.distanceKm > 0 ? item.route.distanceKm : '—'");
-    expect(template).toContain("item.route.elevationM > 0 ? item.route.elevationM : '—'");
-    expect(template).toContain("item.estimatedRideTime || '—'");
-    expect(template).not.toContain('item.capacity');
-    expect(template).not.toContain('人已报名');
+  it('activity-card 死组件模板不再存在于生产目录', () => {
+    expect(existsSync('miniprogram/components/activity-card')).toBe(false);
   });
 
   it('无报名且已到截止时间时禁用', () => {

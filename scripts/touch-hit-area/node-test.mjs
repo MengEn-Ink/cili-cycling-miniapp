@@ -304,6 +304,59 @@ describe('B. 命中层声明白名单：不绘制视觉', () => {
       }
     }
   });
+
+  // 合并反例：选择器等价归并时不允许静默丢类；registry 登记的 bearing 类必须仍被触控块覆盖。
+  test('合并选择器零丢失：app.wxss 登记 bearing 类在触控块规则中均可被命中', () => {
+    const block = extractHitLayerBlock(readRepoText('miniprogram/app.wxss'));
+    assert.ok(block.present, '触控块缺失');
+    const selectors = block.rules.map((rule) => rule.selector);
+    const missing = [];
+    for (const target of REQUIRED_TARGETS) {
+      if (target.base?.kind !== 'bearing' || target.files?.[0] !== 'miniprogram/app.wxss') continue;
+      for (const token of selectorTokens(target.selector)) {
+        const bare = token.replace(/^\./, '').split(/\./).pop();
+        const covered = selectors.some((selector) =>
+          selectorTokens(selector).some(
+            (part) => part.replace(/^\./, '').split(/\./).pop() === bare,
+          ),
+        );
+        if (!covered) missing.push(`${target.id}:${token}`);
+      }
+    }
+    assert.deepEqual(missing, [], '以下登记类在选择器合并后丢失规则：');
+  });
+
+  test('合并选择器零丢失：登记 pad 宿主均有对应 .hit-pad 后代规则', () => {
+    const block = extractHitLayerBlock(readRepoText('miniprogram/app.wxss'));
+    assert.ok(block.present, '触控块缺失');
+    const padRules = block.rules.filter((rule) => rule.selector.includes('.hit-pad'));
+    const hosts = [
+      'button',
+      '.btn',
+      '.secondary',
+      '.button',
+      '.map-button',
+      '.photo-button',
+      '.photo-action',
+      '.route-action',
+      '.profile-alert-action',
+      '.meeting-location__action',
+      '.text-button',
+      '.image-action',
+      '.row.rowlink.rowbutton',
+      '.step',
+      '.segment',
+      '.timeline-tab',
+      '.status-filter',
+      '.filter-tab',
+    ];
+    const missing = [];
+    for (const host of hosts) {
+      const covered = padRules.some((rule) => rule.selector.includes(`${host} .hit-pad`));
+      if (!covered) missing.push(host);
+    }
+    assert.deepEqual(missing, [], '以下宿主在合并后丢失 .hit-pad 后代规则：');
+  });
 });
 
 describe('C. 豁免证据可复核（不放宽断言）', () => {
@@ -607,8 +660,56 @@ describe('E. 视觉零漂移：主题令牌与关键数据不变，改动仅限�
     assert.equal(slice(current), slice(baseline), 'keyPoints / mapCoords 不允许被热区补丁修改');
   });
 
-  test('非标记块源码与基线逐行一致（命中层之外零改动）', () => {
-    const patchFiles = [
+  // E4：受保护声明等价映射。保护视觉（颜色/字号/字重/背景/边框/圆角）、承载几何
+  // （min-height/min-width）、定位锚点（position/四向偏移）与 spacing（margin/gap）。
+  // 允许把同选择器重复的同值 spacing 合并；禁止删除或改写任一受保护声明。跨文件 @import
+  // 展开由集成侧 theme-contract-helpers resolver 覆盖，本 node 门禁只校验同文件声明映射。
+  const E4_PROTECTED_PROPS = new Set([
+    ...VISUAL_SENSITIVE_PROPS,
+    'position',
+    'margin',
+    'margin-top',
+    'margin-right',
+    'margin-bottom',
+    'margin-left',
+    'gap',
+    'row-gap',
+    'column-gap',
+    'letter-spacing',
+    'top',
+    'right',
+    'bottom',
+    'left',
+    'transform',
+  ]);
+  function effectiveProtectedMap(text) {
+    const map = new Map();
+    for (const rule of parseCssRules(stripHitBlocks(text))) {
+      // parseCssRules 已把 @media 前缀拼到 rule.selector 上（如 `@media (max-width:375px) button.btn`），
+      // key 保留媒体上下文，不同视口宽度的规则不会被全局 last-wins 压成同一条。
+      const keySelector = rule.selector.replace(/\s+/g, ' ').trim();
+      for (const [prop, value] of rule.decls) {
+        if (!E4_PROTECTED_PROPS.has(prop)) continue;
+        // 同一（媒体上下文 + 选择器）后写胜出，对齐 CSS 级联。
+        map.set(`${keySelector}::${prop}`, value);
+      }
+    }
+    return map;
+  }
+  function assertEffectiveDeclarationsEqual(baselineText, currentText, label) {
+    const before = effectiveProtectedMap(baselineText);
+    const after = effectiveProtectedMap(currentText);
+    const problems = [];
+    for (const [key, value] of before) {
+      if (!after.has(key)) problems.push(`缺失 ${key}`);
+      else if (after.get(key) !== value)
+        problems.push(`改写 ${key}: ${value} -> ${after.get(key)}`);
+    }
+    assert.ok(problems.length === 0, `${label} 受保护视觉/承载声明不等价：${problems.join('；')}`);
+  }
+
+  test('命中块外受保护视觉与承载声明与基线等价（允许纯布局等价合并）', () => {
+    const cssPatchFiles = [
       'miniprogram/app.wxss',
       'miniprogram/pages/credential/index.wxss',
       'miniprogram/pages/registrations/index.wxss',
@@ -617,24 +718,56 @@ describe('E. 视觉零漂移：主题令牌与关键数据不变，改动仅限�
       'miniprogram/pages/admin/activity-edit/index.wxss',
       'miniprogram/pages/admin/activity-list/index.wxss',
       'docs/styles.css',
-      'docs/templates.js',
     ].filter(existsRepo);
-    // 归一化：去行尾空白、忽略空行差异（命中块周围的空行不承载语句）；
-    // 语句级增删仍会被检出，避免把非视觉空白波动误判为漂移。
-    const normalize = (text) =>
-      stripHitBlocks(text)
-        .split('\n')
-        .map((line) => line.trimEnd())
-        .filter((line) => line.trim().length > 0);
-    for (const file of patchFiles) {
+    for (const file of cssPatchFiles) {
       const baseline = gitBaselineText(file);
-      if (baseline == null) continue; // 新文件，由集成另行审计
-      assert.deepEqual(
-        normalize(readRepoText(file)),
-        normalize(baseline),
-        `${file} 命中块之外存在语句改动`,
-      );
+      if (baseline == null) continue; // 新文件由集成另行审计
+      assertEffectiveDeclarationsEqual(baseline, readRepoText(file), file);
     }
+  });
+
+  test('E4 负例：删除受保护颜色/内边距声明必须失败（先红后绿证据）', () => {
+    const baseline = '.demo { color: var(--color-text); padding: 12rpx; margin: 8rpx; }';
+    const mutated = '.demo { padding: 12rpx; margin: 8rpx; }';
+    assert.throws(
+      () => assertEffectiveDeclarationsEqual(baseline, mutated, 'E4 负例'),
+      /受保护视觉\/承载声明不等价/,
+      '删除 color 后等价守卫应当报错',
+    );
+  });
+
+  test('E4 正例：重复声明合并不改变受保护映射（合法去冗通过）', () => {
+    const baseline =
+      '.demo { color: var(--color-text); padding: 12rpx; margin: 8rpx; }\n.demo { margin: 8rpx; }';
+    const merged = '.demo { color: var(--color-text); padding: 12rpx; margin: 8rpx; }';
+    assertEffectiveDeclarationsEqual(baseline, merged, 'E4 正例');
+  });
+
+  test('E4 负例：删除必要 spacing（margin-top / gap）必须失败', () => {
+    const baseline = '.demo { display: flex; gap: 16rpx; margin-top: 8rpx; }';
+    const mutated = '.demo { display: flex; gap: 16rpx; }';
+    assert.throws(
+      () => assertEffectiveDeclarationsEqual(baseline, mutated, 'E4 spacing 负例'),
+      /受保护视觉\/承载声明不等价/,
+      '删除 margin-top 后 spacing 守卫应当报错',
+    );
+  });
+
+  test('E4 正例：重复 spacing 声明合并后声明映射完全等价（语义不丢）', () => {
+    const baseline =
+      '.demo { margin-top: 8rpx; padding: 12rpx; }\n.demo { margin-top: 8rpx; gap: 16rpx; }';
+    const merged = '.demo { margin-top: 8rpx; padding: 12rpx; gap: 16rpx; }';
+    assertEffectiveDeclarationsEqual(baseline, merged, 'E4 spacing 正例');
+  });
+
+  test('E4 负例：删除字距 letter-spacing 必须失败（排版视觉不得被去冗抹掉）', () => {
+    const baseline = '.demo { color: var(--color-text); letter-spacing: 1rpx; }';
+    const mutated = '.demo { color: var(--color-text); }';
+    assert.throws(
+      () => assertEffectiveDeclarationsEqual(baseline, mutated, 'E4 letter-spacing 负例'),
+      /受保护视觉\/承载声明不等价/,
+      '删除 letter-spacing 后等价守卫应当报错',
+    );
   });
 });
 

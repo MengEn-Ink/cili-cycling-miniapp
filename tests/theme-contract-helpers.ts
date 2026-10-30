@@ -1,8 +1,70 @@
 // @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+// @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
+import path from 'node:path';
 import { expect } from 'vitest';
 
 export const read = (file: string) => readFileSync(file, 'utf8');
+
+// 受控 @import：仅允许仓库内相对 .wxss；外部 URL、绝对路径、越界路径、缺失文件与循环引用均失败。
+// 解析只负责把真实规则展开到 effectiveBlock 可见范围，不放宽颜色、字号、44px 或对比度算法。
+const STYLE_IMPORT_RE = /@import\s+(?:url\(\s*)?['"]?([^'"\s);]+)['"]?\s*\)?\s*;/g;
+
+export function resolveStyleImport(specifier: string, importerFile: string, root?: string): string {
+  // @ts-expect-error Node global under Vitest runtime; repository omits Node typings.
+  const resolvedRoot = root ?? process.cwd();
+  const spec = specifier.trim();
+  if (!spec) throw new Error('空 @import 路径');
+  if (/^(?:https?:)?\/\//i.test(spec) || /^(?:https?|data):/i.test(spec)) {
+    throw new Error(`禁止外部 @import：${spec}`);
+  }
+  if (path.isAbsolute(spec)) throw new Error(`禁止绝对路径 @import：${spec}`);
+  if (!spec.startsWith('./') && !spec.startsWith('../')) {
+    throw new Error(`仅授权仓库内相对 @import：${spec}`);
+  }
+  const rootDir = path.resolve(resolvedRoot);
+  const importerDir = path.dirname(path.resolve(rootDir, importerFile));
+  const target = path.normalize(path.join(importerDir, spec));
+  const relative = path.relative(rootDir, target);
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
+    throw new Error(`@import 越出仓库根目录：${spec}`);
+  }
+  if (!target.endsWith('.wxss')) throw new Error(`@import 仅允许 .wxss 文件：${spec}`);
+  if (!existsSync(target)) throw new Error(`@import 文件缺失：${spec}（来自 ${importerFile}）`);
+  return target;
+}
+
+export function readStyleSource(
+  file: string,
+  options: { root?: string; visited?: Set<string>; stack?: string[] } = {},
+): string {
+  // @ts-expect-error Node global under Vitest runtime; repository omits Node typings.
+  const fallbackRoot = process.cwd();
+  const root = options.root ?? fallbackRoot;
+  const visited = options.visited ?? new Set<string>();
+  const stack = options.stack ?? [];
+  const absolute = path.resolve(root, file);
+  if (visited.has(absolute)) {
+    throw new Error(`@import 循环引用：${[...stack, file].join(' -> ')}`);
+  }
+  const source = readFileSync(absolute, 'utf8');
+  const nextVisited = new Set(visited);
+  nextVisited.add(absolute);
+  return source.replace(STYLE_IMPORT_RE, (_match: unknown, spec: string) => {
+    const target = resolveStyleImport(spec, file, root);
+    const relativeTarget = path.relative(root, target);
+    return `/* @import ${spec}（受控展开） */\n${readStyleSource(relativeTarget, {
+      root,
+      visited: nextVisited,
+      stack: [...stack, file],
+    })}`;
+  });
+}
+
+/** 按真实文件位置展开受控 @import 后再取 effectiveBlock，供去冗后的语义守卫使用。 */
+export function effectiveStyle(file: string, selector: string): string {
+  return effectiveBlock(readStyleSource(file), selector);
+}
 
 export function cssBlocks(source: string, selector: string): string[] {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

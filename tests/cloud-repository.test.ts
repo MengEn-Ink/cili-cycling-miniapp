@@ -3397,3 +3397,120 @@ describe('俱乐部资料管理仓储契约', () => {
     await expectCode(new CloudRepository(cloud).getManagedClub(clubId), 'INVALID_RESPONSE');
   });
 });
+
+describe('路线预览校验严格度等价锁定（私有 helper 重构前后行为不变）', () => {
+  const gpxBase = {
+    preview_id: 'a'.repeat(64),
+    gpx_file_id: `cloud://env/activity-routes/owner/${'b'.repeat(64)}.gpx`,
+    gpx_sha256: 'b'.repeat(64),
+    route_name: 'Strava 周末环湖',
+    distance_km: 52.4,
+    elevation_m: 680,
+    elevation_loss_m: 675,
+    elevation_min_m: 12,
+    elevation_max_m: 486,
+    estimated_moving_time_seconds: 10800,
+    estimation_source: 'cili',
+    elevation_profile: [
+      { distance_km: 0, elevation_m: 12 },
+      { distance_km: 52.4, elevation_m: 30 },
+    ],
+    route_outline: [
+      { latitude: 22, longitude: 114 },
+      { latitude: 22.2, longitude: 114.2 },
+    ],
+    route_bounds: { south: 22, west: 114, north: 22.2, east: 114.2 },
+  };
+  const publicBase = {
+    preview_id: 'c'.repeat(64),
+    external_provider: 'strava',
+    external_route_id: '123456',
+    external_route_url: 'https://www.strava.com/routes/123456',
+    strava_route_id: '123456',
+    strava_route_url: 'https://www.strava.com/routes/123456',
+    route_name: '城市绿道',
+    distance_km: 52.4,
+    elevation_m: 680,
+    elevation_loss_m: 675,
+    elevation_min_m: 12,
+    elevation_max_m: 486,
+    estimated_moving_time_seconds: 10800,
+    estimation_source: 'cili',
+    elevation_profile: [
+      { distance_km: 0, elevation_m: 12 },
+      { distance_km: 52.4, elevation_m: 30 },
+    ],
+    route_outline: [
+      { latitude: 22, longitude: 114 },
+      { latitude: 22.2, longitude: 114.2 },
+    ],
+    route_bounds: { south: 22, west: 114, north: 22.2, east: 114.2 },
+    expires_at: '2026-10-13T09:30:00.000Z',
+  };
+  it('GPX 预览拒绝超出海拔值域的曲线点', async () => {
+    const dto = {
+      ...gpxBase,
+      elevation_profile: [
+        { distance_km: 0, elevation_m: 20000 },
+        { distance_km: 1, elevation_m: 30 },
+      ],
+    };
+    await expectCode(
+      new CloudRepository(cloudWith(success(dto)).cloud).importStravaRoute(
+        'https://www.strava.com/routes/1',
+        'request-id-0001',
+      ),
+      'INVALID_RESPONSE',
+    );
+  });
+  it('GPX 预览拒绝超出经纬度值域的轮廓点', async () => {
+    const dto = {
+      ...gpxBase,
+      route_outline: [
+        { latitude: 91, longitude: 114 },
+        { latitude: 22, longitude: 114 },
+      ],
+    };
+    await expectCode(
+      new CloudRepository(cloudWith(success(dto)).cloud).importStravaRoute(
+        'https://www.strava.com/routes/1',
+        'request-id-0001',
+      ),
+      'INVALID_RESPONSE',
+    );
+  });
+  it('GPX 预览拒绝南界大于北界的包围盒', async () => {
+    const dto = { ...gpxBase, route_bounds: { south: 23, west: 114, north: 22, east: 114.2 } };
+    await expectCode(
+      new CloudRepository(cloudWith(success(dto)).cloud).importStravaRoute(
+        'https://www.strava.com/routes/1',
+        'request-id-0001',
+      ),
+      'INVALID_RESPONSE',
+    );
+  });
+  it('GPX 预览拒绝超过 120 个海拔点', async () => {
+    const points = Array.from({ length: 121 }, (_, i) => ({ distance_km: i, elevation_m: i }));
+    const dto = { ...gpxBase, elevation_profile: points };
+    await expectCode(
+      new CloudRepository(cloudWith(success(dto)).cloud).importStravaRoute(
+        'https://www.strava.com/routes/1',
+        'request-id-0001',
+      ),
+      'INVALID_RESPONSE',
+    );
+  });
+  it('公开预览保持较弱严格度：轮廓点仅要求有限数，不做地理值域拒绝', async () => {
+    const dto = {
+      ...publicBase,
+      route_outline: [
+        { latitude: 91, longitude: 114 },
+        { latitude: 22, longitude: 114 },
+      ],
+    };
+    const result: any = await new CloudRepository(
+      cloudWith(success(dto)).cloud,
+    ).previewPublicStravaRoute('https://www.strava.com/routes/123456');
+    expect(result.routeOutline).toHaveLength(2);
+  });
+});

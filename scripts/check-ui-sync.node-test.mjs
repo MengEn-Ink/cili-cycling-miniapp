@@ -539,3 +539,33 @@ test('ui:digest 与严格门禁共用工作树及二进制口径', (t) => {
   fixture.write('miniprogram/app.wxss', 'changed\n');
   assert.ok(!fixture.runDigest().stdout.includes(fixture.expectedDigest));
 });
+
+test('被 squash 替换且不可达的 topic 锚点在祖先门失败，不进入摘要判定', (t) => {
+  const fixture = gitFixture(t);
+  const branch = fixture.git('rev-parse', '--abbrev-ref', 'HEAD').trim();
+  fixture.git('checkout', '-qb', 'tmp-replaced-topic');
+  fixture.write('miniprogram/app.wxss', 'side topic\n');
+  fixture.git('add', '.');
+  fixture.git('commit', '-qm', 'replaced topic');
+  const topicSha = fixture.git('rev-parse', 'HEAD').trim();
+  fixture.git('checkout', '-q', branch);
+  fixture.git('branch', '-D', 'tmp-replaced-topic');
+  const manifestPath = join(fixture.cwd, 'docs/ui-sync-manifest.json');
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+  manifest.syncedThrough = topicSha;
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  const result = fixture.run();
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /同步基线不是当前分支祖先/);
+});
+
+test('可达真实祖先只解除祖先门，内容摘要不等仍由摘要门失败', (t) => {
+  const fixture = gitFixture(t);
+  fixture.write('miniprogram/app.wxss', 'changed after anchor\n');
+  fixture.git('add', '.');
+  fixture.git('commit', '-qm', 'content changed');
+  const result = fixture.run();
+  assert.notEqual(result.status, 0);
+  assert.doesNotMatch(result.stderr, /同步基线不是当前分支祖先/);
+  assert.match(result.stderr, /截图对应的 UI 内容摘要不匹配|Pages 原型摘要不匹配/);
+});

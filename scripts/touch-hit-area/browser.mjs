@@ -206,11 +206,9 @@ async function probeFn() {
 
   // 发货控件采样：筛选 chip / 坡段行 / 时间线行（docs/index.html + templates.js 真实渲染按钮，
   // 带 data-route="route-analysis" / data-state 委托，非脚本自建 demo）。
-  const allControls = [
-    ...document.querySelectorAll(
-      '.ra-filter[data-route="route-analysis"], .ra-seg-row[data-route="route-analysis"], .ra-tl-row[data-route="route-analysis"]',
-    ),
-  ];
+  const controlSelector =
+    '.ra-filter[data-route="route-analysis"], .ra-seg-row[data-route="route-analysis"], .ra-tl-row[data-route="route-analysis"]';
+  const allControls = [...document.querySelectorAll(controlSelector)];
   report.controlIdentity = {
     hash: location.hash,
     liveButtonCount: allControls.length,
@@ -230,7 +228,6 @@ async function probeFn() {
   }));
   // 全量采样，不截断；5 点（中心 + 四边中点，含左右侧缘）。
   // 不用四角：紧凑 flex 行内 chip 角点会落入相邻兄弟间隙，44px 下限只要求盒尺寸与归属，不要求四角独占。
-  const controls = allControls;
   const fivePoints = (r) => [
     { name: 'center', x: r.left + r.width / 2, y: r.top + r.height / 2 },
     { name: 'edge-top', x: r.left + r.width / 2, y: r.top + Math.min(3, r.height / 4) },
@@ -238,7 +235,7 @@ async function probeFn() {
     { name: 'edge-left', x: r.left + Math.min(3, r.width / 4), y: r.top + r.height / 2 },
     { name: 'edge-right', x: r.right - Math.min(3, r.width / 4), y: r.top + r.height / 2 },
   ];
-  for (const c of controls) {
+  for (const c of allControls) {
     c.scrollIntoView({ block: 'center' });
     await sleep(50);
     const r = c.getBoundingClientRect();
@@ -265,11 +262,7 @@ async function probeFn() {
   // 控件邻近负例：每次重新取实时布局（避免前序 scrollIntoView 后旧矩形失效）；
   // 判定点必须落在某个相邻控件上，且不得被前一控件自身抢点（flex 换行下 DOM 相邻不等于视觉相邻）。
   report.controlNeighbors = [];
-  const liveControls = [
-    ...document.querySelectorAll(
-      '.ra-filter[data-route="route-analysis"], .ra-seg-row[data-route="route-analysis"], .ra-tl-row[data-route="route-analysis"]',
-    ),
-  ];
+  const liveControls = [...document.querySelectorAll(controlSelector)];
   for (let i = 0; i + 1 < liveControls.length; i += 1) {
     const a = liveControls[i];
     const b = liveControls[i + 1];
