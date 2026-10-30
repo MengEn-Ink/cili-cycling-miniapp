@@ -16,7 +16,7 @@
 <view class="profile-label">我的骑行名片</view>
 <view class="profile-identity">
 <view class="avatar-trigger" aria-label="查看我的头像">
-<cili-avatar class="avatar" size="lg" src="{{heroAvatarUrl}}" on-media="{{true}}" data-url="{{heroAvatarUrl}}" bindtap="previewAvatar" binderror="heroAvatarError" aria-label="{{profile && profile.nickname ? profile.nickname : (heroCard ? heroCard.displayName : '骑手')}}的头像" />
+<cili-avatar class="avatar" size="lg" rounded-square="{{true}}" src="{{heroAvatarUrl}}" on-media="{{true}}" data-url="{{heroAvatarUrl}}" bindtap="previewAvatar" binderror="heroAvatarError" aria-label="{{profile && profile.nickname ? profile.nickname : (heroCard ? heroCard.displayName : '骑手')}}的头像" />
 </view>
 <view class="profile-identity-copy">
 <view class="eyebrow">此里 · 骑友</view>

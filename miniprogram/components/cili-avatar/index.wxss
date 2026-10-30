@@ -11,6 +11,9 @@
   border-radius: 50%;
   background: var(--color-action);
 }
+.avatar--rounded-square {
+  border-radius: 12rpx;
+}
 .avatar--sm {
   width: 64rpx;
   height: 64rpx;

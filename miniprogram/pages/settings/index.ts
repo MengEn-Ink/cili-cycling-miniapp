@@ -13,9 +13,20 @@ const RELEASE_NOTES = [
   {
     version: CLIENT_RELEASE_VERSION,
     date: '2026-10-30',
+    title: '个人与骑友头像小圆角统一',
+    summary: '「我的」和活动详情骑友头像改为小圆角方形，保持原有大小和操作。',
+    latest: true,
+    features: [
+      '个人头像、活动骑友列表与名片头像统一为 6px 小圆角',
+      '未公开头像的兜底保持一致，图片裁切、页面布局和功能不变',
+    ],
+  },
+  {
+    version: '2026.10.30.1',
+    date: '2026-10-30',
     title: '界面对比度、加载反馈与暗场细节优化',
     summary: '提升暗色界面的文字、二维码、加载反馈与媒体遮罩一致性。',
-    latest: true,
+    latest: false,
     features: [
       '浅底文字和路线信息清晰可读',
       '二维码减框，加载增加砖红流光',
