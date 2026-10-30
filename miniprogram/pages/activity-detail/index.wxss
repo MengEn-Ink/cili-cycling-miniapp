@@ -451,7 +451,7 @@
 .avatar {
   width: 96rpx;
   height: 96rpx;
-  border-radius: 50%;
+  border-radius: 12rpx;
   background: var(--color-raised);
 }
 .avatar.initialavatar {
@@ -763,7 +763,7 @@
 .rider-dialog-avatar {
   width: 128rpx;
   height: 128rpx;
-  border-radius: 50%;
+  border-radius: 12rpx;
   background: var(--color-raised);
   border: 3rpx solid var(--color-on-media);
 }

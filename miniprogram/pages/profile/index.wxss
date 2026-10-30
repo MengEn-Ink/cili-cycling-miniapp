@@ -86,7 +86,7 @@
   height: 96rpx;
   padding: 0;
   border: 0;
-  border-radius: 50%;
+  border-radius: 12rpx;
   background: transparent;
   box-shadow: none;
   overflow: visible;
@@ -94,7 +94,7 @@
 .avatar-trigger .avatar {
   width: 100%;
   height: 100%;
-  border-radius: 50%;
+  border-radius: 12rpx;
 }
 .profile-identity-copy {
   flex: 1;

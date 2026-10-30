@@ -4,6 +4,7 @@ Component({
     size: { type: String, value: 'md' },
     ariaLabel: { type: String, value: '' },
     onMedia: { type: Boolean, value: false },
+    roundedSquare: { type: Boolean, value: false },
   },
   data: { imageFailed: false },
   observers: {
