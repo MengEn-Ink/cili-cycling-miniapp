@@ -10,7 +10,7 @@
 //
 // 用法：
 //   node scripts/pages-visual-acceptance/capture-routes.mjs \
-//     --port 63742 --width 390 --out /tmp/cili-pages-shots [--route profile]
+//     --port 63742 --width 390 --height 844 --out /tmp/cili-pages-shots [--route profile]
 //
 // 产出：<out>/<route>.png（隐藏 showcase 外壳后的纯手机屏长图）+ <out>/report.json
 
@@ -54,6 +54,7 @@ function parseArgs(argv) {
   const options = {
     port: 63742,
     width: 390,
+    height: 844,
     out: '/tmp/cili-pages-shots',
     route: '',
     docs: 'docs',
@@ -67,6 +68,7 @@ function parseArgs(argv) {
   }
   options.port = Number(options.port);
   options.width = Number(options.width);
+  options.height = Number(options.height);
   return options;
 }
 
@@ -140,7 +142,7 @@ async function run() {
     executablePath ? { headless: true, executablePath } : { headless: true },
   );
   const page = await browser.newPage();
-  await page.setViewportSize({ width: options.width, height: 844 });
+  await page.setViewportSize({ width: options.width, height: options.height });
   const results = [];
   for (const route of routes) {
     const safe = route.replace(/\//g, '-');
@@ -162,7 +164,12 @@ async function run() {
   }
   await browser.close();
   server.close();
-  const report = { capturedAt: new Date().toISOString(), width: options.width, results };
+  const report = {
+    capturedAt: new Date().toISOString(),
+    width: options.width,
+    height: options.height,
+    results,
+  };
   writeFileSync(join(options.out, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
   const problems = results.filter((item) => item.overflow || item.pageErrors.length);
   process.stdout.write(

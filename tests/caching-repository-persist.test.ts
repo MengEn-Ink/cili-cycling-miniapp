@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CachingRepository, REPOSITORY_OFFLINE_STALE_MS } from '../miniprogram/repositories/cached';
 import {
-  MemoryCacheStorage,
   REPO_CACHE_STORAGE_NAMESPACE,
   WxCacheStorage,
 } from '../miniprogram/repositories/persistent';
 import type { RideRepository } from '../miniprogram/repositories/types';
+import { MemoryCacheStorage } from './support/memory-cache-storage';
 
 function makeInner() {
   return {

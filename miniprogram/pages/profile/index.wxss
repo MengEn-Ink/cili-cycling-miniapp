@@ -50,10 +50,10 @@
   left: 0;
   background: linear-gradient(
     180deg,
-    var(--scrim-profile-hero-top) 0%,
-    var(--scrim-profile-hero-soft) 36%,
-    var(--scrim-profile-hero-mid) 68%,
-    var(--scrim-profile-hero-strong) 100%
+    var(--color-scrim-faint) 0%,
+    var(--color-scrim-clear) 36%,
+    var(--color-scrim-mid) 68%,
+    var(--color-scrim-heavy) 100%
   );
 }
 .profile-label {
@@ -108,7 +108,7 @@
   display: inline-flex;
   align-items: center;
   gap: 12rpx;
-  color: var(--color-profile-eyebrow);
+  color: var(--color-media-muted);
   font-family: var(--font-mono);
   font-size: 18rpx;
   letter-spacing: 2rpx;
@@ -136,7 +136,7 @@
 .profile-gender {
   font-size: 21rpx;
   line-height: 30rpx;
-  color: var(--color-profile-meta);
+  color: var(--color-media-muted);
 }
 .refresh-note {
   margin: 0 32rpx;

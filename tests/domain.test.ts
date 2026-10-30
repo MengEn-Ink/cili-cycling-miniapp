@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import { activityDisplayStatus } from '../miniprogram/utils/activity';
-import { canTransition, transition } from '../miniprogram/utils/registration';
+import { canTransition, transition } from './support/registration-state';
 import { validateRegistration } from '../miniprogram/utils/validation';
 import { activities, profile } from './support/mock-fixtures';
 import { runtimeConfig } from '../miniprogram/config/runtime';

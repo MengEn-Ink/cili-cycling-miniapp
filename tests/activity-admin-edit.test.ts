@@ -1393,7 +1393,7 @@ describe('日常活动极简创建与编辑', () => {
   });
 
   it('日常活动详情隐藏旧路线费用和不限人数话术，并展示可信公开路线或 GPX 详情', () => {
-    const card = readFileSync('miniprogram/components/activity-card/index.wxml', 'utf8');
+    const card = readFileSync('miniprogram/pages/activities/index.wxml', 'utf8');
     const detail = readFileSync('miniprogram/pages/activity-detail/index.wxml', 'utf8');
     expect(card).toContain("item.route.distanceKm > 0 ? item.route.distanceKm : '—'");
     expect(card).toContain("item.route.elevationM > 0 ? item.route.elevationM : '—'");

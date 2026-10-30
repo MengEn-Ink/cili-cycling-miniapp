@@ -69,7 +69,7 @@ describe('设置页', () => {
     expect(page.data.currentRelease).toMatchObject({
       version: '2026.10.30.1',
       date: '2026-10-30',
-      title: '界面对比度与加载反馈优化',
+      title: '界面对比度、加载反馈与暗场细节优化',
       latest: true,
     });
     expect(page.data.releaseNotes[1]).toMatchObject({

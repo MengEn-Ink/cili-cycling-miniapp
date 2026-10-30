@@ -4,6 +4,7 @@ import test from 'node:test';
 
 import {
   collectStyleLiteralViolations,
+  collectTokenReferenceIssues,
   contrastRatio,
   parseFontMigrationTable,
   parseMigrationTable,
@@ -14,6 +15,7 @@ import {
   validateDocumentedScripts,
   validateFontContract,
   validateMigrationRows,
+  validateTokenArchitecture,
 } from './check-design.mjs';
 
 function createMigrationFixture() {
@@ -152,6 +154,68 @@ test('page token parser reads only the first page block and normalizes hex', () 
       '--color-a': '#ffffff',
       '--font-family-body': 'sans-serif',
     },
+  );
+  assert.throws(
+    () => parseWxssTokens('page { --color-a: #fff; --color-a: #000; }'),
+    /duplicate root token: --color-a/,
+  );
+});
+
+test('WXSS references must resolve from the root or the same file', () => {
+  assert.deepEqual(
+    collectTokenReferenceIssues(
+      [
+        ['miniprogram/app.wxss', 'page { --global: #fff; } .a { color: var(--global); }'],
+        [
+          'miniprogram/pages/a.wxss',
+          '.a { --local: var(--global); color: var(--local); border: var(--missing); }',
+        ],
+      ],
+      { '--global': '#ffffff' },
+    ).map(({ path, token }) => ({ path, token })),
+    [{ path: 'miniprogram/pages/a.wxss', token: '--missing' }],
+  );
+});
+
+test('three-layer token architecture requires resolvable and consumed component states', () => {
+  const architecture = {
+    document: 'DESIGN.md',
+    primitive: ['--palette-a'],
+    semantic: ['--color-action'],
+    components: [
+      {
+        name: 'button',
+        tokens: ['--button-bg'],
+        states: { active: ['--button-bg-active'] },
+      },
+    ],
+  };
+  const tokens = {
+    '--palette-a': '#ffffff',
+    '--color-action': 'var(--palette-a)',
+    '--button-bg': 'var(--color-action)',
+    '--button-bg-active': 'var(--palette-a)',
+  };
+  assert.doesNotThrow(() =>
+    validateTokenArchitecture({
+      architecture,
+      tokens,
+      styleEntries: [
+        ['miniprogram/app.wxss', '.button { background: var(--button-bg); }'],
+        ['miniprogram/app.wxss', '.button:active { background: var(--button-bg-active); }'],
+      ],
+      documentText: 'Use `var(--color-action)` for actions.',
+    }),
+  );
+  assert.throws(
+    () =>
+      validateTokenArchitecture({
+        architecture,
+        tokens: { ...tokens, '--color-action': 'var(--missing)' },
+        styleEntries: [['miniprogram/app.wxss', '.button { background: var(--button-bg); }']],
+        documentText: 'Broken `var(--not-real)`.',
+      }),
+    /unresolved|not consumed|undefined token/,
   );
 });
 
@@ -307,5 +371,6 @@ test('repository resolves the current theme while retaining the historical migra
     fontLiteralCount: 0,
     migrationRows: 53,
     nativePageConfigs: 17,
+    requiredComponentTokens: 25,
   });
 });

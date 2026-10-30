@@ -157,7 +157,7 @@
   height: 8rpx;
   overflow: hidden;
   border-radius: 999rpx;
-  background: var(--surface-upload-progress-track);
+  background: var(--color-on-media-divider);
 }
 .club-cover-progress-inner {
   height: 100%;

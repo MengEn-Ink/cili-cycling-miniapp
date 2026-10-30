@@ -1,0 +1,181 @@
+{
+  "schemaVersion": 1,
+  "releaseVersion": "2026.10.30.1",
+  "sourceUiDigest": "sha256:5fb23ba7f65f7a0457570e368625a054dcbf76f68726eb4f56ebc8699787f416",
+  "prototypeDigest": "sha256:3eb3af30e64ed0527f0c15e8c684cda1e0be62c4f7df4f3455f4a43752df269c",
+  "syncedThrough": "202b72b5d8be60c9c0a9aa42f91b943d679fe059",
+  "devtoolsStartedAt": "2026-10-30T06:30:27.666Z",
+  "devtoolsFinishedAt": "2026-10-30T06:32:24.949Z",
+  "pagesCapturedAt": "2026-10-30T06:33:39.813Z",
+  "mode": "real-cloud-readonly",
+  "viewport": {
+    "width": 375,
+    "height": 812,
+    "devtoolsScale": 2,
+    "pagesScale": 1
+  },
+  "devtoolsOutcome": {
+    "startupOutcome": "PASS",
+    "productVerdict": "PASS",
+    "passed": 30,
+    "failed": 0,
+    "exceptions": 0,
+    "registeredRoutes": 17
+  },
+  "policy": "真实媒体和个人资料使用不透明矩形遮挡；每张 DevTools 截图另遮挡 8px 左右边界、顶部 8px 与底部 24px，避免圆角边缘残留；Pages 只含合成资料。",
+  "notCovered": [
+    "ordinary-member-write-journey",
+    "ios-physical-device",
+    "android-physical-device",
+    "target-cloud-authoritative-write-readback",
+    "deployment-or-upload"
+  ],
+  "commonOpaqueRectangles": [
+    [0, 0, 750, 8],
+    [0, 1600, 750, 1624],
+    [0, 8, 8, 1600],
+    [742, 8, 750, 1600]
+  ],
+  "routes": [
+    {
+      "id": "activities",
+      "sourceScreenshot": "01-activities.png",
+      "opaqueRectangles": [[0, 573, 750, 1014]],
+      "sourceSha256": "c6b606681c15cd14bee38b617ec1e82184e0ac4f9ffa302762a38def548519d9",
+      "devtoolsSha256": "f6c3299ec0f6079e60e1803ceb4558d0bf47e61ee1a9938f17957db6b8136c8a",
+      "pagesSha256": "0f6cb002103e57c8c79be94aed6fcfffd297518e79ef39b0702c5a579a4c4d76"
+    },
+    {
+      "id": "activity-detail",
+      "sourceScreenshot": "03-detail.png",
+      "opaqueRectangles": [[0, 175, 750, 777]],
+      "sourceSha256": "3213fe1e365a025c6318a2a3474a20b8f08982662b53fbd2fb469880d0f712f0",
+      "devtoolsSha256": "a0e297cfea1f7fb590fe15a797d1ae1628b1443e3f1079dae0437734ace49931",
+      "pagesSha256": "b1849b780ff9bfdd249baadf55f305c1667956ce2dde7882679723a24540115a"
+    },
+    {
+      "id": "route-analysis",
+      "sourceScreenshot": "15-route-analysis.png",
+      "opaqueRectangles": [],
+      "sourceSha256": "a627e4af0f09f62a9e38980dc3d414713495b7c45681f91e6c43ca40aa272849",
+      "devtoolsSha256": "a16b2f9a6cdd0750e82f6bf7721bc171f7f1f4aba8e81eb98072571bd2c0b420",
+      "pagesSha256": "0f36c212ce350bd8ea97edc822bcb0b5de0c4dd5fbbd5c2a6ae1beb9a6bcbd35"
+    },
+    {
+      "id": "registration-form",
+      "sourceScreenshot": "09-registration-form.png",
+      "opaqueRectangles": [[28, 768, 722, 1338]],
+      "sourceSha256": "ffc676164efcbc7e28957696f4e4b76af25021ead2bdfa74b893f605a00766a5",
+      "devtoolsSha256": "87ce9d17e4c351f1543e57fd3bf482d146b9ae3a81876a92383bc3586d8ef579",
+      "pagesSha256": "332641c84280fd0c5bf2ca0a871107343188df3a31bbe50bc9392ae9c7417df6"
+    },
+    {
+      "id": "registrations",
+      "sourceScreenshot": "02-trips.png",
+      "opaqueRectangles": [],
+      "sourceSha256": "efa886a8c4566e8ecdae3ce12f97f050ec224faf0e8570950f062a7676142d3c",
+      "devtoolsSha256": "81352ebb3af4ca20f471c20a7bb870cd1706fc55abc18e588287e5bcc431fed0",
+      "pagesSha256": "b8c937bd2b2d6eae9e137f2e1f1e6fce33376757ab4756974a5f59f7a5a1d9ab"
+    },
+    {
+      "id": "credential",
+      "sourceScreenshot": "04-credential.png",
+      "opaqueRectangles": [[28, 538, 722, 1600]],
+      "sourceSha256": "3454cc146e110445e588a4d4ce996631fff3d0bb895e6a0a9d6d7e2c9816352e",
+      "devtoolsSha256": "2b5d5d0191439a5c81cefafd4be90b6d23b110325fe793845a68297f13f5008a",
+      "pagesSha256": "0166d0d4e523c3af69f6fb1fe35678dde3bd5349e8a240dc31910be7402abe98"
+    },
+    {
+      "id": "profile",
+      "sourceScreenshot": "05-profile.png",
+      "opaqueRectangles": [[0, 175, 750, 600]],
+      "sourceSha256": "58bc52e9d8aeda3a7f7da78eb203bee17f7aaa945ef6074e0972c0180dabec64",
+      "devtoolsSha256": "d6e70446ef5eb3fd72b080167c14522f4e04d8174e4c14ebce808bbd5493b3cf",
+      "pagesSha256": "7e9754004f35e061345cc462807f0fad68ac1ce3913ffdf316bf322de1db08f8"
+    },
+    {
+      "id": "settings",
+      "sourceScreenshot": "08-settings.png",
+      "opaqueRectangles": [[28, 1260, 722, 1385]],
+      "sourceSha256": "de1d989370b078c1839605479e2691d00bb89cde4da9dba6f8faaf509043038e",
+      "devtoolsSha256": "e58ef415a9a902359db314c3cad646eced2ba1c36806e2f684cd8cbbd0967879",
+      "pagesSha256": "eb217db3fa502426ce910b625f3ac7bcc154dbc423e529342263b25a63c965d9"
+    },
+    {
+      "id": "capability-card",
+      "sourceScreenshot": "07-capability-card.png",
+      "opaqueRectangles": [[0, 175, 750, 600]],
+      "sourceSha256": "82a1effc057731465a400f2b5fad9d5332ef782c581caeb7060a08ff65461b3b",
+      "devtoolsSha256": "64a58b0e0695cfeb8b2c4db7af02db7234523b27228fcf0032a89b79f24a0a91",
+      "pagesSha256": "314dee8288effd366a88c58cf2c58cb039896d580662544378af44649733db43"
+    },
+    {
+      "id": "profile-edit",
+      "sourceScreenshot": "06-profile-edit.png",
+      "opaqueRectangles": [
+        [46, 819, 158, 929],
+        [46, 1104, 226, 1212],
+        [28, 1475, 722, 1565]
+      ],
+      "sourceSha256": "1a7fc46481b86f375f1a46652d73352922dd4d04f0852aa7ba276380fae04aa7",
+      "devtoolsSha256": "2e3d9daaa9e70b7b9a24d13891fa768f5f40646798fca7073d023d2174c08c36",
+      "pagesSha256": "4a945deea79b7b3fffcaf87bb1613c67eb3bcf518af64d2ebcf7f648d7278dbb"
+    },
+    {
+      "id": "admin-activity-list",
+      "sourceScreenshot": "10-admin-activity-list.png",
+      "opaqueRectangles": [],
+      "sourceSha256": "295c42c6257c52ab5c072a7e9a569aed0eed10d5740c9e7e8846666a470cb378",
+      "devtoolsSha256": "1f52a3456460d645d7e532172dbc6559aae0170e287c20d81b10e74eeb68a6e4",
+      "pagesSha256": "784d72aa665be4a4685a9074c9c7ed260da395cb4dfa59be28eec830bbdb84ce"
+    },
+    {
+      "id": "admin-activity-edit",
+      "sourceScreenshot": "13-create-activity.png",
+      "opaqueRectangles": [],
+      "sourceSha256": "5816cce6783072b22e3b6614a135af61fcc142549dcaf10aa3a391cf016428d1",
+      "devtoolsSha256": "7c1442cd00a64cea5737d6bff7590b03dc2f3b2c23fe73de8eaec04c85ec2e65",
+      "pagesSha256": "f1a5e70015ac611f1ce34cafe5bd1b2693d7cd94552042feef4d612e549a54a2"
+    },
+    {
+      "id": "admin-reviews",
+      "sourceScreenshot": "11-admin-reviews.png",
+      "opaqueRectangles": [],
+      "sourceSha256": "2cb0460fe4f5a92a725b15f59409f193e705aa2db017db72cb81d5dceb0db313",
+      "devtoolsSha256": "625e1a3b37dd35497c4f0f46674030ed67f6e14fe9e8e8cdf98dddde7e49f2d3",
+      "pagesSha256": "169cff72b76353bac433f8992bfcf922f371d01edaacc022f4f4e37206178207"
+    },
+    {
+      "id": "admin-review-detail",
+      "sourceScreenshot": "12-admin-review-detail.png",
+      "opaqueRectangles": [[0, 195, 750, 930]],
+      "sourceSha256": "f9566f573636707d3a68bd5c051242a7ae0a8d14703deb198b53adabfd1e5880",
+      "devtoolsSha256": "eed13202233cb9f2acd6a5c96a731eee36c80e4c1765380fda1e39297e87cfb9",
+      "pagesSha256": "a3cc5600a5096d6bd6c3594dfba81d258ca395ba1dd02f831ea16c0d9c7c05b4"
+    },
+    {
+      "id": "club-center",
+      "sourceScreenshot": "16-club-center.png",
+      "opaqueRectangles": [[0, 175, 750, 645]],
+      "sourceSha256": "35ea395c8042d801bc6bd435932451c7e61460440ad1d8dc6dc75593ce90e3e3",
+      "devtoolsSha256": "dda5c9947017f51f172c677b6bccedb9fa369b0588909067133d303f6223b7ff",
+      "pagesSha256": "40eca3caca56ead5b40cfe8a091977ff41d0a2f1abaf90ed3a04e518f8fe700d"
+    },
+    {
+      "id": "admin-club-applications",
+      "sourceScreenshot": "17-admin-club.png",
+      "opaqueRectangles": [[28, 548, 722, 942]],
+      "sourceSha256": "d29fa6618bd6cfeca600358ecb24a401bc8e86de483eebc9938505c53dd011f6",
+      "devtoolsSha256": "6b4ab24a01df579206473fcbfaed88ef3695cdf004c28ecce6b7e71dc845aff6",
+      "pagesSha256": "54a9501c975c422b23874ea66448b7cc186e21e8745e25a9587f663153ba0537"
+    },
+    {
+      "id": "admin-club-application-detail",
+      "sourceScreenshot": "18-admin-club-edit.png",
+      "opaqueRectangles": [[28, 703, 722, 1480]],
+      "sourceSha256": "77057a144d129c4c266e7b7bfa9788602444a7a43450f7005c25c928ac6168bc",
+      "devtoolsSha256": "28def082e9ecb5b4aa648d0f9b4ac9acb45bfae36052b8a051e4eaadacbd9e7d",
+      "pagesSha256": "f6b5cb22809d781cdf26bc2258b81b63ebc2eef1f20c835b7c0a66bc04a6be48"
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "sources": {
     "wxss": "miniprogram/app.wxss",
     "themeTs": "miniprogram/config/theme.ts",
@@ -85,14 +85,69 @@
       "value": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
     }
   },
-  "v1ComponentTokens": [
-    "--scrim-cover-top",
-    "--scrim-cover-strong",
-    "--scrim-hero",
-    "--surface-glass",
-    "--surface-sheet",
-    "--shadow-sheet"
-  ],
+  "tokenArchitecture": {
+    "document": "DESIGN.md",
+    "primitive": [
+      "--space-1",
+      "--space-4",
+      "--radius-sm",
+      "--radius-card",
+      "--font-size-body",
+      "--font-size-title",
+      "--font-family-body",
+      "--font-family-editorial",
+      "--palette-ink-950",
+      "--palette-ink-900",
+      "--palette-red-500",
+      "--palette-red-600",
+      "--palette-red-700",
+      "--palette-warm-50",
+      "--motion-duration-base",
+      "--motion-easing-standard"
+    ],
+    "semantic": [
+      "--color-bg",
+      "--color-surface",
+      "--color-text",
+      "--color-muted",
+      "--color-border-strong",
+      "--color-action",
+      "--color-action-active",
+      "--color-on-action",
+      "--color-status-success",
+      "--color-status-warning",
+      "--focus-color",
+      "--focus-ring"
+    ],
+    "components": [
+      {
+        "name": "button",
+        "tokens": ["--button-bg", "--button-text", "--button-border", "--button-radius"],
+        "states": { "active": ["--button-bg-active"] }
+      },
+      {
+        "name": "card",
+        "tokens": ["--card-bg", "--card-text", "--card-border", "--card-radius"]
+      },
+      {
+        "name": "input",
+        "tokens": ["--input-bg", "--input-text", "--input-border", "--input-radius"],
+        "states": { "focus": ["--input-focus-border", "--input-focus-ring"] }
+      },
+      {
+        "name": "tag",
+        "tokens": ["--tag-bg", "--tag-text", "--tag-radius"]
+      },
+      {
+        "name": "segment",
+        "tokens": ["--segment-bg", "--segment-text", "--segment-border", "--segment-radius"]
+      },
+      {
+        "name": "layout",
+        "tokens": ["--control-height", "--page-gutter", "--card-gap"]
+      }
+    ]
+  },
   "contrastPairs": [
     {
       "name": "text-on-canvas",
