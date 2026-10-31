@@ -15,22 +15,7 @@
 .pageheading {
   padding: 32rpx 0 24rpx;
 }
-.pageheading .eyebrow {
-  display: inline-flex;
-  gap: 16rpx;
-  color: var(--color-muted);
-  font-family: var(--font-family-mono);
-  font-size: 22rpx;
-  letter-spacing: 2rpx;
-  text-transform: uppercase;
-}
-.pageheading .eyebrow::before {
-  width: 40rpx;
-  height: 2rpx;
-  background: currentColor;
-  content: '';
-  margin-top: 15rpx;
-}
+
 .pageheading-title {
   display: flex;
   flex-direction: column;
@@ -45,12 +30,12 @@
 .pageheading-sub {
   margin-top: 20rpx;
   color: var(--color-muted);
-  font-size: 28rpx;
+  font-size: var(--font-size-body);
   line-height: 44rpx;
 }
 .pageheading-sub--secondary {
-  margin-top: 8rpx;
-  font-size: 24rpx;
+  margin-top: var(--space-1);
+  font-size: var(--font-size-label);
   line-height: 36rpx;
 }
 
@@ -85,34 +70,34 @@
 .metrics .em .unit {
   color: var(--color-muted);
   font-family: var(--font-family-body);
-  font-size: 24rpx;
+  font-size: var(--font-size-label);
   font-weight: 600;
   letter-spacing: 1rpx;
 }
 .metrics text {
   color: var(--color-muted);
-  font-size: 24rpx;
+  font-size: var(--font-size-label);
   line-height: 36rpx;
 }
 
 /* --- 核心结论 panel ------------------------------------------------------ */
 .conclusion-panel {
-  margin-top: 32rpx;
-  padding: 32rpx;
+  margin-top: var(--space-5);
+  padding: var(--space-5);
   border: 2rpx solid var(--color-border-strong);
-  border-radius: 28rpx;
+  border-radius: var(--radius-card);
   background: var(--color-raised);
   color: var(--color-text);
 }
 .conclusion-label {
   color: var(--color-brand);
   font-family: var(--font-family-mono);
-  font-size: 22rpx;
+  font-size: var(--font-size-label);
   letter-spacing: 2rpx;
   opacity: 0.76;
 }
 .conclusion-copy {
-  margin-top: 12rpx;
+  margin-top: var(--space-2);
   font-family: var(--font-family-editorial);
   font-size: 40rpx;
   line-height: 52rpx;
@@ -133,10 +118,10 @@
 .strategy-tags text {
   padding: 6rpx 16rpx;
   border: 2rpx solid var(--color-on-action);
-  border-radius: 999rpx;
+  border-radius: var(--radius-full);
   color: var(--color-on-action);
   font-family: var(--font-family-mono);
-  font-size: 22rpx;
+  font-size: var(--font-size-label);
   letter-spacing: 1rpx;
 }
 
@@ -144,26 +129,20 @@
 .map.large {
   display: flex;
   flex-direction: column;
-  gap: 16rpx;
-  margin-top: 32rpx;
-  padding: 24rpx;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+  padding: var(--space-4);
   border: 2rpx solid var(--color-border);
-  border-radius: 28rpx;
+  border-radius: var(--radius-card);
   background: var(--color-surface);
 }
 .map-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 16rpx;
+  gap: var(--space-3);
 }
-.chapterhead-eyebrow {
-  flex: none;
-  color: var(--color-muted);
-  font-family: var(--font-family-mono);
-  font-size: 22rpx;
-  letter-spacing: 2rpx;
-}
+
 .chapterhead-title {
   flex: 1;
   font-family: var(--font-family-editorial);
@@ -174,25 +153,25 @@
 .map-count {
   color: var(--color-muted);
   font-family: var(--font-family-mono);
-  font-size: 22rpx;
+  font-size: var(--font-size-label);
 }
 .map-direction {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16rpx;
+  gap: var(--space-3);
   color: var(--color-muted);
-  font-size: 24rpx;
+  font-size: var(--font-size-label);
   line-height: 36rpx;
 }
 .map-reset {
   flex: none;
   padding: 6rpx 16rpx;
   border: 2rpx solid var(--color-border-strong);
-  border-radius: 999rpx;
+  border-radius: var(--radius-full);
   background: var(--color-surface);
   color: var(--color-text);
-  font-size: 22rpx;
+  font-size: var(--font-size-label);
 }
 .map-reset::after {
   display: none;
@@ -200,20 +179,20 @@
 .route-map {
   width: 100%;
   height: 560rpx;
-  border-radius: 20rpx;
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 .map-fallback {
   flex-direction: column;
   align-items: stretch;
-  gap: 12rpx;
+  gap: var(--space-2);
 }
 .map-fallback-copy {
   display: flex;
   flex-direction: column;
-  gap: 12rpx;
+  gap: var(--space-2);
   color: var(--color-text);
-  font-size: 26rpx;
+  font-size: var(--font-size-body);
 }
 .map-retry {
   width: 100%;
@@ -221,58 +200,57 @@
 .map-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 12rpx;
+  gap: var(--space-2);
 }
 .map-legend text {
   display: inline-flex;
   align-items: center;
-  gap: 8rpx;
+  gap: var(--space-1);
   padding: 6rpx 14rpx;
   border: 2rpx solid var(--color-border);
-  border-radius: 999rpx;
+  border-radius: var(--radius-full);
   color: var(--color-text);
-  font-size: 22rpx;
+  font-size: var(--font-size-label);
 }
 .legend-dot {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24rpx;
-  height: 24rpx;
+  width: 36rpx;
+  height: 36rpx;
   border-radius: 50%;
   background: var(--color-raised);
   color: var(--color-text);
   font-family: var(--font-family-mono);
-  font-size: 18rpx;
+  font-size: var(--font-size-label);
 }
 .map-detail,
 .map-detail--start {
   display: flex;
   flex-direction: column;
-  gap: 8rpx;
+  gap: var(--space-1);
   padding: 20rpx;
-  border-left: 4rpx solid var(--color-brand);
-  border-radius: 12rpx;
+  border-radius: var(--radius-sm);
   background: var(--color-raised);
 }
 .map-detail-head {
   display: flex;
   justify-content: space-between;
-  gap: 16rpx;
+  gap: var(--space-3);
 }
 .point-type {
   color: var(--color-muted);
   font-family: var(--font-family-mono);
-  font-size: 22rpx;
+  font-size: var(--font-size-label);
   letter-spacing: 1rpx;
 }
 .point-computed {
-  margin-left: 8rpx;
+  margin-left: var(--space-1);
   padding: 2rpx 8rpx;
   border-radius: 6rpx;
   background: var(--color-raised);
   color: var(--color-muted);
-  font-size: 20rpx;
+  font-size: var(--font-size-label);
 }
 .selected-name {
   margin-top: 4rpx;
@@ -284,33 +262,33 @@
 .selected-km {
   color: var(--color-brand);
   font-family: var(--font-family-mono);
-  font-size: 26rpx;
+  font-size: var(--font-size-body);
   font-weight: 800;
 }
 .map-detail-purpose {
   color: var(--color-text);
-  font-size: 24rpx;
+  font-size: var(--font-size-label);
   line-height: 36rpx;
 }
 .selected-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12rpx;
-  margin-top: 8rpx;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
 }
 .selected-grid view {
   display: flex;
   flex-direction: column;
   color: var(--color-text);
-  font-size: 24rpx;
+  font-size: var(--font-size-label);
 }
 .selected-grid view text:first-child {
   color: var(--color-muted);
-  font-size: 22rpx;
+  font-size: var(--font-size-label);
 }
 .point-note {
   color: var(--color-muted);
-  font-size: 22rpx;
+  font-size: var(--font-size-label);
   line-height: 34rpx;
 }
 .start-navigation-button {
@@ -321,8 +299,8 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: 48rpx;
-  margin-top: 48rpx;
+  gap: var(--space-6);
+  margin-top: var(--space-6);
 }
 .section {
   display: flex;
@@ -337,7 +315,7 @@
 .chapterhead .chapterhead-title {
   color: var(--color-text);
   font-family: var(--font-family-editorial);
-  font-size: 36rpx;
+  font-size: var(--font-size-title);
   line-height: 48rpx;
   font-weight: 900;
   letter-spacing: -0.5rpx;
@@ -352,7 +330,7 @@
   flex: none;
   color: var(--color-muted);
   font-family: var(--font-family-mono);
-  font-size: 22rpx;
+  font-size: var(--font-size-label);
   letter-spacing: 1rpx;
 }
 
@@ -360,7 +338,7 @@
 .elevation {
   padding: 20rpx;
   border: 2rpx solid var(--color-border);
-  border-radius: 20rpx;
+  border-radius: var(--radius-md);
   background: var(--color-surface);
 }
 .elevation-chart {
@@ -391,7 +369,7 @@
   background: var(--color-surface);
   color: var(--color-text);
   text-align: left;
-  font-size: 22rpx;
+  font-size: var(--font-size-label);
 }
 .anchor-item.is-selected {
   background: var(--color-raised);
@@ -401,19 +379,19 @@
 .anchor-computed {
   margin-left: 6rpx;
   color: var(--color-muted);
-  font-size: 18rpx;
+  font-size: var(--font-size-label);
 }
 
 /* --- segments ------------------------------------------------------------ */
 .segments-hint {
   color: var(--color-muted);
-  font-size: 22rpx;
+  font-size: var(--font-size-label);
   line-height: 34rpx;
 }
 .segment-list {
   display: flex;
   flex-direction: column;
-  gap: 12rpx;
+  gap: var(--space-2);
 }
 .segment-item {
   display: grid;
@@ -422,7 +400,7 @@
   width: 100%;
   padding: 20rpx 24rpx;
   border: 2rpx solid var(--color-border);
-  border-radius: 20rpx;
+  border-radius: var(--radius-md);
   background: var(--color-surface);
   color: var(--color-text);
   text-align: left;
@@ -437,7 +415,7 @@
 .segment-index {
   color: var(--color-muted);
   font-family: var(--font-family-mono);
-  font-size: 28rpx;
+  font-size: var(--font-size-body);
   font-weight: 900;
 }
 .segment-content {
@@ -450,31 +428,31 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12rpx;
+  gap: var(--space-2);
 }
 .segment-name {
   color: var(--color-text);
-  font-size: 28rpx;
+  font-size: var(--font-size-body);
   font-weight: 800;
 }
 .difficulty {
   padding: 4rpx 12rpx;
-  border-radius: 999rpx;
-  font-size: 20rpx;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-label);
   background: var(--color-raised);
   color: var(--color-text);
 }
 .segment-range {
   color: var(--color-muted);
-  font-size: 24rpx;
+  font-size: var(--font-size-label);
 }
 .segment-change {
   color: var(--color-muted);
-  font-size: 22rpx;
+  font-size: var(--font-size-label);
 }
 .segment-strategy {
   color: var(--color-text);
-  font-size: 24rpx;
+  font-size: var(--font-size-label);
   line-height: 36rpx;
 }
 
@@ -482,7 +460,7 @@
 .point-list {
   display: flex;
   flex-direction: column;
-  gap: 12rpx;
+  gap: var(--space-2);
 }
 .point {
   display: grid;
@@ -491,7 +469,7 @@
   width: 100%;
   padding: 20rpx 24rpx;
   border: 2rpx solid var(--color-border);
-  border-radius: 20rpx;
+  border-radius: var(--radius-md);
   background: var(--color-surface);
   color: var(--color-text);
   text-align: left;
@@ -512,13 +490,13 @@
   border-right: 2rpx dashed var(--color-border);
   color: var(--color-brand);
   font-family: var(--font-family-mono);
-  font-size: 28rpx;
+  font-size: var(--font-size-body);
   line-height: 36rpx;
   font-weight: 900;
 }
 .distance text {
   color: var(--color-muted);
-  font-size: 20rpx;
+  font-size: var(--font-size-label);
   font-weight: 600;
 }
 .point-main {
@@ -530,41 +508,41 @@
 .point-name-row {
   display: flex;
   align-items: center;
-  gap: 12rpx;
+  gap: var(--space-2);
 }
 .point-name {
   color: var(--color-text);
-  font-size: 28rpx;
+  font-size: var(--font-size-body);
   font-weight: 800;
 }
 .point-purpose {
   color: var(--color-muted);
-  font-size: 24rpx;
+  font-size: var(--font-size-label);
 }
 .point-elevation {
   color: var(--color-text);
   font-family: var(--font-family-mono);
-  font-size: 22rpx;
+  font-size: var(--font-size-label);
 }
 
 /* --- paper + risk + strategy + equipment -------------------------------- */
 .paper {
   display: flex;
   flex-direction: column;
-  gap: 12rpx;
-  padding: 24rpx;
+  gap: var(--space-2);
+  padding: var(--space-4);
   border: 2rpx solid var(--color-border);
-  border-radius: 20rpx;
+  border-radius: var(--radius-md);
   background: var(--color-surface);
 }
 .risk-row,
 .strategy-row,
 .equipment-row {
   display: flex;
-  align-items: baseline;
-  gap: 16rpx;
+  align-items: center;
+  gap: var(--space-3);
   color: var(--color-text);
-  font-size: 26rpx;
+  font-size: var(--font-size-body);
   line-height: 40rpx;
 }
 .risk-mark {
@@ -577,28 +555,33 @@
   font-weight: 900;
 }
 .check {
-  color: var(--color-brand);
-  font-weight: 900;
+  flex: none;
+  width: 10rpx;
+  height: 18rpx;
+  margin: 0 6rpx 6rpx 4rpx;
+  border-right: 3.5rpx solid var(--color-brand);
+  border-bottom: 3.5rpx solid var(--color-brand);
+  transform: rotate(45deg);
 }
 
 /* --- notice -------------------------------------------------------------- */
 .notice {
   display: flex;
   align-items: flex-start;
-  gap: 16rpx;
+  gap: var(--space-3);
   padding: 20rpx 24rpx;
   border: 2rpx dashed var(--color-border);
   border-radius: 16rpx;
   background: var(--color-bg);
   color: var(--color-muted);
-  font-size: 24rpx;
+  font-size: var(--font-size-label);
   line-height: 36rpx;
 }
 .notice-dot {
   flex: none;
   width: 12rpx;
   height: 12rpx;
-  margin-top: 12rpx;
+  margin-top: var(--space-2);
   border-radius: 50%;
   background: var(--color-text);
 }
@@ -613,14 +596,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 12rpx;
+  gap: var(--space-2);
   min-height: 88rpx;
   padding: 0 32rpx;
   border: 2rpx solid var(--color-text);
-  border-radius: 999rpx;
+  border-radius: var(--radius-full);
   background: var(--color-text);
   color: var(--color-on-action);
-  font-size: 28rpx;
+  font-size: var(--font-size-body);
   line-height: 40rpx;
   font-weight: 800;
 }
@@ -666,9 +649,7 @@
 .route-analysis-page .pageheading {
   padding: 24rpx 0 18rpx;
 }
-.route-analysis-page .pageheading .eyebrow {
-  font-size: 20rpx;
-}
+
 .route-analysis-page .pageheading-title {
   margin-top: 10rpx;
   font-size: 52rpx;
@@ -676,23 +657,23 @@
   letter-spacing: -1rpx;
 }
 .route-analysis-page .pageheading-sub {
-  margin-top: 8rpx;
-  font-size: 24rpx;
+  margin-top: var(--space-1);
+  font-size: var(--font-size-label);
   line-height: 34rpx;
 }
 .route-analysis-page .pageheading-meta {
   margin-top: 4rpx;
   color: var(--color-muted);
   font-family: var(--font-family-mono);
-  font-size: 20rpx;
+  font-size: var(--font-size-label);
 }
 .route-analysis-page .ink {
   padding: 18rpx;
-  border-radius: 12rpx;
+  border-radius: var(--radius-sm);
 }
 .route-analysis-page .metrics {
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8rpx;
+  gap: var(--space-1);
 }
 .route-analysis-page .metrics .em {
   gap: 2rpx;
@@ -703,47 +684,47 @@
 }
 .route-analysis-page .metrics .em .unit,
 .route-analysis-page .metrics text {
-  font-size: 18rpx;
+  font-size: var(--font-size-label);
   line-height: 28rpx;
 }
 .route-analysis-page .conclusion-panel {
-  margin-top: 16rpx;
+  margin-top: var(--space-3);
   padding: 20rpx;
-  border-radius: 12rpx;
+  border-radius: var(--radius-sm);
 }
 .route-analysis-page .conclusion-copy {
-  margin-top: 8rpx;
+  margin-top: var(--space-1);
   font-family: var(--font-family-body);
-  font-size: 28rpx;
+  font-size: var(--font-size-body);
   line-height: 40rpx;
 }
 .route-analysis-page .conclusion-copy--secondary {
-  font-size: 24rpx;
+  font-size: var(--font-size-label);
   line-height: 34rpx;
 }
 .route-analysis-page .strategy-tags {
-  margin-top: 12rpx;
+  margin-top: var(--space-2);
 }
 .route-analysis-page .strategy-tags text {
   padding: 4rpx 10rpx;
-  font-size: 18rpx;
+  font-size: var(--font-size-label);
 }
 .route-analysis-page .map.large {
   gap: 10rpx;
-  margin-top: 16rpx;
-  padding: 16rpx;
-  border-radius: 12rpx;
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
 }
 .route-analysis-page .map-head {
   flex-wrap: wrap;
 }
 .route-analysis-page .map-head .chapterhead-title {
   font-family: var(--font-family-body);
-  font-size: 28rpx;
+  font-size: var(--font-size-body);
   line-height: 38rpx;
 }
 .route-analysis-page .map-direction {
-  font-size: 21rpx;
+  font-size: var(--font-size-label);
   line-height: 30rpx;
 }
 .route-analysis-page .map-reset {
@@ -752,19 +733,19 @@
 }
 .route-analysis-page .route-map {
   height: 440rpx;
-  border-radius: 8rpx;
+  border-radius: var(--radius-xs);
 }
 .route-analysis-page .map-detail,
 .route-analysis-page .map-detail--start {
   padding: 14rpx;
-  border-radius: 8rpx;
+  border-radius: var(--radius-xs);
 }
 .route-analysis-page .content {
-  gap: 32rpx;
+  gap: var(--space-5);
   margin-top: 28rpx;
 }
 .route-analysis-page .section {
-  gap: 12rpx;
+  gap: var(--space-2);
 }
 .route-analysis-page .chapterhead .chapterhead-title {
   font-family: var(--font-family-body);
@@ -773,8 +754,8 @@
 }
 .route-analysis-page .elevation,
 .route-analysis-page .paper {
-  padding: 16rpx;
-  border-radius: 12rpx;
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
 }
 .route-analysis-page .elevation-chart {
   height: 260rpx;
@@ -788,7 +769,7 @@
 }
 .route-analysis-page .segment-item,
 .route-analysis-page .point {
-  padding: 16rpx;
+  padding: var(--space-3);
 }
 .route-analysis-page .actionbar .btn {
   border-radius: 10rpx;

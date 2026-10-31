@@ -4,7 +4,6 @@
   <state-view loading="{{loading}}" error="{{!p ? error : ''}}" loading-title="正在读取个人资料" loading-copy="正在加载已保存的个人资料">
   <block wx:if="{{p}}">
     <view class="pageheading">
-      <view class="eyebrow">此里 · 关于你</view>
       <view class="pageheading-title editorial">
         <text class="pageheading-line">让同行的人，</text>
         <text class="pageheading-line">认出你。</text>
@@ -147,7 +146,6 @@
   <view wx:if="{{consentVisible}}" class="consent-mask" bindtap="deferConsent" catchtouchmove="keepConsentSheet">
     <view class="consent-sheet" catchtap="keepConsentSheet" role="dialog" aria-label="资料授权确认">
       <view class="consent-handle" aria-hidden="true"></view>
-      <view class="consent-kicker">填写前确认</view>
       <view class="consent-title editorial">这些资料会用在哪里？</view>
       <view class="consent-copy">仅在你确认后使用，之后可在本页随时查看状态或调整。</view>
       <view class="consent-list">

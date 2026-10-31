@@ -19,7 +19,6 @@
 <cili-avatar class="avatar" size="lg" rounded-square="{{true}}" src="{{heroAvatarUrl}}" on-media="{{true}}" data-url="{{heroAvatarUrl}}" bindtap="previewAvatar" binderror="heroAvatarError" aria-label="{{profile && profile.nickname ? profile.nickname : (heroCard ? heroCard.displayName : '骑手')}}的头像" />
 </view>
 <view class="profile-identity-copy">
-<view class="eyebrow">此里 · 骑友</view>
 <view class="profile-name editorial">{{profile && profile.nickname ? profile.nickname : (heroCard ? heroCard.displayName : '欢迎来到此里')}}</view>
 <view class="profile-gender">{{profile && profile.gender ? profile.gender : (heroCard ? heroCard.genderLabel : '未标注')}}</view>
 </view>

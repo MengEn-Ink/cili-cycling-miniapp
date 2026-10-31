@@ -25,7 +25,6 @@
 
   <block wx:else>
     <view class="pageheading">
-      <view class="eyebrow">此里 · 组织一场出发</view>
       <view class="pageheading-title editorial">
         <text class="pageheading-line">山路上的事，</text>
         <text class="pageheading-line">安排得明明白白。</text>

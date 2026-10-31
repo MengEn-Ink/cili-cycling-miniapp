@@ -19,7 +19,7 @@
         <view class="shade"></view>
         <view class="corner"><text class="tag dark">{{viewerStatus.label}}</text></view>
         <view class="caption">
-          <view class="eyebrow">{{displayDate}}{{item.route.level ? ' · ' + item.route.level : ''}}</view>
+          <view class="eyebrow caption-when"><text>{{displayDate}}</text><text wx:if="{{item.route.level}}">{{item.route.level}}</text></view>
           <view class="hero-title editorial">{{item.title}}</view>
           <view class="hero-sub">{{item.clubIdentity.name}}</view>
         </view>
@@ -41,7 +41,7 @@
             <view class="rowicon rowicon--clock" aria-hidden="true"></view>
             <view class="rowtext">
               <text class="em">{{startTime || '集合时间待公布'}}</text>
-              <text class="sub">{{displayDate}} · {{item.route.start || '集合地点待公布'}}</text>
+              <view class="sub ink-row__meta"><text>{{displayDate}}</text><text>{{item.route.start || '集合地点待公布'}}</text></view>
             </view>
           </view>
           <view class="ink-capacity" wx:if="{{!item.registrationUnlimited}}"><text>已通过</text><text>{{item.approvedRegistrationCount || 0}} 人</text></view>
@@ -70,12 +70,11 @@
           <view class="paper">
             <view class="detailrows">
               <view class="detailrow"><text class="detailrow-term">集合时间</text><text class="detailrow-desc">{{startTime || '待公布'}}</text></view>
-              <view class="detailrow"><text class="detailrow-term">集合地点</text><text class="detailrow-desc">{{item.route.start || '集合地点待公布'}}</text></view>
+              <view class="detailrow detailrow--action"><text class="detailrow-term">集合地点</text><text class="detailrow-desc">{{item.route.start || '集合地点待公布'}}</text><button wx:if="{{item.route.startLocation}}" class="meeting-nav" data-target="start" bindtap="navigate" aria-label="导航到集合地点">导航</button></view>
               <view class="detailrow" wx:if="{{item.route.startLocation && item.route.startLocation.address && item.route.startLocation.address !== item.route.start}}"><text class="detailrow-term">集合位置</text><text class="detailrow-desc">{{item.route.startLocation.address}}</text></view>
               <view class="detailrow" wx:if="{{endTime}}"><text class="detailrow-term">预计结束</text><text class="detailrow-desc">{{endTime}}</text></view>
               <view class="detailrow" wx:if="{{deadlineTime}}"><text class="detailrow-term">报名截止</text><text class="detailrow-desc">{{deadlineTime}}</text></view>
             </view>
-            <button wx:if="{{item.route.startLocation}}" class="btn secondary meeting-cta" data-target="start" bindtap="navigate" aria-label="导航到集合地点">导航到集合点</button>
           </view>
         </view>
 
@@ -144,7 +143,7 @@
           <view class="paper notes-paper">
             <view class="chip-list" wx:if="{{item.equipment && item.equipment.length}}">
               <text class="chip-list-label">装备</text>
-              <view class="gear-chip" wx:for="{{item.equipment}}" wx:key="*this"><text class="check">✓</text><text>{{item}}</text></view>
+              <view class="gear-chip" wx:for="{{item.equipment}}" wx:key="*this"><view class="check" aria-hidden="true"></view><text>{{item}}</text></view>
             </view>
             <view class="chip-list" wx:if="{{item.notices && item.notices.length}}">
               <text class="chip-list-label">注意事项</text>
@@ -196,7 +195,6 @@
       <!-- decision：报名状态 + 主 CTA 说明 -->
       <view class="decision" aria-label="报名状态">
         <view class="decision-head">
-          <text class="decision-kicker">报名状态</text>
           <text class="decision-title editorial">{{viewerStatus.label}}</text>
         </view>
         <view class="decision-hint">{{viewerStatus.hint}}</view>

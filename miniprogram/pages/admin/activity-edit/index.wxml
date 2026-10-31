@@ -24,7 +24,6 @@
 
   <block wx:else>
     <view class="pageheading editor-hero">
-      <view class="eyebrow">此里 · 编辑这次骑行</view>
       <view class="pageheading-title editorial">
         <text class="pageheading-line">出发之前，</text>
         <text class="pageheading-line">把细节讲清楚。</text>
