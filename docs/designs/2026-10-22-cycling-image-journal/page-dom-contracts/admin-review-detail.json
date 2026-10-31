@@ -27,7 +27,6 @@
     { "trigger": "previewPhoto", "dataAttr": "data-url", "note": "点击资料照片全屏预览" }
   ],
   "copy": [
-    "此里 · 确认同行资料",
     "报名与联络资料",
     "管理员可见完整信息",
     "报名活动",

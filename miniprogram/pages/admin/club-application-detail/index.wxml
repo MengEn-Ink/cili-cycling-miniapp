@@ -23,7 +23,6 @@
 
   <block wx:else>
     <view class="pageheading">
-      <view class="eyebrow">此里 · 共同的名片</view>
       <view class="club-profile-badge small muted">{{pageState === 'bootstrap' ? '平台管理员 · 首次创建' : '平台管理员 · 唯一俱乐部资料维护'}}</view>
       <view class="pageheading-title editorial">
         <text class="pageheading-line">把俱乐部的样子，</text>

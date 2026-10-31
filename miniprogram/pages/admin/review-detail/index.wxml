@@ -24,7 +24,6 @@
   <block wx:if="{{x && card}}">
     <view class="pageheading">
       <view class="pageheading-logo-row">
-        <view class="eyebrow">此里 · 确认同行资料</view>
         <brand-logo compact="{{true}}" meta="审批详情" />
       </view>
       <view class="pageheading-title editorial">{{card.displayName}}</view>

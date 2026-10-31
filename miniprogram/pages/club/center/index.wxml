@@ -39,7 +39,7 @@
       <image wx:if="{{club.coverUrl && !coverFailed}}" class="club-cover club-cover-image hero-media" src="{{club.coverUrl}}" mode="aspectFill" binderror="coverError" aria-label="{{club.name}} 俱乐部封面" />
       <view wx:else class="club-cover club-cover-placeholder hero-media hero-media--fallback" aria-hidden="true"></view>
       <view class="shade" aria-hidden="true"></view>
-      <view class="club-cover-location" aria-hidden="true">{{club.city || '城市未填写'}}</view>
+      <view class="club-cover-location" wx:if="{{club.city}}" aria-hidden="true">{{club.city}}</view>
       <view class="caption">
         <view class="club-identity">
           <image wx:if="{{club.avatarUrl && !avatarFailed}}" class="club-avatar" src="{{club.avatarUrl}}" mode="aspectFill" binderror="avatarError" aria-label="{{club.name}} 俱乐部头像" />
@@ -68,9 +68,9 @@
             <view class="detailrow-term">名称</view>
             <view class="detailrow-desc">{{club.name}}</view>
           </view>
-          <view class="detailrow">
+          <view class="detailrow" wx:if="{{club.city}}">
             <view class="detailrow-term">所在地区</view>
-            <view class="detailrow-desc">{{club.city || '城市未填写'}}</view>
+            <view class="detailrow-desc">{{club.city}}</view>
           </view>
           <view class="detailrow">
             <view class="detailrow-term">当前身份</view>

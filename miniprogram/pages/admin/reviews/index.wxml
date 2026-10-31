@@ -7,7 +7,6 @@
 -->
 <view class="page review-page cinema-page cinema-page--dark" data-v1-layout="admin">
   <view class="pageheading">
-    <view class="eyebrow">此里 · 审核工作台</view>
     <view class="pageheading-title editorial">
       <text class="pageheading-line">每一位同行者，</text>
       <text class="pageheading-line">都值得认真确认。</text>

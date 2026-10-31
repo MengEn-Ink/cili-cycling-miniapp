@@ -15,25 +15,10 @@ page {
 .editor-hero.pageheading {
   display: flex;
   flex-direction: column;
-  gap: 16rpx;
+  gap: var(--space-3);
   padding: 40rpx var(--page-gutter) 36rpx;
 }
-.editor-hero .eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
-  color: var(--color-muted);
-  font-family: var(--font-family-mono);
-  font-size: 24rpx;
-  line-height: 36rpx;
-  letter-spacing: 2rpx;
-}
-.editor-hero .eyebrow::before {
-  width: 40rpx;
-  height: 2rpx;
-  background: currentColor;
-  content: '';
-}
+
 .pageheading-title.editorial {
   display: flex;
   flex-direction: column;
@@ -48,7 +33,7 @@ page {
 }
 .pageheading-sub {
   color: var(--color-muted);
-  font-size: 28rpx;
+  font-size: var(--font-size-body);
   line-height: 44rpx;
 }
 
@@ -81,21 +66,21 @@ page {
   align-items: baseline;
   justify-content: space-between;
   gap: 20rpx;
-  padding-bottom: 16rpx;
+  padding-bottom: var(--space-3);
   border-bottom: 2rpx solid var(--color-border);
 }
 .chapterhead-title {
   min-width: 0;
   color: var(--color-text);
   font-family: var(--font-family-editorial);
-  font-size: 36rpx;
+  font-size: var(--font-size-title);
   line-height: 48rpx;
   font-weight: 900;
 }
 .chapterhead-aside {
   flex: none;
   color: var(--color-muted);
-  font-size: 24rpx;
+  font-size: var(--font-size-label);
   line-height: 36rpx;
 }
 
@@ -103,12 +88,12 @@ page {
 .fieldset.registration-mode-field {
   display: flex;
   flex-direction: column;
-  gap: 12rpx;
+  gap: var(--space-2);
 }
 .field-label,
 .fieldlegend {
   color: var(--color-text);
-  font-size: 28rpx;
+  font-size: var(--font-size-body);
   line-height: 44rpx;
   font-weight: 800;
 }
@@ -119,7 +104,7 @@ page {
   border: 0;
   background: transparent;
   color: var(--color-muted);
-  font-size: 24rpx;
+  font-size: var(--font-size-label);
   line-height: 36rpx;
   font-weight: 600;
 }
@@ -136,7 +121,7 @@ page {
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-text);
-  font-size: 28rpx;
+  font-size: var(--font-size-body);
   line-height: 44rpx;
   font-weight: 600;
 }
@@ -158,14 +143,14 @@ page {
 }
 .field-error {
   color: var(--color-action-active);
-  font-size: 24rpx;
+  font-size: var(--font-size-label);
   line-height: 36rpx;
   font-weight: 700;
 }
 .small,
 .small.muted {
   color: var(--color-muted);
-  font-size: 24rpx;
+  font-size: var(--font-size-label);
   line-height: 38rpx;
 }
 .fieldgrid {
@@ -177,14 +162,14 @@ page {
 .choicegrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16rpx;
+  gap: var(--space-3);
 }
 .choice {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
-  gap: 8rpx;
+  gap: var(--space-1);
   min-height: 124rpx;
   padding: 20rpx;
   border: 2rpx solid var(--color-border-strong);
@@ -198,7 +183,7 @@ page {
 }
 .choice-title {
   color: var(--color-text);
-  font-size: 28rpx;
+  font-size: var(--font-size-body);
   line-height: 40rpx;
   font-weight: 800;
 }
@@ -218,7 +203,7 @@ page {
   min-height: 88rpx;
   padding: 20rpx 0;
   border-bottom: 2rpx solid var(--color-border);
-  font-size: 26rpx;
+  font-size: var(--font-size-body);
   line-height: 40rpx;
 }
 .detailrow .dt {
@@ -242,14 +227,14 @@ page {
 }
 .upload-title {
   color: var(--color-text);
-  font-size: 28rpx;
+  font-size: var(--font-size-body);
   line-height: 44rpx;
   font-weight: 800;
 }
 .image-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16rpx;
+  gap: var(--space-3);
   margin: 0;
 }
 .image-item,
@@ -272,11 +257,11 @@ page {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 12rpx;
+  padding: var(--space-2);
   border: 0;
   background: var(--color-raised);
   color: var(--color-muted);
-  font-size: 24rpx;
+  font-size: var(--font-size-label);
   line-height: 36rpx;
 }
 .cover-badge,
@@ -290,7 +275,7 @@ page {
   border-radius: var(--radius-xs);
   background: var(--surface-media-action);
   color: var(--color-on-media);
-  font-size: 22rpx;
+  font-size: var(--font-size-label);
   line-height: 36rpx;
 }
 .cover-badge {
@@ -313,12 +298,12 @@ page {
 .image-action {
   flex: 1;
   min-height: 88rpx;
-  padding: 8rpx;
+  padding: var(--space-1);
   border: 0;
   border-radius: 0 !important;
   background: var(--surface-media-action) !important;
   color: var(--color-on-media) !important;
-  font-size: 24rpx;
+  font-size: var(--font-size-label);
   line-height: 36rpx;
   text-decoration: none;
 }
@@ -337,7 +322,7 @@ page {
   align-items: center;
   justify-content: center;
   gap: 4rpx;
-  font-size: 24rpx;
+  font-size: var(--font-size-label);
 }
 .upload-plus {
   font-size: 44rpx;
@@ -355,7 +340,7 @@ page {
 .input-row {
   display: flex;
   align-items: center;
-  gap: 16rpx;
+  gap: var(--space-3);
 }
 .location-row .input,
 .input-row .input {
@@ -372,7 +357,7 @@ page {
   display: flex;
   flex-direction: column;
   gap: 20rpx;
-  padding: 24rpx;
+  padding: var(--space-4);
   border: 2rpx solid var(--color-border);
   border-radius: var(--radius-card);
   background: var(--color-surface);
@@ -400,7 +385,7 @@ page {
 .metric .unit,
 .metric .meta {
   color: var(--color-muted);
-  font-size: 24rpx;
+  font-size: var(--font-size-label);
   line-height: 36rpx;
 }
 .metric .unit {
@@ -429,13 +414,12 @@ page {
   display: flex;
   align-items: flex-start;
   gap: 14rpx;
-  padding: 16rpx 0 16rpx 20rpx;
+  padding: 16rpx 20rpx;
   border: 0;
-  border-left: 6rpx solid var(--color-border-strong);
-  border-radius: 0;
-  background: transparent;
+  border-radius: var(--radius-sm);
+  background: var(--color-raised);
   color: var(--color-text);
-  font-size: 24rpx;
+  font-size: var(--font-size-label);
   line-height: 38rpx;
 }
 .notice-dot {
@@ -447,11 +431,13 @@ page {
   background: currentColor;
 }
 .notice--warn {
-  border-left-color: var(--color-action);
   color: var(--color-text);
 }
-.notice.tone-success {
-  border-left-color: var(--color-status-success);
+.notice--warn .notice-dot {
+  background: var(--color-action);
+}
+.notice.tone-success .notice-dot {
+  background: var(--color-status-success);
 }
 .route-source-conn {
   justify-content: space-between;
@@ -483,7 +469,7 @@ page {
   left: 0;
   display: flex;
   flex-direction: column;
-  gap: 24rpx;
+  gap: var(--space-4);
   padding: 24rpx var(--page-gutter) calc(48rpx + env(safe-area-inset-bottom));
   border-radius: var(--radius-display) var(--radius-display) 0 0;
   background: var(--color-surface);
@@ -492,23 +478,23 @@ page {
   width: 72rpx;
   height: 6rpx;
   margin: 0 auto;
-  border-radius: 999rpx;
+  border-radius: var(--radius-full);
   background: var(--color-border-strong);
 }
 .route-boost-title {
   color: var(--color-text);
-  font-size: 36rpx;
+  font-size: var(--font-size-title);
   line-height: 48rpx;
   font-weight: 900;
 }
 
 .group-qr-field {
-  gap: 16rpx;
+  gap: var(--space-3);
 }
 .group-qr-card {
   position: relative;
   align-items: center;
-  padding: 32rpx;
+  padding: var(--space-5);
   border-color: var(--color-border-strong);
   background: var(--color-raised);
 }
@@ -546,7 +532,7 @@ page {
   left: 0;
   display: grid;
   grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
-  gap: 16rpx;
+  gap: var(--space-3);
   padding: 16rpx var(--page-gutter) calc(16rpx + env(safe-area-inset-bottom));
   border-top: 2rpx solid var(--color-border);
   background: var(--color-fixed-bar);
@@ -559,7 +545,7 @@ page {
 .buttonpair {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16rpx;
+  gap: var(--space-3);
 }
 .btn,
 .map-button--secondary {
@@ -569,7 +555,7 @@ page {
   border-radius: var(--radius-sm) !important;
   background: var(--color-action) !important;
   color: var(--color-on-action) !important;
-  font-size: 28rpx;
+  font-size: var(--font-size-body);
   line-height: 44rpx;
   font-weight: 800;
   letter-spacing: 0;
@@ -591,7 +577,7 @@ page {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16rpx;
+  gap: var(--space-3);
   margin: 80rpx var(--page-gutter);
   padding: 40rpx 24rpx;
   border: 2rpx solid var(--color-border);
@@ -603,12 +589,12 @@ page {
 .empty-title {
   color: var(--color-text);
   font-family: var(--font-family-editorial);
-  font-size: 36rpx;
+  font-size: var(--font-size-title);
   line-height: 48rpx;
   font-weight: 900;
 }
 .empty-copy {
-  font-size: 26rpx;
+  font-size: var(--font-size-body);
   line-height: 40rpx;
 }
 

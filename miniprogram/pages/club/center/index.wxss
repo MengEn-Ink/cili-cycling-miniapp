@@ -54,10 +54,10 @@
   right: 48rpx;
   padding: 10rpx 20rpx;
   border: 2rpx solid var(--color-on-media-divider);
-  border-radius: 999rpx;
+  border-radius: var(--radius-full);
   color: var(--color-on-media);
   font-family: var(--font-mono);
-  font-size: 22rpx;
+  font-size: var(--font-size-label);
   letter-spacing: 2rpx;
   text-transform: uppercase;
   background: var(--color-control-scrim);
@@ -69,12 +69,12 @@
   bottom: 56rpx;
   display: flex;
   flex-direction: column;
-  gap: 24rpx;
+  gap: var(--space-4);
 }
 .club-identity {
   display: flex;
   align-items: center;
-  gap: 24rpx;
+  gap: var(--space-4);
   padding: 20rpx 24rpx;
   border-radius: 24rpx;
   background: var(--surface-media-action);
@@ -96,7 +96,7 @@
   justify-content: center;
   color: var(--color-text);
   font-family: var(--font-family-editorial);
-  font-size: 48rpx;
+  font-size: var(--font-size-display);
   font-weight: 900;
   background: var(--color-raised);
 }
@@ -117,13 +117,13 @@
 }
 .club-intro {
   color: var(--color-media-muted);
-  font-size: 26rpx;
+  font-size: var(--font-size-body);
   line-height: 38rpx;
 }
 .content {
   display: flex;
   flex-direction: column;
-  gap: 48rpx;
+  gap: var(--space-6);
   padding: 40rpx var(--page-gutter) 0;
 }
 .state-content {
@@ -133,10 +133,10 @@
   display: inline-flex;
   align-items: center;
   padding: 10rpx 22rpx;
-  border-radius: 999rpx;
+  border-radius: var(--radius-full);
   background: var(--color-raised);
   color: var(--color-text);
-  font-size: 24rpx;
+  font-size: var(--font-size-label);
   line-height: 32rpx;
   font-weight: 800;
   letter-spacing: 1rpx;
@@ -161,7 +161,7 @@
   flex: none;
   color: var(--color-text);
   font-family: var(--font-family-editorial);
-  font-size: 36rpx;
+  font-size: var(--font-size-title);
   line-height: 48rpx;
   font-weight: 900;
   letter-spacing: -0.5rpx;
@@ -176,7 +176,7 @@
   flex: none;
   color: var(--color-muted);
   font-family: var(--font-mono);
-  font-size: 22rpx;
+  font-size: var(--font-size-label);
   line-height: 32rpx;
   letter-spacing: 1rpx;
 }
@@ -193,14 +193,14 @@
 }
 .club-intro-body {
   color: var(--color-text);
-  font-size: 28rpx;
+  font-size: var(--font-size-body);
   line-height: 42rpx;
 }
 .detailrows {
   display: flex;
   flex-direction: column;
   border: 2rpx solid var(--color-border);
-  border-radius: 20rpx;
+  border-radius: var(--radius-md);
   background: var(--color-surface);
   overflow: hidden;
 }
@@ -215,27 +215,27 @@
 }
 .detailrow-term {
   color: var(--color-muted);
-  font-size: 24rpx;
+  font-size: var(--font-size-label);
   line-height: 36rpx;
   letter-spacing: 1rpx;
 }
 .detailrow-desc {
   color: var(--color-text);
-  font-size: 26rpx;
+  font-size: var(--font-size-body);
   line-height: 36rpx;
   word-break: break-all;
 }
 .activity-list {
   display: flex;
   flex-direction: column;
-  gap: 24rpx;
+  gap: var(--space-4);
 }
 .activity-state {
   padding: 32rpx 24rpx;
   border: 2rpx dashed var(--color-border);
-  border-radius: 20rpx;
+  border-radius: var(--radius-md);
   color: var(--color-muted);
-  font-size: 26rpx;
+  font-size: var(--font-size-body);
   line-height: 38rpx;
   text-align: center;
 }
@@ -246,7 +246,7 @@
   color: var(--color-status-warning);
   display: flex;
   flex-direction: column;
-  gap: 16rpx;
+  gap: var(--space-3);
   align-items: center;
 }
 .activity-retry {
@@ -255,7 +255,7 @@
 .story.activity-row {
   display: flex;
   flex-direction: column;
-  gap: 16rpx;
+  gap: var(--space-3);
   padding: 28rpx 24rpx;
   margin: 0;
   border: 2rpx solid var(--color-border);
@@ -274,13 +274,13 @@
 .story-head {
   display: flex;
   align-items: center;
-  gap: 16rpx;
+  gap: var(--space-3);
 }
 .story-date {
   flex: 1;
   color: var(--color-muted);
   font-family: var(--font-mono);
-  font-size: 24rpx;
+  font-size: var(--font-size-label);
   letter-spacing: 1rpx;
   text-transform: uppercase;
 }
@@ -297,7 +297,7 @@
 .storyfacts {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12rpx;
+  gap: var(--space-2);
   padding: 20rpx 0 0;
   border-top: 2rpx dashed var(--color-border);
 }
@@ -308,23 +308,23 @@
 }
 .storyfacts-value {
   color: var(--color-text);
-  font-size: 28rpx;
+  font-size: var(--font-size-body);
   line-height: 36rpx;
   font-weight: 900;
 }
 .storyfacts-label {
   color: var(--color-muted);
-  font-size: 22rpx;
+  font-size: var(--font-size-label);
   line-height: 30rpx;
 }
 .storymeta {
   display: flex;
   align-items: center;
   gap: 10rpx;
-  padding-top: 12rpx;
+  padding-top: var(--space-2);
   border-top: 2rpx solid var(--color-border);
   color: var(--color-muted);
-  font-size: 24rpx;
+  font-size: var(--font-size-label);
   line-height: 36rpx;
 }
 .storymeta-pin {
@@ -350,10 +350,10 @@
   min-height: var(--control-height);
   padding: 0 32rpx;
   border: 2rpx solid var(--color-text);
-  border-radius: 999rpx;
+  border-radius: var(--radius-full);
   background: var(--color-text);
   color: var(--color-on-action);
-  font-size: 28rpx;
+  font-size: var(--font-size-body);
   line-height: 40rpx;
   font-weight: 800;
 }
@@ -374,7 +374,7 @@
 .skeleton-tag,
 .skeleton-card {
   background: var(--color-raised);
-  border-radius: 20rpx;
+  border-radius: var(--radius-md);
   animation: skeleton-pulse 1.2s ease-in-out infinite;
 }
 .skeleton-tag {
@@ -397,7 +397,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16rpx;
+  gap: var(--space-3);
   padding: 56rpx 32rpx;
   border: 2rpx solid var(--color-border);
   border-radius: 24rpx;
@@ -425,13 +425,13 @@
 }
 .state-copy {
   color: var(--color-muted);
-  font-size: 26rpx;
+  font-size: var(--font-size-body);
   line-height: 38rpx;
 }
 .club-footer {
   margin-top: 72rpx;
   color: var(--color-muted);
-  font-size: 22rpx;
+  font-size: var(--font-size-label);
   line-height: 32rpx;
   text-align: center;
   letter-spacing: 2rpx;
@@ -447,15 +447,15 @@
     top: 32rpx;
   }
   .club-name {
-    font-size: 48rpx;
+    font-size: var(--font-size-display);
     line-height: 56rpx;
   }
   .content {
-    padding-left: 24rpx;
-    padding-right: 24rpx;
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
   }
   .story-title {
-    font-size: 36rpx;
+    font-size: var(--font-size-title);
     line-height: 48rpx;
   }
 }
@@ -469,7 +469,7 @@
   right: 32rpx;
   padding: 6rpx 12rpx;
   border-radius: 6rpx;
-  font-size: 18rpx;
+  font-size: var(--font-size-label);
 }
 .club-center-page .caption {
   left: 32rpx;
@@ -477,14 +477,14 @@
   bottom: 28rpx;
 }
 .club-center-page .club-identity {
-  gap: 16rpx;
+  gap: var(--space-3);
   padding: 14rpx 16rpx;
   border-radius: 10rpx;
 }
 .club-center-page .club-avatar {
   width: 72rpx;
   height: 72rpx;
-  border-radius: 12rpx;
+  border-radius: var(--radius-sm);
 }
 .club-center-page .club-name {
   font-family: var(--font-family-body);
@@ -493,19 +493,19 @@
   letter-spacing: 0;
 }
 .club-center-page .club-intro {
-  font-size: 21rpx;
+  font-size: var(--font-size-label);
   line-height: 30rpx;
 }
 .club-center-page .content {
   gap: 28rpx;
-  padding-top: 24rpx;
+  padding-top: var(--space-4);
 }
 .club-center-page .tag {
   padding: 6rpx 12rpx;
-  font-size: 21rpx;
+  font-size: var(--font-size-label);
 }
 .club-center-page .section {
-  gap: 12rpx;
+  gap: var(--space-2);
 }
 .club-center-page .chapterhead-title {
   font-family: var(--font-family-body);
@@ -513,7 +513,7 @@
   line-height: 40rpx;
 }
 .club-center-page .club-intro-body {
-  font-size: 25rpx;
+  font-size: var(--font-size-body);
   line-height: 38rpx;
 }
 .club-center-page .detailrows {
@@ -523,7 +523,7 @@
   padding: 14rpx 16rpx;
 }
 .club-center-page .activity-list {
-  gap: 12rpx;
+  gap: var(--space-2);
 }
 .club-center-page .story.activity-row {
   gap: 10rpx;
@@ -531,7 +531,7 @@
   border-radius: 10rpx;
 }
 .club-center-page .story-date {
-  font-size: 20rpx;
+  font-size: var(--font-size-label);
 }
 .club-center-page .story-title {
   font-family: var(--font-family-body);
@@ -540,17 +540,17 @@
   letter-spacing: 0;
 }
 .club-center-page .storyfacts {
-  padding-top: 12rpx;
+  padding-top: var(--space-2);
 }
 .club-center-page .storyfacts-value {
-  font-size: 24rpx;
+  font-size: var(--font-size-label);
 }
 .club-center-page .storymeta {
-  padding-top: 8rpx;
-  font-size: 21rpx;
+  padding-top: var(--space-1);
+  font-size: var(--font-size-label);
   line-height: 30rpx;
 }
 .club-center-page .btn {
   border-radius: 10rpx;
-  font-size: 26rpx;
+  font-size: var(--font-size-body);
 }

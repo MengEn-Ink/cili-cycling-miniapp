@@ -23,7 +23,6 @@
     { "trigger": "openStravaSync", "note": "管理员：触发 Strava 线路信息同步（section 整体受 wx:if=isAdmin 控制）" }
   ],
   "copy": [
-    "此里 · 安心同行",
     "小事设置好，",
     "出发更轻松。",
     "通知订阅、隐私与应用信息。",

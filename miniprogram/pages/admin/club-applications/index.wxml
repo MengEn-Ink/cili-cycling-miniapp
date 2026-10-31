@@ -9,7 +9,6 @@
 <view class="page club-admin-page cinema-page cinema-page--dark" data-v1-layout="admin">
   <block wx:if="{{mode === 'loading'}}">
     <view class="pageheading">
-      <view class="eyebrow">此里 · 唯一俱乐部</view>
       <view class="pageheading-title editorial">
         <text class="pageheading-line">让我们的故事，</text>
         <text class="pageheading-line">有一个共同的名字。</text>
@@ -23,7 +22,6 @@
 
   <block wx:elif="{{mode === 'error'}}">
     <view class="pageheading">
-      <view class="eyebrow">此里 · 唯一俱乐部</view>
       <view class="pageheading-title editorial">
         <text class="pageheading-line">暂时读不到</text>
         <text class="pageheading-line">俱乐部资料。</text>
@@ -41,7 +39,6 @@
 
   <block wx:elif="{{mode === 'bootstrap'}}">
     <view class="pageheading">
-      <view class="eyebrow">此里 · 唯一俱乐部</view>
       <view class="club-admin-badge small muted">平台管理员 · 首次创建</view>
       <view class="pageheading-title editorial">
         <text class="pageheading-line">让我们的故事，</text>
@@ -61,7 +58,6 @@
 
   <block wx:else>
     <view class="pageheading">
-      <view class="eyebrow">此里 · 唯一俱乐部</view>
       <view class="club-admin-badge small muted">平台管理员</view>
       <view class="pageheading-title editorial">
         <text class="pageheading-line">让我们的故事，</text>

@@ -24,7 +24,6 @@
     { "trigger": "load", "note": "state-view bind:retry。" }
   ],
   "copy": [
-    "此里 · 骑行日历",
     "在这里确认报名状态与集合安排。",
     "我的行程",
     "骑行票据",

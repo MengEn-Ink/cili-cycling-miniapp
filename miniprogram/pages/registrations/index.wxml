@@ -9,7 +9,6 @@
   <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{refreshError}}</view>
 
   <view class="pageheading">
-    <view class="eyebrow">此里 · 骑行日历</view>
     <view class="pageheading-title editorial">
       <text class="pageheading-line">每次出发，</text>
       <text class="pageheading-line">都有一张记忆。</text>

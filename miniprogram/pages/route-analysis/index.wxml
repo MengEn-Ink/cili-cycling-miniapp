@@ -6,7 +6,6 @@
 <view class="page route-analysis-page cinema-page cinema-page--dark" data-v1-layout="content">
   <state-view loading="{{loading}}" error="{{error}}" empty="{{empty}}" retryable="{{true}}" bindretry="retry" loading-title="正在分析路线" loading-copy="正在整理路线走向与坡段" empty-title="暂无路线分析" empty-copy="活动尚未提供可展示的路线信息">
     <view class="pageheading">
-      <view class="eyebrow">此里 · 路线手记</view>
       <view class="pageheading-title editorial">
         <text class="pageheading-line">{{routeTitle || '一路向山。'}}</text>
       </view>
@@ -34,7 +33,6 @@
     <!-- 地图 large：路线走向 · 关键地名 -->
     <view class="map large" wx:if="{{mapAvailable || mapFailed}}">
       <view class="map-head">
-        <view class="chapterhead-eyebrow">ROUTE / MAP</view>
         <view class="chapterhead-title">路线走向 · 关键地名</view>
         <view class="map-count" wx:if="{{hasRealKeyPoints}}">{{keyPointCount}} 点</view>
       </view>
@@ -87,7 +85,7 @@
       <!-- 主要坡段 segments -->
       <view class="section" wx:if="{{segments.length}}">
         <view class="chapterhead"><view class="chapterhead-title">主要坡段</view><view class="chapterhead-aside">{{segments.length}} 段</view></view>
-        <view class="segments-hint muted">分段按里程与海拔剖面计算，非真实地名；坡度不可用时以实际路况为准。</view>
+        <view class="segments-hint muted">分段为估算，以实际路况为准</view>
         <view class="segment-list">
           <button class="segment-item {{selectedSegmentId === segment.id ? 'is-selected' : ''}}" wx:for="{{segments}}" wx:for-item="segment" wx:key="id" data-id="{{segment.id}}" bindtap="selectSegment" aria-label="选择{{segment.name}}分段">
             <view class="segment-index">{{index + 1 < 10 ? '0' + (index + 1) : index + 1}}</view>
@@ -127,7 +125,7 @@
       <view class="section equipment-card" wx:if="{{equipment.length}}">
         <view class="chapterhead"><view class="chapterhead-title">带上这些</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
         <view class="paper">
-          <view class="equipment-row" wx:for="{{equipment}}" wx:key="*this"><text class="check">✓</text><text>{{item}}</text></view>
+          <view class="equipment-row" wx:for="{{equipment}}" wx:key="*this"><view class="check" aria-hidden="true"></view><text>{{item}}</text></view>
         </view>
       </view>
     </view>

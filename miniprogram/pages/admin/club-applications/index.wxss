@@ -15,22 +15,7 @@
 .pageheading {
   padding: 32rpx var(--page-gutter) 24rpx;
 }
-.pageheading .eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 16rpx;
-  color: var(--color-muted);
-  font-family: var(--font-family-mono);
-  font-size: 22rpx;
-  letter-spacing: 2rpx;
-  text-transform: uppercase;
-}
-.pageheading .eyebrow::before {
-  width: 40rpx;
-  height: 2rpx;
-  background: currentColor;
-  content: '';
-}
+
 .pageheading-title {
   display: flex;
   flex-direction: column;
@@ -43,17 +28,17 @@
   color: var(--color-text);
 }
 .pageheading-sub {
-  margin-top: 16rpx;
+  margin-top: var(--space-3);
   color: var(--color-muted);
-  font-size: 28rpx;
+  font-size: var(--font-size-body);
   line-height: 44rpx;
 }
 .club-admin-badge {
   display: inline-flex;
-  margin-top: 16rpx;
+  margin-top: var(--space-3);
   padding: 6rpx 18rpx;
   border: 2rpx solid var(--color-border);
-  border-radius: 999rpx;
+  border-radius: var(--radius-full);
   background: var(--color-surface);
   color: var(--color-text);
   letter-spacing: 1rpx;
@@ -65,7 +50,7 @@
   margin: 8rpx var(--page-gutter) 32rpx;
   aspect-ratio: 16 / 9;
   overflow: hidden;
-  border-radius: 28rpx;
+  border-radius: var(--radius-card);
   background: var(--color-media-card-bg, var(--color-raised));
   color: var(--color-on-media);
 }
@@ -121,7 +106,7 @@
 .caption-eyebrow {
   color: var(--color-media-muted);
   font-family: var(--font-family-mono);
-  font-size: 22rpx;
+  font-size: var(--font-size-label);
   letter-spacing: 2rpx;
   text-transform: uppercase;
 }
@@ -138,7 +123,7 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: 32rpx;
+  gap: var(--space-5);
   padding: 0 var(--page-gutter);
 }
 
@@ -148,13 +133,13 @@
   flex-direction: column;
   overflow: hidden;
   border: 2rpx solid var(--color-border);
-  border-radius: 20rpx;
+  border-radius: var(--radius-md);
   background: var(--color-surface);
 }
 .detailrow {
   display: flex;
   align-items: center;
-  gap: 16rpx;
+  gap: var(--space-3);
   padding: 18rpx 24rpx;
   border-top: 2rpx dashed var(--color-border);
 }
@@ -165,13 +150,13 @@
   flex: none;
   min-width: 180rpx;
   color: var(--color-muted);
-  font-size: 24rpx;
+  font-size: var(--font-size-label);
 }
 .detailrow .dd {
   flex: 1;
   min-width: 0;
   color: var(--color-text);
-  font-size: 28rpx;
+  font-size: var(--font-size-body);
   line-height: 40rpx;
   font-weight: 800;
   text-align: right;
@@ -181,13 +166,13 @@
 .section {
   display: flex;
   flex-direction: column;
-  gap: 16rpx;
+  gap: var(--space-3);
 }
 .chapterhead {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16rpx;
+  gap: var(--space-3);
 }
 .chapterhead-title {
   color: var(--color-text);
@@ -199,7 +184,7 @@
 .chapterhead-aside {
   color: var(--color-muted);
   font-family: var(--font-family-mono);
-  font-size: 22rpx;
+  font-size: var(--font-size-label);
   letter-spacing: 1rpx;
 }
 
@@ -209,10 +194,10 @@
   align-items: center;
   padding: 4rpx 16rpx;
   border: 2rpx solid var(--color-text);
-  border-radius: 999rpx;
+  border-radius: var(--radius-full);
   background: var(--color-text);
   color: var(--color-on-action);
-  font-size: 22rpx;
+  font-size: var(--font-size-label);
   letter-spacing: 1rpx;
 }
 .tag.tag-success {
@@ -225,20 +210,20 @@
 .notice {
   display: flex;
   align-items: flex-start;
-  gap: 16rpx;
+  gap: var(--space-3);
   padding: 20rpx 24rpx;
   border: 2rpx solid var(--color-border);
   border-radius: 16rpx;
   background: var(--color-bg);
   color: var(--color-text);
-  font-size: 24rpx;
+  font-size: var(--font-size-label);
   line-height: 36rpx;
 }
 .notice-dot {
   flex: none;
   width: 12rpx;
   height: 12rpx;
-  margin-top: 12rpx;
+  margin-top: var(--space-2);
   border-radius: 50%;
   background: var(--color-text);
 }
@@ -251,7 +236,7 @@
 }
 .skeleton view {
   height: 160rpx;
-  border-radius: 20rpx;
+  border-radius: var(--radius-md);
   background: var(--color-raised);
   animation: club-admin-shimmer 1.4s ease-in-out infinite;
 }
@@ -267,10 +252,10 @@
 .empty {
   display: flex;
   flex-direction: column;
-  gap: 12rpx;
+  gap: var(--space-2);
   padding: 40rpx 32rpx;
   border: 2rpx dashed var(--color-border);
-  border-radius: 20rpx;
+  border-radius: var(--radius-md);
   background: var(--color-surface);
   text-align: center;
 }
@@ -281,7 +266,7 @@
 }
 .empty-copy {
   color: var(--color-muted);
-  font-size: 26rpx;
+  font-size: var(--font-size-body);
   line-height: 38rpx;
 }
 .empty .btn {
@@ -299,10 +284,10 @@
   color: var(--color-text);
   font-family: var(--font-family-editorial);
   font-size: 72rpx;
-  margin-bottom: 8rpx;
+  margin-bottom: var(--space-1);
 }
 .small {
-  font-size: 22rpx;
+  font-size: var(--font-size-label);
   line-height: 32rpx;
 }
 .muted {
@@ -317,10 +302,10 @@
   min-height: 88rpx;
   padding: 0 32rpx;
   border: 2rpx solid var(--color-text);
-  border-radius: 999rpx;
+  border-radius: var(--radius-full);
   background: var(--color-text);
   color: var(--color-on-action);
-  font-size: 28rpx;
+  font-size: var(--font-size-body);
   line-height: 40rpx;
   font-weight: 800;
 }
@@ -344,7 +329,7 @@
     line-height: 72rpx;
   }
   .caption-title {
-    font-size: 48rpx;
+    font-size: var(--font-size-display);
     line-height: 60rpx;
   }
 }

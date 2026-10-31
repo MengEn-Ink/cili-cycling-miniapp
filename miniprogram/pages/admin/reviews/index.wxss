@@ -14,22 +14,7 @@
 .pageheading {
   padding: 32rpx var(--page-gutter) 24rpx;
 }
-.pageheading .eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 16rpx;
-  color: var(--color-muted);
-  font-family: var(--font-family-mono);
-  font-size: 22rpx;
-  letter-spacing: 2rpx;
-  text-transform: uppercase;
-}
-.pageheading .eyebrow::before {
-  width: 40rpx;
-  height: 2rpx;
-  background: currentColor;
-  content: '';
-}
+
 .pageheading-title {
   display: flex;
   flex-direction: column;
@@ -42,9 +27,9 @@
   color: var(--color-text);
 }
 .pageheading-sub {
-  margin-top: 16rpx;
+  margin-top: var(--space-3);
   color: var(--color-muted);
-  font-size: 28rpx;
+  font-size: var(--font-size-body);
   line-height: 44rpx;
 }
 
@@ -52,36 +37,36 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: 48rpx;
+  gap: var(--space-6);
   padding: 0 var(--page-gutter);
 }
 .content.tight {
-  gap: 32rpx;
+  gap: var(--space-5);
 }
 
 /* --- info-bar (current activity) ----------------------------------------- */
 .info-bar {
   padding: 20rpx 24rpx;
   border: 2rpx solid var(--color-border);
-  border-radius: 20rpx;
+  border-radius: var(--radius-md);
   background: var(--color-surface);
 }
 .info-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16rpx;
+  gap: var(--space-3);
 }
 .info-tag {
   display: inline-flex;
   align-items: center;
   padding: 6rpx 18rpx;
   border: 2rpx solid var(--color-border);
-  border-radius: 999rpx;
+  border-radius: var(--radius-full);
   background: var(--color-raised);
   color: var(--color-muted);
   font-family: var(--font-family-mono);
-  font-size: 22rpx;
+  font-size: var(--font-size-label);
   letter-spacing: 1rpx;
 }
 .info-tag.is-pending {
@@ -94,10 +79,10 @@
   padding: 8rpx 20rpx;
   min-height: 56rpx;
   border: 2rpx solid var(--color-text);
-  border-radius: 999rpx;
+  border-radius: var(--radius-full);
   background: transparent;
   color: var(--color-text);
-  font-size: 24rpx;
+  font-size: var(--font-size-label);
   line-height: 32rpx;
   font-weight: 800;
 }
@@ -109,7 +94,7 @@
 .filters {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12rpx;
+  gap: var(--space-2);
 }
 .filter-tab {
   margin: 0;
@@ -119,7 +104,7 @@
   border-radius: 16rpx;
   background: var(--color-surface);
   color: var(--color-text);
-  font-size: 26rpx;
+  font-size: var(--font-size-body);
   line-height: 36rpx;
   font-weight: 800;
 }
@@ -136,13 +121,13 @@
 .result-count,
 .limit-notice {
   display: block;
-  font-size: 22rpx;
+  font-size: var(--font-size-label);
   line-height: 32rpx;
   color: var(--color-muted);
   letter-spacing: 1rpx;
 }
 .small {
-  font-size: 22rpx;
+  font-size: var(--font-size-label);
   line-height: 32rpx;
 }
 .muted {
@@ -157,7 +142,7 @@
 }
 .skeleton view {
   height: 128rpx;
-  border-radius: 20rpx;
+  border-radius: var(--radius-md);
   background: var(--color-raised);
   animation: review-shimmer 1.4s ease-in-out infinite;
 }
@@ -173,10 +158,10 @@
 .empty {
   display: flex;
   flex-direction: column;
-  gap: 12rpx;
+  gap: var(--space-2);
   padding: 40rpx 32rpx;
   border: 2rpx dashed var(--color-border);
-  border-radius: 20rpx;
+  border-radius: var(--radius-md);
   background: var(--color-surface);
   text-align: center;
 }
@@ -187,7 +172,7 @@
 }
 .empty-copy {
   color: var(--color-muted);
-  font-size: 26rpx;
+  font-size: var(--font-size-body);
   line-height: 38rpx;
 }
 .empty .btn {
@@ -198,12 +183,12 @@
 .reviewitem-list {
   display: flex;
   flex-direction: column;
-  gap: 24rpx;
+  gap: var(--space-4);
 }
 .reviewitem {
   display: flex;
   flex-direction: column;
-  gap: 16rpx;
+  gap: var(--space-3);
   padding: 28rpx 24rpx 24rpx;
   border: 2rpx solid var(--color-border);
   border-radius: 24rpx;
@@ -221,7 +206,7 @@
 .reviewitem-head {
   display: flex;
   align-items: center;
-  gap: 16rpx;
+  gap: var(--space-3);
 }
 .reviewitem-avatar {
   width: 88rpx;
@@ -258,10 +243,10 @@
   align-items: center;
   padding: 4rpx 16rpx;
   border: 2rpx solid var(--color-text);
-  border-radius: 999rpx;
+  border-radius: var(--radius-full);
   background: var(--color-text);
   color: var(--color-on-action);
-  font-size: 22rpx;
+  font-size: var(--font-size-label);
   letter-spacing: 1rpx;
   flex: none;
 }
@@ -295,7 +280,7 @@
   flex-wrap: wrap;
   gap: 12rpx 20rpx;
   color: var(--color-muted);
-  font-size: 24rpx;
+  font-size: var(--font-size-label);
   line-height: 36rpx;
 }
 .meta .mono {
@@ -307,13 +292,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16rpx;
-  padding-top: 12rpx;
+  gap: var(--space-3);
+  padding-top: var(--space-2);
   border-top: 2rpx dashed var(--color-border);
 }
 .reviewitem-cta {
   color: var(--color-text);
-  font-size: 24rpx;
+  font-size: var(--font-size-label);
   font-weight: 800;
 }
 
@@ -321,7 +306,7 @@
 .paper {
   display: flex;
   flex-direction: column;
-  gap: 16rpx;
+  gap: var(--space-3);
   padding: 28rpx 24rpx;
   border: 2rpx solid var(--color-border);
   border-radius: 24rpx;
@@ -339,7 +324,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16rpx;
+  gap: var(--space-3);
 }
 .chapterhead-title {
   color: var(--color-text);
@@ -352,7 +337,7 @@
 .chapterhead-aside {
   color: var(--color-muted);
   font-family: var(--font-family-mono);
-  font-size: 22rpx;
+  font-size: var(--font-size-label);
   letter-spacing: 1rpx;
 }
 
@@ -360,20 +345,20 @@
 .notice {
   display: flex;
   align-items: flex-start;
-  gap: 16rpx;
+  gap: var(--space-3);
   padding: 20rpx 24rpx;
   border: 2rpx solid var(--color-border);
   border-radius: 16rpx;
   background: var(--color-bg);
   color: var(--color-text);
-  font-size: 24rpx;
+  font-size: var(--font-size-label);
   line-height: 36rpx;
 }
 .notice-dot {
   flex: none;
   width: 12rpx;
   height: 12rpx;
-  margin-top: 12rpx;
+  margin-top: var(--space-2);
   border-radius: 50%;
   background: var(--color-text);
 }
@@ -386,10 +371,10 @@
   min-height: 88rpx;
   padding: 0 32rpx;
   border: 2rpx solid var(--color-text);
-  border-radius: 999rpx;
+  border-radius: var(--radius-full);
   background: var(--color-text);
   color: var(--color-on-action);
-  font-size: 28rpx;
+  font-size: var(--font-size-body);
   line-height: 40rpx;
   font-weight: 800;
 }
@@ -426,9 +411,7 @@
 .review-page .pageheading {
   padding-top: 40rpx;
 }
-.review-page .pageheading .eyebrow {
-  color: var(--color-brand);
-}
+
 .review-page .pageheading-title {
   color: var(--color-cinema-text);
 }
