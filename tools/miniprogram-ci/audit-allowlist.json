@@ -1,5 +1,5 @@
 {
-  "reviewedAt": "2026-10-17",
+  "reviewedAt": "2026-10-31",
   "expiresAt": "2027-01-15",
   "scope": "仅限 tools/miniprogram-ci 的短生命周期上传进程；不用于小程序运行时、云函数或服务端请求处理。",
   "controls": [
@@ -12,6 +12,7 @@
     "GHSA-pfq8-rq6v-vf5m": "html-minifier 正则拒绝服务；只处理受保护提交中的小程序源码，且作业有超时。",
     "GHSA-35jh-r3h4-6jhm": "lodash.template 模板注入；上传流程不接受用户提供的模板。",
     "GHSA-p8p7-x288-28g6": "request 中等级别请求问题；目标地址由微信 SDK 固定，不接受用户 URL。",
+    "GHSA-g3hv-75wg-m249": "minimatch globparts 放大拒绝服务；miniprogram-ci 经 eslint、glob 与 archiver 传递依赖 3.x，修复仅在 11.x ESM 大版本，模式均来自受控仓库配置且作业有超时。",
     "GHSA-w5hq-g745-h8pq": "uuid v3/v5/v6 外部缓冲区边界校验缺失；SDK 只调用 v4 且不接收外部缓冲区，升级到 11.x 会破坏 uuid/v4 加载兼容。"
   }
 }
