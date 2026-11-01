@@ -4,15 +4,19 @@
   - 真实业务保留：future/history 切换、day chips 日期筛选、沉浸/紧凑布局、分页 loadMore、refresh retry、无障碍 live region
   - WeChat 原生 brand-logo/系统胶囊，不渲染伪 statusbar / systemnav
 -->
-<view class="page activities-page cinema-page cinema-page--dark" data-v1-layout="content" style="padding-top: {{navigationTopPx}}px">
+<page-meta page-style="{{appearanceStyle}}" background-text-style="{{appearanceMode === 'light' ? 'dark' : 'light'}}" />
+<view class="page activities-page aihero-page cinema-page cinema-page--dark" data-v1-layout="content" style="padding-top: {{navigationTopPx}}px">
   <view class="custom-nav-title" style="top: {{navigationTopPx - 44}}px">活动</view>
   <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{refreshing ? '正在刷新活动' : loadingMore ? '正在加载更多活动' : ''}}</view>
   <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{refreshError}}</view>
 
   <view class="pageheading">
-    <view class="pageheading-title editorial">周末，交给山路。</view>
+    <view class="eyebrow">此里 · 一起出发</view>
+    <view class="pageheading-title editorial" aria-label="周末，交给山路。"><text class="pageheading-line">周末，</text><text class="pageheading-line">交给山路。</text></view>
+    <view class="pageheading-sub">每一次转弯，都有值得记住的风景。</view>
   </view>
 
+  <view class="activity-toolbar" style="top: {{navigationTopPx}}px">
   <view class="segment" role="tablist" aria-label="活动时间">
     <button class="segment-item {{activeView === 'future' ? 'selected' : ''}}" role="tab" data-view="future" aria-selected="{{activeView === 'future'}}" aria-controls="activity-list-panel" bindtap="switchView">近期活动</button>
     <button class="segment-item {{activeView === 'history' ? 'selected' : ''}}" role="tab" data-view="history" aria-selected="{{activeView === 'history'}}" aria-controls="activity-list-panel" bindtap="switchView">往期影像</button>
@@ -29,6 +33,8 @@
       </view>
     </scroll-view>
   </view>
+
+  </view><!-- activity-toolbar -->
 
   <view class="refresh-note" wx:if="{{refreshing}}" aria-hidden="true">正在刷新活动…</view>
   <view class="refresh-note refresh-error" wx:if="{{refreshError}}" aria-hidden="true">{{refreshError}}</view>
@@ -55,17 +61,18 @@
               <view class="caption">
                 <view class="eyebrow caption-when"><text>{{item.displayDateLabel}}</text><text>{{item.displayTimeLabel}}</text></view>
                 <view class="story-title editorial">{{item.title}}</view>
-                <view class="story-sub">{{item.clubIdentity.name}}</view>
               </view>
             </view>
+            <view class="story-host"><text>{{item.clubIdentity.name}}</text><text wx:if="{{item.route.level}}" class="tag">{{item.route.level}}</text></view>
             <view class="storyfacts">
-              <text class="em">{{item.route.distanceKm > 0 ? item.route.distanceKm : '—'}}{{item.route.distanceKm > 0 ? ' km' : ''}} <text>距离</text></text>
-              <text class="em">{{item.route.elevationM > 0 ? item.route.elevationM : '—'}}{{item.route.elevationM > 0 ? ' m' : ''}} <text>爬升</text></text>
-              <text class="em">{{item.estimatedRideTime || '—'}} <text>骑行</text></text>
+              <view><text class="em">{{item.route.distanceKm > 0 ? item.route.distanceKm : '—'}}{{item.route.distanceKm > 0 ? ' km' : ''}}</text><text class="metric-label">距离</text></view>
+              <view><text class="em">{{item.route.elevationM > 0 ? item.route.elevationM : '—'}}{{item.route.elevationM > 0 ? ' m' : ''}}</text><text class="metric-label">爬升</text></view>
+              <view><text class="em">{{item.estimatedRideTime || '—'}}</text><text class="metric-label">骑行</text></view>
             </view>
             <view class="storymeta">
               <text class="storymeta-pin" aria-hidden="true">◉</text>
               <text class="storymeta-main">{{item.route.start || '集合地点待公布'}}</text>
+              <text class="storymeta-action">查看 ›</text>
             </view>
           </view>
         </view>

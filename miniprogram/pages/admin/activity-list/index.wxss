@@ -684,3 +684,5 @@
 .activity-list-page .input {
   border-radius: var(--radius-xs);
 }
+
+@import '../../../styles/aihero-layout.wxss';

@@ -1,7 +1,9 @@
 // 保留已注册的旧地址；本人头像和背景在「我的」统一展示。
 export {};
 
-Page({
+import { themedPage } from '../../services/theme-service';
+
+themedPage({
   data: { error: '' },
   onShow() {
     this.openProfile();

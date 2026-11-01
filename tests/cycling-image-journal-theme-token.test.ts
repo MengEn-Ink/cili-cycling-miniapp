@@ -1,7 +1,7 @@
 // @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { contrast, hexColor, resolveValue } from './theme-contract-helpers';
+import { contrast, hexColor, resolveValue, readStyles } from './theme-contract-helpers';
 
 const read = (path: string) => readFileSync(path, 'utf8');
 const tokens = (source: string) =>
@@ -58,8 +58,8 @@ describe('骑行影像志逐页主题令牌', () => {
 
   it('摄影首页、详情、路线、行程与俱乐部标题不再硬编码字体栈', () => {
     for (const path of tokenizedEditorialStyles) {
-      const styles = read(path);
-      expect(styles, path).toContain('font-family: var(--font-family-editorial);');
+      const styles = readStyles(path);
+      expect(styles, path).toContain('font-family: var(--font-family-body);');
       expect(styles, path).not.toContain("font-family: 'Songti SC', STSong, serif;");
     }
   });
@@ -87,7 +87,7 @@ describe('骑行影像志逐页主题令牌', () => {
 
   it('Pages、小程序与设计源共享 primitive → semantic → component 三层主题', () => {
     const sources = [
-      read('docs/styles.css'),
+      read('docs/styles.css').split('/* 已批准 AI Hero')[0],
       read('miniprogram/app.wxss'),
       read('docs/designs/2026-10-22-cycling-image-journal/shared.css'),
     ];

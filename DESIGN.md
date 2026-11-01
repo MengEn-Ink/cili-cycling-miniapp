@@ -15,7 +15,7 @@
 
 ## Token 架构
 
-权威值只定义在 `miniprogram/app.wxss` 的首个 `page` 块，机器契约位于 `miniprogram/config/theme-contract.json`。
+静态启动 / 回退值定义在 `miniprogram/app.wxss` 的首个 `page` 块，机器契约位于 `miniprogram/config/theme-contract.json`。已批准的 AI Hero 浅暗运行时覆盖统一定义在 `miniprogram/config/appearance.ts`：只覆盖已有 semantic / component token，不在各页增加独立色板。公共 `themedPage` 经 `page-meta page-style` 在 page 层注入，页面、组件、固定层共同继承；原生 navigation / tabBar 由 `theme-service` 同步。Pages 的两套镜像值由 `tests/theme-runtime-integration.test.ts` 校验，不修改历史设计 snapshot。真实双端采集仍是独立门禁，见 [浅暗实现验收](docs/verification/2026-11-01-aihero-light-dark-implementation.md)。
 
 1. Primitive：原始尺度与色板，例如 `var(--space-4)`、`var(--palette-red-600)`。
 2. Semantic：面向含义的别名，例如 `var(--color-text)`、`var(--color-action)`、`var(--focus-ring)`。

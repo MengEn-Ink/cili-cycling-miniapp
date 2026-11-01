@@ -1,0 +1,964 @@
+/* Approved AI Hero mobile layout. Import LAST in each route to retire cinematic geometry.
+ * All colours/fonts consume the existing semantic contract; media/QR remain invariant.
+ * Scope doubled deliberately: page-local legacy selectors must not undo the shared layout. */
+.aihero-page.aihero-page {
+  padding-left: var(--page-gutter);
+  padding-right: var(--page-gutter);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+.aihero-page.aihero-page .pageheading {
+  padding: 48rpx 0 40rpx;
+  margin: 0;
+}
+.aihero-page.aihero-page .pageheading-title {
+  margin: 16rpx 0 0;
+  font-family: var(--font-family-body);
+  font-size: 64rpx;
+  line-height: 1.12;
+  font-weight: 700;
+  letter-spacing: -0.032em;
+}
+.aihero-page.aihero-page .pageheading-line {
+  display: block;
+}
+.aihero-page.aihero-page .pageheading-sub {
+  margin-top: 24rpx;
+  font-size: 28rpx;
+  line-height: 1.65;
+  color: var(--color-muted);
+}
+.aihero-page.aihero-page .eyebrow,
+.aihero-page.aihero-page .chapterhead-index {
+  font-family: var(--font-family-mono);
+  font-size: 24rpx;
+  letter-spacing: 0.12em;
+  color: var(--color-muted);
+}
+.aihero-page.aihero-page .content {
+  padding-left: 0;
+  padding-right: 0;
+  margin-top: 0;
+}
+.aihero-page.aihero-page .section {
+  margin-top: 40rpx;
+  padding: 40rpx 0 0;
+  border: 0;
+  border-top: 1px solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.aihero-page.aihero-page .chapterhead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 16rpx;
+  margin-bottom: 28rpx;
+}
+.aihero-page.aihero-page .chapterhead-index {
+  flex: 0 0 auto;
+}
+.aihero-page.aihero-page .chapterhead-title {
+  font-family: var(--font-family-body);
+  font-size: 38rpx;
+  line-height: 1.3;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+.aihero-page.aihero-page .chapterhead-rule {
+  display: none;
+}
+.aihero-page.aihero-page .chapterhead-aside {
+  margin-left: auto;
+  max-width: 100%;
+  font-size: 24rpx;
+  color: var(--color-muted);
+}
+.aihero-page.aihero-page .paper {
+  padding: 28rpx;
+  border: 1px solid var(--color-border);
+  border-radius: 18rpx;
+  background: var(--color-surface);
+  box-shadow: none;
+}
+.aihero-page.aihero-page .section-prose {
+  font-size: 30rpx;
+  line-height: 1.8;
+  color: var(--color-text);
+}
+.aihero-page.aihero-page .detailrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 16rpx;
+  padding: 24rpx 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.aihero-page.aihero-page .detailrow:last-child {
+  border-bottom: 0;
+}
+.aihero-page.aihero-page .detailrow-term,
+.aihero-page.aihero-page .dt {
+  flex: 0 0 160rpx;
+  font-size: 26rpx;
+  line-height: 1.6;
+  color: var(--color-muted);
+}
+.aihero-page.aihero-page .detailrow-desc,
+.aihero-page.aihero-page .dd {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  font-size: 28rpx;
+  line-height: 1.6;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+.aihero-page.aihero-page .detailrow-desc--nowrap,
+.aihero-page.aihero-page .dd--nowrap {
+  white-space: normal;
+}
+.aihero-page.aihero-page .metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 18rpx;
+  background: var(--color-surface);
+  overflow: hidden;
+}
+.aihero-page.aihero-page .metrics > view {
+  padding: 24rpx 16rpx;
+  min-width: 0;
+  border: 0;
+  border-left: 1px solid var(--color-border);
+}
+.aihero-page.aihero-page .metrics > view:first-child {
+  border-left: 0;
+}
+.aihero-page.aihero-page .metrics .em {
+  display: block;
+  font-family: var(--font-family-mono);
+  font-size: 36rpx;
+  line-height: 1.3;
+  font-weight: 500;
+  color: var(--color-text);
+}
+.aihero-page.aihero-page .metrics .unit {
+  font-size: 24rpx;
+  color: var(--color-muted);
+  margin-left: 4rpx;
+}
+.aihero-page.aihero-page .metrics .meta {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: var(--color-muted);
+}
+.aihero-page.aihero-page .ink {
+  padding: 32rpx 0;
+  margin: 0;
+  border: 0;
+  background: transparent !important;
+}
+/* 取消全出血负边距后，详情概要宽度必须同步回到页内宽度。 */
+.detail-page.aihero-page .ink {
+  width: 100%;
+}
+/* 封面日期属于媒体文字，不能被纸面眉题的 muted 层级覆盖。 */
+.activities-page.aihero-page .caption .eyebrow {
+  color: var(--color-on-media);
+}
+.aihero-page.aihero-page .notice {
+  padding: 24rpx;
+  border: 1px solid var(--color-border);
+  border-radius: 18rpx;
+  background: var(--color-surface);
+  font-size: 26rpx;
+  line-height: 1.65;
+  box-shadow: none;
+}
+.aihero-page.aihero-page .field {
+  margin-top: 28rpx;
+}
+.aihero-page.aihero-page .field-label {
+  margin-bottom: 14rpx;
+  font-size: 28rpx;
+  line-height: 1.5;
+  font-weight: 600;
+  color: var(--color-text);
+}
+.aihero-page.aihero-page .input,
+.aihero-page.aihero-page .field-input,
+.aihero-page.aihero-page .picker-value {
+  box-sizing: border-box;
+  width: 100%;
+  height: auto;
+  min-height: 96rpx;
+  padding: 22rpx 24rpx;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 18rpx;
+  background: var(--color-surface);
+  font-size: 30rpx;
+  line-height: 1.6;
+  color: var(--color-text);
+}
+.aihero-page.aihero-page .textarea,
+.aihero-page.aihero-page .field-textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 220rpx;
+  padding: 24rpx;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 18rpx;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 30rpx;
+  line-height: 1.65;
+}
+.aihero-page.aihero-page .field-help,
+.aihero-page.aihero-page .upload-sub,
+.aihero-page.aihero-page .field-counter {
+  font-size: 24rpx;
+  line-height: 1.7;
+  color: var(--color-muted);
+}
+.aihero-page.aihero-page .btn {
+  border-radius: 18rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  box-shadow: none;
+}
+.aihero-page.aihero-page .actionbar,
+.aihero-page.aihero-page .action-bar,
+.aihero-page.aihero-page .fixed {
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.aihero-page.aihero-page .rowbutton {
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 0;
+  padding: 28rpx 0;
+  background: transparent;
+  color: var(--color-text);
+  text-align: left;
+}
+.aihero-page.aihero-page .rowicon {
+  border: 1px solid var(--color-border);
+  border-radius: 18rpx;
+  background: var(--color-surface);
+}
+.aihero-page.aihero-page .rowtext-title {
+  font-size: 30rpx;
+  font-weight: 600;
+}
+.aihero-page.aihero-page .rowtext-sub {
+  margin-top: 8rpx;
+  font-size: 26rpx;
+  color: var(--color-muted);
+}
+.aihero-page.aihero-page .filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin: 28rpx 0;
+}
+.aihero-page.aihero-page .filter-tab {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 12rpx 24rpx;
+  border: 1px solid var(--color-border);
+  border-radius: 18rpx;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 26rpx;
+}
+.aihero-page.aihero-page .filter-tab.is-active {
+  border-color: var(--color-action);
+  background: var(--color-brand-soft);
+}
+
+/* Activities: sticky two-level toolbar, same 16:9 card height for every result. */
+.activities-page.aihero-page .activity-toolbar {
+  position: sticky;
+  z-index: 20;
+  margin: 0;
+  padding: 24rpx 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+.activities-page.aihero-page .segment {
+  position: static;
+  display: flex;
+  gap: 8rpx;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.activities-page.aihero-page .segment-item {
+  flex: 1;
+  padding: 12rpx;
+  border: 1px solid var(--color-border);
+  border-radius: 18rpx;
+  font-size: 26rpx;
+}
+.activities-page.aihero-page .segment-end {
+  flex: 0 0 88rpx;
+}
+.activities-page.aihero-page .day-chip-shell {
+  margin: 24rpx 0 0;
+  mask-image: none;
+}
+.activities-page.aihero-page .day-chip-bar__inner {
+  display: inline-flex;
+  gap: 12rpx;
+  padding-bottom: 4rpx;
+}
+.activities-page.aihero-page .day-chip {
+  margin: 0;
+  min-width: 128rpx;
+  padding: 12rpx 16rpx;
+  border-radius: 18rpx;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.activities-page.aihero-page .day-chip.is-active {
+  border-color: var(--color-action);
+  background: var(--color-brand-soft);
+}
+.activities-page.aihero-page .day-chip__relative,
+.activities-page.aihero-page .day-chip__date {
+  display: block;
+  font-size: 24rpx;
+}
+.activities-page.aihero-page .day-chip__date {
+  color: var(--color-muted);
+  font-family: var(--font-family-mono);
+}
+.activities-page.aihero-page .story {
+  display: block;
+  padding: 36rpx 0;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+.activities-page.aihero-page .story .photo {
+  position: relative;
+  padding-top: 56.25%;
+  height: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 22rpx;
+}
+.activities-page.aihero-page .story-title {
+  font-family: var(--font-family-body);
+  font-size: 44rpx;
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+.activities-page.aihero-page .story-host {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-top: 24rpx;
+  color: var(--color-muted);
+  font-size: 28rpx;
+}
+.activities-page.aihero-page .story-host > text:first-child {
+  flex: 1;
+  min-width: 0;
+}
+.activities-page.aihero-page .storyfacts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 28rpx;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 18rpx;
+  background: var(--color-surface);
+}
+.activities-page.aihero-page .storyfacts > view {
+  padding: 24rpx 16rpx;
+  border-left: 1px solid var(--color-border);
+}
+.activities-page.aihero-page .storyfacts > view:first-child {
+  border-left: 0;
+}
+.activities-page.aihero-page .storyfacts .em {
+  display: block;
+  font-family: var(--font-family-mono);
+  font-size: 36rpx;
+  font-weight: 500;
+}
+.activities-page.aihero-page .storyfacts .metric-label {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: var(--color-muted);
+}
+.activities-page.aihero-page .storymeta {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-top: 24rpx;
+  padding: 0;
+  border: 0;
+  font-size: 28rpx;
+}
+.activities-page.aihero-page .storymeta-main {
+  flex: 1;
+  min-width: 0;
+  color: var(--color-muted);
+}
+.activities-page.aihero-page .storymeta-action {
+  flex: 0 0 auto;
+  font-weight: 600;
+}
+
+/* Detail hero + overview + numbered reading sections. */
+.detail-page.aihero-page .hero {
+  width: 100%;
+  margin: 0;
+  height: 0;
+  padding-top: 56.25%;
+  border-radius: 22rpx;
+  overflow: hidden;
+}
+.detail-page.aihero-page .hero-gallery,
+.detail-page.aihero-page .hero > .hero-media,
+.detail-page.aihero-page .hero > generated-activity-cover {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+.detail-page.aihero-page .hero-title {
+  font-size: 48rpx;
+  line-height: 1.15;
+}
+.detail-page.aihero-page .ink-row {
+  margin-top: 28rpx;
+  border: 1px solid var(--color-border);
+  border-radius: 18rpx;
+  background: var(--color-surface);
+  padding: 24rpx;
+}
+.detail-page.aihero-page .decision {
+  margin-top: 40rpx;
+  padding: 28rpx;
+  border: 1px solid var(--color-border);
+  border-radius: 18rpx;
+}
+.detail-page.aihero-page .caption .hero-title,
+.detail-page.aihero-page .caption .hero-sub,
+.detail-page.aihero-page .caption .eyebrow {
+  color: var(--color-on-media);
+}
+
+/* Analysis: overview -> restrained conclusion -> interactive map and profile. */
+.route-analysis-page.aihero-page .metrics {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.route-analysis-page.aihero-page .conclusion-panel {
+  margin: 32rpx 0;
+  padding: 28rpx;
+  border: 1px solid var(--color-border);
+  border-radius: 18rpx;
+}
+.route-analysis-page.aihero-page .map.large {
+  margin: 32rpx 0 0;
+  padding: 24rpx;
+  border: 1px solid var(--color-border);
+  border-radius: 22rpx;
+  background: var(--color-surface);
+}
+.route-analysis-page.aihero-page .strategy-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 20rpx;
+}
+.route-analysis-page.aihero-page .strategy-tags text {
+  padding: 12rpx;
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text);
+  border-radius: 12rpx;
+  font-size: 24rpx;
+}
+.route-analysis-page.aihero-page .segment-list .segment-item,
+.route-analysis-page.aihero-page .point {
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
+}
+.route-analysis-page.aihero-page .segment-list .segment-item.is-selected,
+.route-analysis-page.aihero-page .point.is-selected {
+  background: var(--color-brand-soft);
+}
+
+/* Form: honest readiness, full-width choices, compact progress strip. */
+.form-page.aihero-page .timeline {
+  display: flex;
+  padding: 24rpx 0;
+  margin: 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+.form-page.aihero-page .step {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  font-size: 24rpx;
+}
+.form-page.aihero-page .choice-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+.form-page.aihero-page .choice {
+  padding: 28rpx;
+  border: 1px solid var(--color-border);
+  border-radius: 18rpx;
+  background: var(--color-surface);
+}
+.form-page.aihero-page .choice.selected,
+.form-page.aihero-page .segment-choice.selected {
+  border-color: var(--color-action);
+  background: var(--color-brand-soft);
+  color: var(--color-text);
+}
+.form-page.aihero-page .experience-segment {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12rpx;
+  border: 0;
+}
+.form-page.aihero-page .segment-choice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 88rpx;
+  border: 1px solid var(--color-border);
+  border-radius: 18rpx;
+  padding: 12rpx 0;
+}
+.form-page.aihero-page .subscription-note {
+  margin-top: 16rpx;
+  color: var(--color-muted);
+  font-size: 26rpx;
+  line-height: 1.7;
+}
+
+/* Trip tickets: no tall ornamental media, keep swipe and status guidance. */
+.registrations-page.aihero-page .trip-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 18rpx;
+  overflow: hidden;
+}
+.registrations-page.aihero-page .trip-stat {
+  border: 0;
+  border-left: 1px solid var(--color-border);
+  padding: 24rpx 16rpx;
+  border-radius: 0;
+}
+.registrations-page.aihero-page .trip-stat:first-child {
+  border-left: 0;
+}
+.registrations-page.aihero-page .trip-stat__value {
+  font-family: var(--font-family-mono);
+  font-size: 40rpx;
+}
+.registrations-page.aihero-page .ticket {
+  overflow: hidden;
+  margin: 28rpx 0 0;
+  border: 1px solid var(--color-border);
+  border-radius: 22rpx;
+  background: var(--color-surface);
+}
+.registrations-page.aihero-page .ticket-main {
+  display: grid;
+  grid-template-columns: 208rpx minmax(0, 1fr);
+  align-items: stretch;
+}
+.registrations-page.aihero-page .ticketphoto {
+  width: 100%;
+  min-height: 256rpx;
+  height: 100%;
+  padding-top: 0;
+}
+.registrations-page.aihero-page .ticket-main .ticketbody {
+  padding: 24rpx;
+  border: 0;
+}
+.registrations-page.aihero-page .ticket-main .ticket-title {
+  font-size: 34rpx;
+}
+@media (max-width: 350px) {
+  .registrations-page.aihero-page .ticket-main {
+    grid-template-columns: 152rpx minmax(0, 1fr);
+  }
+}
+.registrations-page.aihero-page .ticketbody {
+  padding: 28rpx;
+}
+.registrations-page.aihero-page .ticket-title {
+  font-family: var(--font-family-body);
+  font-size: 40rpx;
+  line-height: 1.3;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.registrations-page.aihero-page .ticketfooter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  border-top: 1px dashed var(--color-border-strong);
+  padding: 24rpx 28rpx;
+}
+.registrations-page.aihero-page .ticket-actions {
+  margin-left: auto;
+}
+
+/* Credential: ink header is paper-toned, genuine serial, explicit perforation. */
+.credential-page.aihero-page .voucher {
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 22rpx;
+  background: var(--color-surface);
+}
+.credential-page.aihero-page .voucher .ink {
+  padding: 32rpx;
+  background: var(--color-raised) !important;
+}
+.credential-page.aihero-page .voucher-headline {
+  font-family: var(--font-family-body);
+  font-size: 44rpx;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+.credential-page.aihero-page .voucher-perforation {
+  height: 0;
+  border-top: 1px dashed var(--color-border-strong);
+}
+.credential-page.aihero-page .ticketbody {
+  padding: 32rpx;
+}
+.credential-page.aihero-page .voucher-number {
+  display: block;
+  margin-top: 24rpx;
+  font-family: var(--font-family-mono);
+  color: var(--color-text);
+  font-size: 32rpx;
+  letter-spacing: 0.04em;
+}
+.credential-page.aihero-page .person {
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 24rpx;
+}
+.credential-page.aihero-page .credential-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  margin-top: 32rpx;
+}
+.credential-page.aihero-page .credential-links {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+/* Profile / club: media remains on-media; utility rows form a separate reading group. */
+.profile-page.aihero-page .profile-hero {
+  height: 0;
+  padding-top: 56.25%;
+  border-radius: 22rpx;
+  overflow: hidden;
+  margin-bottom: 32rpx;
+}
+.profile-page.aihero-page .profile-name {
+  font-family: var(--font-family-body);
+  font-size: 44rpx;
+  letter-spacing: -0.025em;
+  color: var(--color-on-media);
+}
+.profile-page.aihero-page .profile-permission,
+.profile-edit-page.aihero-page .permission-card {
+  margin: 28rpx 0;
+  padding: 28rpx;
+  border: 1px solid var(--color-border);
+  border-radius: 18rpx;
+  background: var(--color-surface);
+  box-shadow: none;
+}
+.profile-page.aihero-page .profile-links {
+  margin-top: 32rpx;
+  border-top: 1px solid var(--color-border);
+}
+.profile-edit-page.aihero-page .upload {
+  padding: 28rpx 0;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
+}
+.profile-edit-page.aihero-page .upload-avatar {
+  display: flex;
+  align-items: flex-start;
+  gap: 28rpx;
+}
+.profile-edit-page.aihero-page .upload-background {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+.profile-edit-page.aihero-page .upload-media-background {
+  width: 100%;
+  height: 0;
+  padding-top: 56.25%;
+  border-radius: 18rpx;
+  overflow: hidden;
+}
+.profile-edit-page.aihero-page .upload-media-background > .background-image,
+.profile-edit-page.aihero-page .upload-media-background > .background-placeholder {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  box-sizing: border-box;
+}
+.profile-edit-page.aihero-page .upload-copy {
+  flex: 1;
+  min-width: 0;
+}
+.profile-edit-page.aihero-page .save-action {
+  margin-top: 32rpx;
+}
+.settings-page.aihero-page .detailrows {
+  margin-top: 24rpx;
+  padding: 0 24rpx;
+  border: 1px solid var(--color-border);
+  border-radius: 18rpx;
+  background: var(--color-surface);
+}
+.club-center-page.aihero-page .hero.club,
+.club-admin-page.aihero-page .hero.club {
+  height: 0;
+  padding-top: 56.25%;
+  margin: 0;
+  border-radius: 22rpx;
+  overflow: hidden;
+}
+.club-center-page.aihero-page .club-name,
+.club-admin-page.aihero-page .caption-title {
+  font-family: var(--font-family-body);
+  font-size: 44rpx;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--color-on-media);
+}
+.club-center-page.aihero-page .activity-row {
+  padding: 28rpx 0;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.club-center-page.aihero-page .story-title {
+  font-size: 38rpx;
+}
+
+/* Admin: grouped metrics, flat list actions, numbered single-column form. */
+.activity-list-page.aihero-page .ticket,
+.activity-list-page.aihero-page .paper {
+  border: 1px solid var(--color-border);
+  border-radius: 22rpx;
+  background: var(--color-surface);
+  box-shadow: none;
+}
+.activity-list-page.aihero-page .ticket-title,
+.activity-list-page.aihero-page .paper-title {
+  font-family: var(--font-family-body);
+  font-size: 40rpx;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+}
+.activity-list-page.aihero-page .management-metrics {
+  margin: 28rpx 0;
+}
+.activity-list-page.aihero-page .page-actions {
+  margin-top: 32rpx;
+}
+.activity-editor.aihero-page .fieldgrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+.activity-editor.aihero-page .form-card {
+  padding: 40rpx 0 0;
+  border-radius: 0;
+  background: transparent;
+}
+.activity-editor.aihero-page .image-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12rpx;
+  margin-top: 24rpx;
+}
+.activity-editor.aihero-page .image-item,
+.activity-editor.aihero-page .upload-tile {
+  border-radius: 18rpx;
+}
+.activity-editor.aihero-page .choicegrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16rpx;
+}
+.activity-editor.aihero-page .choice {
+  border: 1px solid var(--color-border);
+  border-radius: 18rpx;
+  background: var(--color-surface);
+  padding: 28rpx;
+  text-align: left;
+}
+.activity-editor.aihero-page .choice.is-active {
+  border-color: var(--color-action);
+  background: var(--color-brand-soft);
+}
+.activity-editor.aihero-page .route-preview-card .metrics {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.review-page.aihero-page .info-bar {
+  padding: 28rpx;
+  border: 1px solid var(--color-border);
+  border-radius: 18rpx;
+  background: var(--color-surface);
+}
+.review-page.aihero-page .reviewitem {
+  margin-top: 20rpx;
+  padding: 28rpx;
+  border: 1px solid var(--color-border);
+  border-radius: 22rpx;
+  background: var(--color-surface);
+  box-shadow: none;
+}
+.review-page.aihero-page .reviewitem-title {
+  font-size: 34rpx;
+  letter-spacing: -0.02em;
+}
+.review-page.aihero-page .reviewitem .meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx 24rpx;
+  padding: 20rpx 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+.review-detail-page.aihero-page .person {
+  padding: 28rpx;
+  border: 1px solid var(--color-border);
+  border-radius: 18rpx;
+  background: var(--color-surface);
+}
+.review-detail-page.aihero-page .section-body {
+  padding: 28rpx;
+  border: 1px solid var(--color-border);
+  border-radius: 18rpx;
+  background: var(--color-surface);
+  line-height: 1.75;
+}
+.club-profile-page.aihero-page .club-cover-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 0;
+  padding: 0 0 28rpx;
+}
+.club-profile-page.aihero-page .club-cover-preview {
+  width: 100%;
+  height: 0;
+  padding-top: 56.25%;
+  border-radius: 18rpx;
+}
+.club-profile-page.aihero-page .club-cover-preview > .upload-image {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+.club-profile-page.aihero-page .club-avatar-editor {
+  display: flex;
+  align-items: flex-start;
+  gap: 28rpx;
+  border: 0;
+  padding: 28rpx 0;
+  border-radius: 0;
+}
+.club-profile-page.aihero-page .upload-copy {
+  flex: 1;
+  min-width: 0;
+}
+.capability-page.aihero-page {
+  padding: 40rpx var(--page-gutter);
+  min-height: 100vh;
+}
+.capability-page.aihero-page .redirect-heading {
+  padding: 40rpx 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Tabs are navigation, not filled CTAs; status retains its semantic colour. */
+.aihero-page.aihero-page .filter-tab,
+.activities-page.aihero-page .segment-item {
+  border: 0;
+  border-bottom: 1px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-muted);
+}
+.aihero-page.aihero-page .filter-tab.is-active,
+.activities-page.aihero-page .segment-item.selected {
+  border-bottom-color: var(--color-action);
+  background: transparent;
+  color: var(--color-text);
+}
+.review-page.aihero-page .info-tag.is-pending {
+  border: 1px solid var(--color-status-warning);
+  background: transparent;
+  color: var(--color-status-warning);
+}
+.review-page.aihero-page .tag--approved,
+.review-page.aihero-page .tag--checked_in {
+  border: 1px solid var(--color-status-success);
+  background: transparent;
+  color: var(--color-status-success);
+}

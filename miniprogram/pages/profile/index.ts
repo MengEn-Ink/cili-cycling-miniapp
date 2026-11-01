@@ -99,7 +99,9 @@ function cardView(card: PersonalCapabilityCard, images: Record<string, string> =
   };
 }
 
-Page({
+import { themedPage } from '../../services/theme-service';
+
+themedPage({
   loadRequestId: 0,
   lifecycleRevision: 0,
   cacheRevision: getProfilePageCacheRevision(),

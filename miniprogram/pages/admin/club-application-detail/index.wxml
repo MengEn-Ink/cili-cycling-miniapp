@@ -8,7 +8,8 @@
     删除背景；上传进度；文案字段校验；并发创建冲突/并发更新冲突；fieldError 展示；
     canvas 预处理节点保留供 chooseAndUploadClubMedia 使用。
 -->
-<view class="page club-profile-page cinema-page cinema-page--dark" data-v1-layout="admin-form">
+<page-meta page-style="{{appearanceStyle}}" background-text-style="{{appearanceMode === 'light' ? 'dark' : 'light'}}" />
+<view class="page aihero-page club-profile-page cinema-page cinema-page--dark" data-v1-layout="admin-form">
   <view wx:if="{{uploading}}" class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{uploadKind === 'avatar' ? '正在更新俱乐部头像…' : '正在更新俱乐部背景…'}}</view>
   <view class="empty" wx:if="{{pageState === 'loading'}}">
     <view class="empty-title">正在读取俱乐部资料</view>
@@ -35,6 +36,7 @@
       <form data-submit="save">
         <view class="section club-profile-card">
           <view class="chapterhead">
+            <text class="chapterhead-index">01</text>
             <view class="chapterhead-title">头像与背景</view>
             <view class="chapterhead-aside">分别处理</view>
           </view>
@@ -109,6 +111,7 @@
 
         <view class="section club-profile-card">
           <view class="chapterhead">
+            <text class="chapterhead-index">02</text>
             <view class="chapterhead-title">基本资料</view>
             <view class="chapterhead-aside">公开展示</view>
           </view>

@@ -463,6 +463,6 @@
         "note": "原型按 admin-club-profile.html 命名；对应小程序路由 admin-club-application-detail。"
       }
     ],
-    "limitation": "本次是对高保真原型（Pages/HTML 版本）的三宽度验收，并非 WeChat 小程序模拟器真机截图；小程序侧的真机双端对齐仍以上方 evidence.routes 中的 sanitized-runtime 截图为准，由后续发布流程继续守护。"
+    "limitation": "历史三宽度记录只验证 2026-10-22 的 Pages/HTML 设计源，不是微信开发者工具或物理真机证据。2026-11-01 AI Hero 浅暗实现的当前双端证据为 BLOCKED：尚未真实重采 17 路由浅/暗截图；上方 evidence.routes 和 source/prototype digest 均保留原值，不代表当前源码已同步。祖先检查已通过；当前 strict 在 Pages 原型摘要不一致处失败，不能靠仅更新 digest 消除截图证据阻塞。详见 docs/verification/2026-11-01-aihero-light-dark-implementation.md；不得重签旧截图或放宽 checker。"
   }
 }

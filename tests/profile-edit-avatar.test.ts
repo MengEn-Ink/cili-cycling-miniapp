@@ -395,8 +395,10 @@ describe('资料编辑头像交互', () => {
 
     expect(page.data.loading).toBe(false);
     expect(page.data.p).not.toBeNull();
-    expect(wx.getStorageSync).toHaveBeenCalledOnce();
-    expect(wx.getStorageSync).toHaveBeenCalledWith('cili-profile-media-consent-v1');
+    expect(wx.getStorageSync.mock.calls.map(([key]: [string]) => key)).toEqual([
+      'cili-appearance',
+      'cili-profile-media-consent-v1',
+    ]);
     expect(wx.setStorageSync).not.toHaveBeenCalled();
     expect(rideService.cleanupSpy).not.toHaveBeenCalled();
   });

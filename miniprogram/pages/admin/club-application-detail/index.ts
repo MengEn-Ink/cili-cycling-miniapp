@@ -53,7 +53,9 @@ function errorCode(error: unknown): string {
   return String((error as { code?: string })?.code || '');
 }
 
-Page({
+import { themedPage } from '../../../services/theme-service';
+
+themedPage({
   saveRequestId: '',
   data: {
     pageState: 'loading' as PageState,

@@ -8,7 +8,8 @@
     confirmDelete(左滑或主动删除)、cloneForm modal。
   - 本页已完成从旧过渡 heading 结构向设计稿 pageheading 的迁移。
 -->
-<view class="page activity-list-page cinema-page cinema-page--dark" data-v1-layout="admin">
+<page-meta page-style="{{appearanceStyle}}" background-text-style="{{appearanceMode === 'light' ? 'dark' : 'light'}}" />
+<view class="page aihero-page activity-list-page cinema-page cinema-page--dark" data-v1-layout="admin">
   <view class="skeleton" wx:if="{{loading}}"><view></view><view></view><view></view></view>
 
   <view class="empty" wx:elif="{{loadError}}" role="alert">
@@ -25,6 +26,7 @@
 
   <block wx:else>
     <view class="pageheading">
+      <view class="eyebrow">此里 · 活动管理</view>
       <view class="pageheading-title editorial">
         <text class="pageheading-line">山路上的事，</text>
         <text class="pageheading-line">安排得明明白白。</text>

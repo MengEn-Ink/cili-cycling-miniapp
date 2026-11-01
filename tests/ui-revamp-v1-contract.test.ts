@@ -49,8 +49,14 @@ describe('UI 改版 V1 原生契约', () => {
     expect(read('miniprogram/pages/activities/index.ts')).toContain(
       '每一次转弯，都有值得记住的风景。',
     );
-    expect(homeStyle).toContain('padding-top: 60%');
-    expect(detailStyle).toContain('aspect-ratio: 5 / 4');
+    expect(homeStyle).toContain('aihero-layout.wxss');
+    const layout = read('miniprogram/styles/aihero-layout.wxss');
+    expect(layout).toMatch(
+      /\.activities-page\.aihero-page \.story \.photo\s*\{[^}]*padding-top:\s*56\.25%/s,
+    );
+    expect(layout).toMatch(
+      /\.detail-page\.aihero-page \.hero\s*\{[^}]*width:\s*100%;[^}]*padding-top:\s*56\.25%/s,
+    );
     expect(detailStyle).toContain('margin: 0');
     expect(detailStyle).toContain('border-radius: 0');
     expect(detailStyle).toContain('box-shadow: none');

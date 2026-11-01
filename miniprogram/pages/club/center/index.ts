@@ -28,7 +28,9 @@ function displayActivity(item: Activity) {
   };
 }
 
-Page({
+import { themedPage } from '../../../services/theme-service';
+
+themedPage({
   loadToken: 0,
   activityLoadToken: 0,
   unloaded: false,

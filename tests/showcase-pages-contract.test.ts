@@ -329,10 +329,16 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
   });
 
   it('真实页面与 M0 原型页面都带关键状态与“问题 → 改法 → 规范”设计说明，并提供总览页', () => {
-    expect(schema.match(/\n {6}states: \[/g)).toHaveLength(17);
-    expect(schema.match(/\n {6}problems: \[/g)).toHaveLength(17);
-    expect(schema.match(/\n {6}fixes: \[/g)).toHaveLength(17);
-    expect(schema.match(/\n {6}spec: \[/g)).toHaveLength(17);
+    const formalPages = prototypeRuntime.prototypeData?.pages.filter((page: { path?: string }) =>
+      page.path?.startsWith('pages/'),
+    );
+    expect(formalPages).toHaveLength(17);
+    for (const page of formalPages) {
+      for (const field of ['states', 'problems', 'fixes', 'spec']) {
+        expect(page[field], `${page.id}/${field}`).toBeInstanceOf(Array);
+        expect(page[field].length, `${page.id}/${field}`).toBeGreaterThan(0);
+      }
+    }
     for (const state of [
       "'empty'",
       "'loading'",
@@ -476,7 +482,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
   });
 
   it('搭建指南覆盖九步交付、技术选型、核心变量、合规清单与项目审计', () => {
-    expect(script.match(/\['0[1-9]',/g)).toHaveLength(9);
+    expect(script.match(/\[\s*'0[1-9]',/g)).toHaveLength(9);
     for (const content of [
       '先判断交付物',
       '原生小程序',
@@ -555,9 +561,11 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
 
   it('设置页原型同步当前客户端版本与当前 App 更新', () => {
     expect(schema).toContain("state: '通知、隐私与缓存管理'");
-    expect(schema).toContain(
-      "['2026.10.21.1', '活动发布全流程恢复', '有限名额活动可正常创建发布，历史数据清理与真实全流程验收已闭环。']",
-    );
+    expect(prototypeRuntime.prototypeData?.releaseNotes).toContainEqual([
+      '2026.10.21.1',
+      '活动发布全流程恢复',
+      '有限名额活动可正常创建发布，历史数据清理与真实全流程验收已闭环。',
+    ]);
     expect(templates).toContain('App 更新');
     expect(templates).not.toContain('最近五次');
   });
@@ -565,7 +573,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
   it('支持哈希路由、页面回退、键盘切换和关键业务反馈', () => {
     expect(script).toContain("window.addEventListener('hashchange'");
     expect(script).toContain("window.addEventListener('keydown'");
-    expect(script).toContain("if (action === 'back') goBack()");
+    expect(script).toMatch(/if \(action === 'back'\)\s*\{\s*goBack\(\);?\s*\}/);
     expect(script).toContain("if (action === 'submit-registration')");
     expect(script).toContain("if (action === 'approve-review')");
     expect(script).toContain("if (action === 'reject-review')");
@@ -575,7 +583,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
   it('颜色变量与 miniprogram/app.wxss 同名同值，不引入装饰性渐变', () => {
     const wxss = read('miniprogram/app.wxss');
     const wxssVars = themeTokens(wxss);
-    const cssVars = themeTokens(css);
+    const cssVars = themeTokens(css.split('/* 已批准 AI Hero')[0]);
     for (const name of [
       '--color-bg',
       '--color-surface',
@@ -590,9 +598,9 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
       expect(resolveThemeToken(wxssVars, name), name).toBe(resolveThemeToken(cssVars, name));
     }
     const declaredHex = new Set(
-      Object.values(cssVars)
-        .map((value) => value.match(/#[0-9a-f]{6}\b/i)?.[0]?.toLowerCase())
-        .filter(Boolean),
+      [...css.matchAll(/--[\w-]+\s*:\s*([^;]+);/g)]
+        .flatMap((match) => match[1].match(/#[0-9a-f]{6}\b/gi) || [])
+        .map((value) => value.toLowerCase()),
     );
     // 路线分析保留地图青绿 / 海拔橙红 / 路段黄等语义色；旧浅色声明由末尾
     // 页面级暗色规则覆盖，仅保留 marker 白色符号和数据图形需要的内联色。
@@ -677,7 +685,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
       expect(css).toContain(`${name}: ${value}`);
     }
     const allowedSelectors =
-      /^(\.(tag-success|tag-warning|inline-toast|club-admin-card-status)|\.activities-v3 \.activity-card-v3\.is-(closing|joined) \.activity-card-status|\.route-source-conn\.tone-(success|warning) \.route-source-conn-dot|\.screen-container \.tag\.(success|warning)|\.screen-container \.notice\.(success|warning|error)|\.screen-container \.cinema-flow-page \.(tag-success|tag-warning|tag\.(success|warning)|tag--(connected|approved|checked_in|pending|waiting)))$/;
+      /^(\.(tag-success|tag-warning|inline-toast|club-admin-card-status)|\.activities-v3 \.activity-card-v3\.is-(closing|joined) \.activity-card-status|\.route-source-conn\.tone-(success|warning) \.route-source-conn-dot|\.screen-container \.pg\[data-aihero-layout\] \.(info-tag\.is-pending|tag-solid)|\.screen-container \.tag\.(success|warning)|\.screen-container \.notice\.(success|warning|error)|\.screen-container \.cinema-flow-page \.(tag-success|tag-warning|tag\.(success|warning)|tag--(connected|approved|checked_in|pending|waiting)))$/;
     const cssNoComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
     for (const [, selector, body] of cssNoComments.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
       if (!/var\(--color-status-/.test(body)) continue;

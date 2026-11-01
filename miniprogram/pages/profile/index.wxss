@@ -551,3 +551,5 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+@import '../../styles/aihero-layout.wxss';

@@ -12,10 +12,22 @@ const MAX_SUBSCRIPTION_TEMPLATES = 3;
 const RELEASE_NOTES = [
   {
     version: CLIENT_RELEASE_VERSION,
+    date: '2026-11-01',
+    title: '浅色与暗色，按你的习惯阅读',
+    summary: '17 个页面统一清晰排版，可在设置中选择浅色或暗色，退出后保留选择。',
+    latest: true,
+    features: [
+      '设置页新增浅色与暗色选择，导航、底栏和返回页面同步更新',
+      '标题、分隔线与骑行数字更利落，保留大字号和舒适触控范围',
+      '报名、通知订阅、审核与隐私权限保持不变',
+    ],
+  },
+  {
+    version: '2026.10.31.1',
     date: '2026-10-31',
     title: '页面更简洁，重点信息更好找',
     summary: '精简各页重复标题与说明文字，活动、详情和报名页的关键信息更集中、更易读。',
-    latest: true,
+    latest: false,
     features: [
       '活动列表合并场次计数，日期与时间分开显示，筛选条两端渐隐',
       '活动详情把导航按钮放到集合地点旁，删去重复的状态与提示文字',
@@ -628,7 +640,9 @@ const STRAVA_COPY: Record<'connected' | 'disconnected' | 'pending' | 'error', St
   },
 };
 
-Page({
+import { setAppearance, themedPage } from '../../services/theme-service';
+
+themedPage({
   data: {
     releaseNotes: RELEASE_NOTES,
     currentRelease: RELEASE_NOTES[0],
@@ -640,10 +654,17 @@ Page({
     stravaAction: STRAVA_COPY.disconnected.action,
     stravaStatusLabel: STRAVA_COPY.disconnected.statusLabel,
     stravaAuthorizationUrl: '',
+    appearanceError: '',
     notificationHint: '',
     notificationHintTone: 'info' as 'info' | 'success' | 'warning',
   },
   stravaPollTimer: undefined as ReturnType<typeof setInterval> | undefined,
+  chooseAppearance(event: { currentTarget: { dataset: { mode?: string } } }) {
+    if (this.data.actionPending) return;
+    const value = event.currentTarget.dataset.mode;
+    if (value !== 'light' && value !== 'dark') return;
+    this.setData({ appearanceError: setAppearance(value) ? '' : '主题未能保存，请稍后重试。' });
+  },
   onShow() {
     const isAdmin = appStore.authStatus === 'authenticated' && appStore.role === 'admin';
     this.setData({ isAdmin });

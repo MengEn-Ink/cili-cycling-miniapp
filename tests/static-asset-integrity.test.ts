@@ -113,15 +113,15 @@ describe('静态图片资源完整性', () => {
         ),
     );
     expect(dynamicLines).toEqual([
-      'miniprogram/services/theme-service.ts: iconPath: `assets/tabbar/${name}-light.png`,',
+      "miniprogram/services/theme-service.ts: iconPath: `assets/tabbar/${name}${applyingMode === 'dark' ? '-light' : ''}.png`,",
       'miniprogram/services/theme-service.ts: selectedIconPath: `assets/tabbar/${name}-active.png`,',
     ]);
 
     const tabs = ['activities', 'registrations', 'profile'];
-    const variants = ['light', 'active'];
+    const variants = ['', '-light', '-active'];
     const missing = tabs.flatMap((tab) =>
       variants
-        .map((variant) => `miniprogram/assets/tabbar/${tab}-${variant}.png`)
+        .map((variant) => `miniprogram/assets/tabbar/${tab}${variant}.png`)
         .filter((file) => !existsSync(path.join(ROOT, file))),
     );
     expect(missing).toEqual([]);
@@ -184,9 +184,6 @@ describe('静态图片资源完整性', () => {
       'miniprogram/assets/profile/avatars/cili-black.png',
       'miniprogram/assets/profile/avatars/cili-ivory.png',
       'miniprogram/assets/profile/avatars/cili-orange.png',
-      'miniprogram/assets/tabbar/activities.png',
-      'miniprogram/assets/tabbar/profile.png',
-      'miniprogram/assets/tabbar/registrations.png',
     ];
     expect(retiredPaths.filter((item) => existsSync(path.join(ROOT, item)))).toEqual([]);
   });

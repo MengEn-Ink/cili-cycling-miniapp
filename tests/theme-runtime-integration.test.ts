@@ -2,50 +2,90 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { expandAppRoutes, type MiniProgramAppConfig } from './helpers/app-routes';
+import { APPEARANCE_TOKENS } from '../miniprogram/config/appearance';
+import { contrast, hexColor } from './theme-contract-helpers';
 
-const appConfig = JSON.parse(readFileSync('miniprogram/app.json', 'utf8')) as MiniProgramAppConfig;
+const read = (path: string) => readFileSync(path, 'utf8');
+const appConfig = JSON.parse(read('miniprogram/app.json')) as MiniProgramAppConfig;
 
-describe('单一明亮外观接线', () => {
-  it('17 个页面不再保存或同步运行时主题', () => {
-    const appRoutes = expandAppRoutes(appConfig);
-    expect(appRoutes).toHaveLength(17);
-
-    for (const pagePath of appRoutes) {
-      const script = readFileSync(`miniprogram/${pagePath}.ts`, 'utf8');
-      const template = readFileSync(`miniprogram/${pagePath}.wxml`, 'utf8');
-
-      expect(script, pagePath).not.toMatch(/themeClass|syncPageTheme|setTheme|display-theme/);
-      expect(template, pagePath).not.toMatch(/themeClass|theme-light|theme-dark/);
+describe('AI Hero 全局浅暗接线', () => {
+  it('17 页通过公共接缝与 page-meta 更新 page 上的变量，组件和固定层共同继承', () => {
+    const routes = expandAppRoutes(appConfig);
+    expect(routes).toHaveLength(17);
+    for (const route of routes) {
+      expect(read(`miniprogram/${route}.ts`), route).toContain('themedPage({');
+      const template = read(`miniprogram/${route}.wxml`);
+      expect(template, route).toContain('page-style="{{appearanceStyle}}"');
+      expect(template, route).toContain('aihero-page');
+      expect(template, route).not.toMatch(/Tweaks|身份切换/);
     }
   });
-
-  it('设置页保留可访问入口，但不再提供主题切换', () => {
-    const template = readFileSync('miniprogram/pages/settings/index.wxml', 'utf8');
-    const script = readFileSync('miniprogram/pages/settings/index.ts', 'utf8');
-    const profileTemplate = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
-    const profileScript = readFileSync('miniprogram/pages/profile/index.ts', 'utf8');
-
-    expect(profileTemplate).toContain('bindtap="openSettings"');
-    expect(profileTemplate).toContain('aria-label="打开设置"');
-    expect(profileScript).toContain("wx.navigateTo({ url: '/pages/settings/index' })");
-    expect(template).not.toMatch(/显示主题|深色（默认）|浅色（户外）|theme-option/);
-    expect(script).not.toMatch(/setTheme|switchTheme/);
-    expect(template).not.toContain('第三方授权');
-    expect(script).not.toContain('getStravaReadiness');
-    expect(template).toContain('App 更新');
+  it('设置为唯一生产选择入口，不增添原型身份/状态面板', () => {
+    const template = read('miniprogram/pages/settings/index.wxml');
+    const script = read('miniprogram/pages/settings/index.ts');
+    expect(read('miniprogram/pages/profile/index.wxml')).toContain('bindtap="openSettings"');
+    expect(template).toContain('aria-label="显示主题"');
+    expect(template).toContain('data-mode="light"');
+    expect(template).toContain('data-mode="dark"');
+    expect(template).toContain('aria-checked="{{appearanceMode');
+    expect(script).toContain('setAppearance(value)');
+    expect(template).toContain('bindtap="manageNotifications"');
+    expect(template).toContain('bindtap="managePrivacy"');
+    expect(template).toContain('bindtap="clearSafeCache"');
   });
-
-  it('设置页只渲染当前版本的 App 更新卡片，RELEASE_NOTES 保留历史且仅一条 latest', () => {
-    const template = readFileSync('miniprogram/pages/settings/index.wxml', 'utf8');
-    const script = readFileSync('miniprogram/pages/settings/index.ts', 'utf8');
-
-    expect(template).toContain('App 更新');
-    expect(template).toContain('wx:if="{{currentRelease}}"');
-    expect(template).not.toContain('wx:for="{{releaseNotes}}"');
-    expect(script).toContain("date: '2026-10-18'");
-    expect(script).toContain('version: CLIENT_RELEASE_VERSION');
-    expect(script).toContain("title: '界面风格统一'");
-    const latestMatches = script.match(/latest:\s*true/g) || [];
-    expect(latestMatches).toHaveLength(1);
+  it('两套正文、次级、占位、禁用和状态色在对应表面达到 4.5:1', () => {
+    for (const tokens of Object.values(APPEARANCE_TOKENS)) {
+      for (const surface of ['--color-bg', '--color-surface', '--color-raised'] as const) {
+        for (const text of [
+          '--color-text',
+          '--color-muted',
+          '--color-placeholder',
+          '--color-disabled-text',
+        ] as const) {
+          expect(
+            contrast(hexColor(tokens[text]), hexColor(tokens[surface])),
+            `${text}/${surface}`,
+          ).toBeGreaterThanOrEqual(4.5);
+        }
+      }
+      for (const [text, surface] of [
+        ['--color-status-success', '--color-status-success-soft'],
+        ['--color-status-warning', '--color-status-warning-soft'],
+        ['--color-danger-text', '--color-danger-soft'],
+      ] as const) {
+        expect(contrast(hexColor(tokens[text]), hexColor(tokens[surface]))).toBeGreaterThanOrEqual(
+          4.5,
+        );
+      }
+      expect(tokens['--border-width-hairline']).toBe('1px');
+    }
+  });
+  it('Pages 浅暗语义覆盖与生产同值，媒体/二维码不被改成随主题反色', () => {
+    const css = read('docs/styles.css');
+    for (const mode of ['light', 'dark'] as const) {
+      const block = css.match(
+        new RegExp(String.raw`:root\[data-appearance='${mode}'\]\s*\{([^}]+)\}`),
+      )?.[1];
+      expect(block, mode).toBeDefined();
+      const values = Object.fromEntries(
+        [...block!.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)].map((match) => [
+          match[1],
+          match[2].trim().replace(/\s/g, ''),
+        ]),
+      );
+      for (const [name, value] of Object.entries(APPEARANCE_TOKENS[mode])) {
+        if (name.startsWith('--color-') && name !== '--color-shadow') {
+          expect(values[name], `${mode}/${name}`).toBe(value.replace(/\s/g, ''));
+        }
+      }
+      expect(block).not.toContain('--color-on-media:');
+      expect(block).not.toContain('--color-qr-');
+    }
+  });
+  it('当前功能日志置顶且只有一个 latest，Pages 当前版本一致', () => {
+    const script = read('miniprogram/pages/settings/index.ts');
+    expect(script.match(/latest:\s*true/g)).toHaveLength(1);
+    expect(script).toContain("date: '2026-11-01'");
+    expect(read('docs/schema.js')).toContain('2026.11.01.1');
   });
 });

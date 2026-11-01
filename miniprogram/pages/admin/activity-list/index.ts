@@ -121,7 +121,9 @@ function summariseMetrics(items: any[]) {
   return { publishedCount, draftCount, pendingCount };
 }
 
-Page({
+import { themedPage } from '../../../services/theme-service';
+
+themedPage({
   _unloaded: false,
   _listRevision: 0,
   _loadMorePromise: undefined as Promise<void> | undefined,

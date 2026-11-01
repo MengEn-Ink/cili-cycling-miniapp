@@ -1,4 +1,5 @@
-<view class="page settings-page cinema-page cinema-page--dark" data-v1-layout="form">
+<page-meta page-style="{{appearanceStyle}}" background-text-style="{{appearanceMode === 'light' ? 'dark' : 'light'}}" />
+<view class="page aihero-page settings-page cinema-page cinema-page--dark" data-v1-layout="form">
   <view class="pageheading">
     <view class="pageheading-title editorial">
       <text class="pageheading-line">小事设置好，</text>
@@ -8,8 +9,18 @@
   </view>
 
   <view class="content tight">
+    <view class="section section-appearance">
+      <view class="chapterhead"><text class="chapterhead-index">00</text><view class="chapterhead-title">显示主题</view><view class="chapterhead-aside">本设备</view></view>
+      <view class="appearance-options" role="radiogroup" aria-label="显示主题">
+        <button class="appearance-option {{appearanceMode === 'light' ? 'is-selected' : ''}}" bindtap="chooseAppearance" data-mode="light" role="radio" aria-checked="{{appearanceMode === 'light'}}" disabled="{{actionPending}}">浅色</button>
+        <button class="appearance-option {{appearanceMode === 'dark' ? 'is-selected' : ''}}" bindtap="chooseAppearance" data-mode="dark" role="radio" aria-checked="{{appearanceMode === 'dark'}}" disabled="{{actionPending}}">暗色</button>
+      </view>
+      <view class="appearance-hint">选择将保留在当前设备上，不影响登录与报名。</view>
+      <view wx:if="{{appearanceError}}" class="appearance-error" role="alert">{{appearanceError}}</view>
+    </view>
     <view class="section section-notifications">
       <view class="chapterhead">
+        <text class="chapterhead-index">01</text>
         <view class="chapterhead-title">通知</view>
         <view class="chapterhead-rule" aria-hidden="true"></view>
       </view>
@@ -41,6 +52,7 @@
 
     <view class="section section-privacy">
       <view class="chapterhead">
+        <text class="chapterhead-index">02</text>
         <view class="chapterhead-title">隐私</view>
         <view class="chapterhead-rule" aria-hidden="true"></view>
       </view>
@@ -68,6 +80,7 @@
 
     <view class="section section-app">
       <view class="chapterhead">
+        <text class="chapterhead-index">03</text>
         <view class="chapterhead-title">应用</view>
         <view class="chapterhead-rule" aria-hidden="true"></view>
       </view>
@@ -105,6 +118,7 @@
       data-admin-only
     >
       <view class="chapterhead">
+        <text class="chapterhead-index">04</text>
         <view class="chapterhead-title">Strava 线路同步</view>
         <view class="chapterhead-aside">平台管理员可见</view>
       </view>

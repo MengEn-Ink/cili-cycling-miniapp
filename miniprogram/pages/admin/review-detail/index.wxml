@@ -13,7 +13,8 @@
   - 真实业务保留：管理员鉴权、报名详情加载、capabilityCard、电话来源、照片预览、
     photoFailed、驳回理由、通过、签到。
 -->
-<view class="page review-detail-page cinema-page cinema-page--dark" data-v1-layout="admin-form">
+<page-meta page-style="{{appearanceStyle}}" background-text-style="{{appearanceMode === 'light' ? 'dark' : 'light'}}" />
+<view class="page aihero-page review-detail-page cinema-page cinema-page--dark" data-v1-layout="admin-form">
   <view class="skeleton" wx:if="{{loading}}" aria-label="正在加载审批详情"><view></view><view></view><view></view></view>
 
   <view class="empty" wx:if="{{error && !x}}" role="alert">
@@ -50,6 +51,7 @@
 
       <view class="section">
         <view class="chapterhead">
+          <text class="chapterhead-index">01</text>
           <view class="chapterhead-title">报名与联络资料</view>
           <view class="chapterhead-aside">管理员可见完整信息</view>
         </view>
@@ -66,6 +68,7 @@
 
       <view class="section">
         <view class="chapterhead">
+          <text class="chapterhead-index">02</text>
           <view class="chapterhead-title">骑行经验</view>
           <view class="chapterhead-aside">自评能力</view>
         </view>
@@ -75,6 +78,7 @@
 
       <view class="section">
         <view class="chapterhead">
+          <text class="chapterhead-index">03</text>
           <view class="chapterhead-title">骑友备注</view>
           <view class="chapterhead-aside">本人填写</view>
         </view>
@@ -83,6 +87,7 @@
 
       <view class="section">
         <view class="chapterhead">
+          <text class="chapterhead-index">04</text>
           <view class="chapterhead-title">照片</view>
           <view class="chapterhead-aside">活动审核用</view>
         </view>
@@ -103,6 +108,7 @@
 
       <view wx:if="{{x.status === 'pending'}}" class="decision-panel section">
         <view class="chapterhead">
+          <text class="chapterhead-index">05</text>
           <view class="chapterhead-title">审核意见</view>
           <view class="chapterhead-aside">驳回时必填</view>
         </view>
@@ -115,6 +121,7 @@
 
       <view class="section" wx:elif="{{x.status === 'approved'}}">
         <view class="chapterhead">
+          <text class="chapterhead-index">05</text>
           <view class="chapterhead-title">现场签到</view>
           <view class="chapterhead-aside">集合现场操作</view>
         </view>

@@ -123,14 +123,21 @@ describe('FORMAL GitHub Pages 骑行影像志', () => {
     expect(deliveryCenter).toContain('设计演进记录');
   });
 
-  it('设置页以 2026.10.30.1 展示界面对比度与加载反馈优化当前版本', () => {
-    expect(schema).toContain(
-      "['2026.10.30.1', '界面对比度与加载反馈优化', '提升暗色界面的文字、二维码与加载反馈。']",
-    );
+  it('设置页同步浅暗显示入口与 2026.11.01.1 当前版本', () => {
+    const data: { prototypeData?: { releaseNotes: string[][] } } = {};
+    new Function('window', schema)(data);
+    expect(data.prototypeData?.releaseNotes[0]).toEqual([
+      '2026.11.01.1',
+      '浅色与暗色，按你的习惯阅读',
+      '17 个页面统一清晰排版，可在设置中选择浅色或暗色，退出后保留选择。',
+    ]);
     runtime.prototypeState = 'default';
     const settings = runtime.pageTemplates?.settings?.() ?? '';
-    expect(settings).toContain('V2026.10.30.1');
-    expect(settings).toContain('2026.10.30');
+    expect(settings).toContain('V2026.11.01.1');
+    expect(settings).toContain('2026.11.01');
+    expect(settings).toContain('显示主题');
+    expect(settings).toContain('data-mode="light"');
+    expect(settings).toContain('data-mode="dark"');
   });
 
   it('报名提交按审核中、公开通过和满员候补展示真实行程结果', () => {
@@ -267,23 +274,22 @@ describe('FORMAL GitHub Pages 骑行影像志', () => {
     );
   });
 
-  it('活动首页首屏使用紧凑单行导语与 3:5 开场图，并完整保留首场关键信息', () => {
+  it('AI Hero 首页使用双行导语和统一 16:9 图片，完整保留场次与指标', () => {
     const miniTemplate = read('miniprogram/pages/activities/index.wxml');
-    const miniStyles = read('miniprogram/pages/activities/index.wxss');
+    const miniStyles = read('miniprogram/styles/aihero-layout.wxss');
     runtime.prototypeState = 'default';
     const activities = runtime.pageTemplates?.activities?.() ?? '';
 
-    expect(miniTemplate).toContain('周末，交给山路。');
-    expect(miniTemplate).not.toContain('<text class="pageheading-line">');
+    expect(miniTemplate).toContain('aria-label="周末，交给山路。"');
+    expect(miniTemplate).toContain('<text class="pageheading-line">周末，</text>');
+    expect(miniTemplate).toContain('<text class="pageheading-line">交给山路。</text>');
     expect(miniStyles).toMatch(
-      /\.activities-page \.story--opening \.photo\s*\{[^}]*padding-top:\s*60%/s,
+      /\.activities-page\.aihero-page \.story \.photo\s*\{[^}]*padding-top:\s*56\.25%/s,
     );
-    expect(miniStyles).not.toContain('padding-top: 104%');
     expect(styles).toMatch(
-      /\.activities-journal \.story-opening \.photo\s*\{[^}]*height:\s*min\(60vw, 258px\)/s,
+      /\[data-aihero-layout\] \.story \.photo\s*\{[^}]*aspect-ratio:\s*16\s*\/\s*9/s,
     );
-    expect(styles).not.toContain('height: 400px');
-    expect(activities).toContain('周末，交给山路。');
+    expect(activities).toContain('<h1 class="editorial">周末，<br>交给山路。</h1>');
     expect(activities).toContain('class="storyfacts"');
     expect(activities).toContain('class="storymeta"');
   });

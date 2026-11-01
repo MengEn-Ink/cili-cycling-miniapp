@@ -941,14 +941,14 @@
   bottom: 36rpx;
   left: 36rpx;
 }
-.detail-page .hero-title {
-  color: var(--color-cinema-text);
+.detail-page .caption .hero-title {
+  color: var(--color-on-media);
   font-size: 68rpx;
   line-height: 78rpx;
 }
-.detail-page .hero-sub,
+.detail-page .caption .hero-sub,
 .detail-page .caption .eyebrow {
-  color: var(--color-cinema-text);
+  color: var(--color-on-media);
 }
 .detail-page .ink {
   width: calc(100% + var(--page-gutter) * 2);
@@ -1263,3 +1263,5 @@
     padding-left: var(--space-2);
   }
 }
+
+@import '../../styles/aihero-layout.wxss';

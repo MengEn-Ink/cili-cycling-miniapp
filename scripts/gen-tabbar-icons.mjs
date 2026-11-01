@@ -7,8 +7,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const SIZE = 81;
-const NORMAL = [168, 168, 173]; // #A8A8AD
-const ACTIVE = [213, 91, 31]; // #D55B1F
+const NORMAL = [85, 87, 90]; // Light-mode inactive icons: #55575a
+const ACTIVE = [229, 66, 66]; // #e54242
 
 function canvas() {
   return { size: SIZE, px: new Float32Array(SIZE * SIZE) };
@@ -190,6 +190,8 @@ mkdirSync(outDir, { recursive: true });
 for (const [name, drawFn] of Object.entries(draw)) {
   const c = drawFn();
   writeFileSync(join(outDir, `${name}.png`), encodePng(c, NORMAL));
-  writeFileSync(join(outDir, `${name}-active.png`), encodePng(c, ACTIVE));
+  if (!process.argv.includes('--light-only')) {
+    writeFileSync(join(outDir, `${name}-active.png`), encodePng(c, ACTIVE));
+  }
   console.log(`generated ${name}.png / ${name}-active.png`);
 }

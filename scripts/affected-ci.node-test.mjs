@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { createAffectedPlan } from './affected-ci.mjs';
+import { createAffectedPlan, runAffectedPlan } from './affected-ci.mjs';
 
 test('纯 Pages 文档只执行文档与设计相关门禁', () => {
   const plan = createAffectedPlan([
@@ -181,5 +181,90 @@ test('Strava 契约注册于 validate 且不削弱根配置全量 fail-safe', ()
   assert.ok(root.scripts.validate.includes('npm run test:content-contract'));
   for (const path of ['package.json', 'scripts/affected-ci.mjs']) {
     assert.equal(createAffectedPlan([path, 'scripts/strava-state-machine/core.cjs']).mode, 'full');
+  }
+});
+
+function recordPlan(files, failInstall = false) {
+  const calls = [];
+  const commands = {
+    execFileSync(command, args) {
+      calls.push([command, ...args]);
+      if (failInstall && command === 'npx' && args[0] === 'playwright') {
+        throw new Error('Chromium install failed');
+      }
+    },
+    spawnSync() {
+      return { status: 0 };
+    },
+  };
+  runAffectedPlan(createAffectedPlan(files), commands);
+  return calls;
+}
+
+test('消费者局部回归先安装 Chromium 与系统库，再执行真实 Node 测试', () => {
+  const file = 'tests/theme-consumer-regression.node-test.mjs';
+  const calls = recordPlan([file]);
+  const install = calls.findIndex((call) => call[0] === 'npx' && call[1] === 'playwright');
+  const consumer = calls.findIndex((call) => call[0] === 'node' && call.includes(file));
+  assert.deepEqual(calls[install], ['npx', 'playwright', 'install', '--with-deps', 'chromium']);
+  assert.ok(install >= 0 && consumer > install);
+});
+
+test('Chromium 安装失败会阻断局部回归，不静默跳过', () => {
+  assert.throws(
+    () => recordPlan(['tests/theme-consumer-regression.node-test.mjs'], true),
+    /Chromium install failed/,
+  );
+});
+
+test('非浏览器局部测试不安装 Chromium', () => {
+  const calls = recordPlan(['scripts/check-release-notes.node-test.mjs']);
+  assert.equal(
+    calls.some((call) => call.includes('playwright')),
+    false,
+  );
+  assert.ok(calls.some((call) => call[0] === 'node' && call[1] === '--test'));
+});
+
+test('选择器自身与根配置全量回退通过 validate 实际注册消费者，不遗漏安全门禁', () => {
+  const root = JSON.parse(readFileSync('package.json', 'utf8'));
+  assert.equal(
+    root.scripts['test:theme-consumer'],
+    'playwright install --with-deps chromium && node --test tests/theme-consumer-regression.node-test.mjs',
+  );
+  assert.equal(
+    root.scripts.validate.split(' && ').filter((step) => step === 'npm run test:theme-consumer')
+      .length,
+    1,
+  );
+  for (const file of ['scripts/affected-ci.mjs', 'package.json']) {
+    assert.equal(createAffectedPlan([file]).mode, 'full');
+    assert.deepEqual(recordPlan([file]), [
+      ['npm', 'run', 'cloud:install'],
+      ['npm', 'run', 'validate'],
+      ['npm', 'run', 'coverage'],
+      ['npm', 'run', 'audit:all'],
+    ]);
+  }
+});
+
+test('真实主题与页面消费者源码局部变更必须选择浏览器回归', () => {
+  const config = JSON.parse(readFileSync('miniprogram/app.json', 'utf8'));
+  const routes = [
+    ...config.pages,
+    ...config.subpackages.flatMap(({ root, pages }) => pages.map((route) => `${root}/${route}`)),
+  ];
+  const sources = [
+    'miniprogram/config/appearance.ts',
+    'miniprogram/services/theme-service.ts',
+    'miniprogram/app.wxss',
+    'miniprogram/styles/aihero-layout.wxss',
+    ...routes.flatMap((route) => [`miniprogram/${route}.wxml`, `miniprogram/${route}.wxss`]),
+  ];
+  for (const file of sources) {
+    assert.ok(readFileSync(file).length > 0, `真实输入存在：${file}`);
+    const plan = createAffectedPlan([file]);
+    assert.equal(plan.mode, 'targeted', file);
+    assert.ok(plan.scriptTests.includes('tests/theme-consumer-regression.node-test.mjs'), file);
   }
 });

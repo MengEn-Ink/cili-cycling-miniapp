@@ -36,7 +36,9 @@ const confirmCheckIn = () =>
 
 let loadRequestId = 0;
 
-Page({
+import { themedPage } from '../../../services/theme-service';
+
+themedPage({
   data: {
     x: null as any,
     card: null as any,

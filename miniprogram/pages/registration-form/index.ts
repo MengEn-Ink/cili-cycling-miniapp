@@ -51,7 +51,9 @@ async function loadActivityContext(
   };
 }
 
-Page({
+import { themedPage } from '../../services/theme-service';
+
+themedPage({
   loadRequestId: 0,
   submitRequestId: 0,
   submissionPending: false,

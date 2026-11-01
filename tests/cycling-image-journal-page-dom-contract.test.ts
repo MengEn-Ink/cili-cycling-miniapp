@@ -73,7 +73,17 @@ const loadContracts = (): PageContract[] => {
   );
   return files.map((file: string) => {
     const raw = read(`${CONTRACTS_DIR}/${file}`);
-    return JSON.parse(raw) as PageContract;
+    const contract = JSON.parse(raw) as PageContract;
+    // Keep the immutable 2026-10-22 snapshot; the approved AI Hero form replaces
+    // its disabled pre-checked legal row with truthful native subscription readiness.
+    if (contract.slug === 'registration-form') {
+      contract.containers = contract.containers.map((container) =>
+        container.role === 'legal-check'
+          ? { ...container, class: 'section section-subscription', role: 'subscription-readiness' }
+          : container,
+      );
+    }
+    return contract;
   });
 };
 

@@ -1,7 +1,14 @@
 (() => {
   const data = window.prototypeData;
+  try {
+    document.documentElement.dataset.appearance =
+      localStorage.getItem('cili-appearance') === 'light' ? 'light' : 'dark';
+  } catch {
+    document.documentElement.dataset.appearance = 'dark';
+  }
+  window.prototypeAppearance = document.documentElement.dataset.appearance;
   const templates = window.pageTemplates;
-  const deliveryCenter = window.deliveryCenter;
+  const { deliveryCenter } = window;
   const pageById = new Map(data.pages.map((page) => [page.id, page]));
   const tabRoutes = ['activities', 'registrations', 'profile'];
   const baseOverviewSections = [
@@ -27,27 +34,87 @@
     ...((deliveryCenter && deliveryCenter.extraOverviewAnchors) || []),
   ]);
   const setupSteps = [
-    ['01', '先定目标与主体', '确认核心用户、服务范围、是否商用，再选择个人或企业主体；名称、简介、类目和实际功能保持一致。'],
-    ['02', '注册并取得 AppID', '在微信公众平台注册小程序；AppID 位于“开发—开发设置”，它是项目标识，不是服务端密钥。'],
-    ['03', '选择技术路线', '简单项目优先原生小程序；需要跨端复用再评估 Taro/uni-app；希望少运维可选微信云开发。'],
-    ['04', '搭建开发环境', '安装 Node.js、微信开发者工具与 Git，导入项目后先跑模拟器，再做真机预览和弱网验证。'],
-    ['05', '划清数据边界', '敏感写操作进云函数；客户端不保存 AppSecret，只申请完成当前动作所需的最小权限。'],
-    ['06', '并行准备合规', '开发同时确认服务类目、备案、用户隐私保护指引和内容安全方案，避免完成后再返工。'],
-    ['07', '测试关键旅程', '覆盖游客浏览、登录授权、图片上传、数据保存、分享、失败重试，以及不同机型和网络。'],
-    ['08', '上传并提交审核', '开发者工具上传代码，在小程序后台提交审核；版本备注应准确描述本次用户可见变化。'],
-    ['09', '发布与持续运营', '审核通过后仍需执行发布；上线后监控错误、成本、内容安全结果，并保留可回滚版本。'],
+    [
+      '01',
+      '先定目标与主体',
+      '确认核心用户、服务范围、是否商用，再选择个人或企业主体；名称、简介、类目和实际功能保持一致。',
+    ],
+    [
+      '02',
+      '注册并取得 AppID',
+      '在微信公众平台注册小程序；AppID 位于“开发—开发设置”，它是项目标识，不是服务端密钥。',
+    ],
+    [
+      '03',
+      '选择技术路线',
+      '简单项目优先原生小程序；需要跨端复用再评估 Taro/uni-app；希望少运维可选微信云开发。',
+    ],
+    [
+      '04',
+      '搭建开发环境',
+      '安装 Node.js、微信开发者工具与 Git，导入项目后先跑模拟器，再做真机预览和弱网验证。',
+    ],
+    [
+      '05',
+      '划清数据边界',
+      '敏感写操作进云函数；客户端不保存 AppSecret，只申请完成当前动作所需的最小权限。',
+    ],
+    [
+      '06',
+      '并行准备合规',
+      '开发同时确认服务类目、备案、用户隐私保护指引和内容安全方案，避免完成后再返工。',
+    ],
+    [
+      '07',
+      '测试关键旅程',
+      '覆盖游客浏览、登录授权、图片上传、数据保存、分享、失败重试，以及不同机型和网络。',
+    ],
+    [
+      '08',
+      '上传并提交审核',
+      '开发者工具上传代码，在小程序后台提交审核；版本备注应准确描述本次用户可见变化。',
+    ],
+    [
+      '09',
+      '发布与持续运营',
+      '审核通过后仍需执行发布；上线后监控错误、成本、内容安全结果，并保留可回滚版本。',
+    ],
   ];
   const stackChoices = [
     ['原生小程序', '首选', '微信能力直连、包体可控，适合单端和中小团队；此里采用这条路线。'],
-    ['跨端框架', '按需', '已有 React/Vue 团队且必须复用多端代码时评估，同时预算平台差异与调试成本。'],
-    ['微信云开发', '低运维', '数据库、存储和云函数一体化，适合快速上线；仍需做环境隔离、权限规则和成本监控。'],
-    ['自建后端', '高控制', '需要复杂集成或独立基础设施时选择，同时承担服务器、域名、安全和运维责任。'],
+    [
+      '跨端框架',
+      '按需',
+      '已有 React/Vue 团队且必须复用多端代码时评估，同时预算平台差异与调试成本。',
+    ],
+    [
+      '微信云开发',
+      '低运维',
+      '数据库、存储和云函数一体化，适合快速上线；仍需做环境隔离、权限规则和成本监控。',
+    ],
+    [
+      '自建后端',
+      '高控制',
+      '需要复杂集成或独立基础设施时选择，同时承担服务器、域名、安全和运维责任。',
+    ],
   ];
   const coreVariables = [
     ['AppID', '微信公众平台 → 开发 → 开发设置', '项目标识；可进入 project.config.json'],
-    ['CloudBase EnvID', 'GitHub Environment Variable：CLOUDBASE_ENV_ID', '非敏感环境标识；必须与 cloudbaserc.json 一致'],
-    ['小程序 CI 私钥', 'GitHub Secret：WECHAT_MINIPROGRAM_PRIVATE_KEY', '只在微信上传工作流中写入临时文件，结束时清理'],
-    ['CloudBase API Key', 'GitHub Environment Secret：CLOUDBASE_API_KEY', '环境级部署凭证；不进入 Aime、仓库、Artifact 或日志'],
+    [
+      'CloudBase EnvID',
+      'GitHub Environment Variable：CLOUDBASE_ENV_ID',
+      '非敏感环境标识；必须与 cloudbaserc.json 一致',
+    ],
+    [
+      '小程序 CI 私钥',
+      'GitHub Secret：WECHAT_MINIPROGRAM_PRIVATE_KEY',
+      '只在微信上传工作流中写入临时文件，结束时清理',
+    ],
+    [
+      'CloudBase API Key',
+      'GitHub Environment Secret：CLOUDBASE_API_KEY',
+      '环境级部署凭证；不进入 Aime、仓库、Artifact 或日志',
+    ],
   ];
   const deploySteps = [
     [1, 'PR 门禁', '格式、类型、测试、覆盖率与依赖审计全部通过后才允许合入。', 'gate'],
@@ -62,13 +129,33 @@
     ['CLOUDBASE_API_KEY', 'Environment Secret', 'CloudBase 环境级 API Key；敏感、不可回读'],
     ['CLOUDBASE_ENV_ID', 'Environment Variable', '目标环境 ID；必须匹配 cloudbaserc.json'],
     ['CLOUDBASE_REGION', 'Environment Variable', '目标地域，例如 ap-shanghai'],
-    ['WECHAT_MINIPROGRAM_PRIVATE_KEY', 'Repository / Environment Secret', '微信开发版上传私钥；保持完整多行内容'],
+    [
+      'WECHAT_MINIPROGRAM_PRIVATE_KEY',
+      'Repository / Environment Secret',
+      '微信开发版上传私钥；保持完整多行内容',
+    ],
   ];
   const projectAudit = [
-    ['P0', '补齐 UGC 内容安全闭环', '活动标题、说明、昵称和图片目前未见统一安全检查入口；建议在云函数写入前集中接入 msgSecCheck / mediaCheckAsync，并保留审核结果与失败策略。'],
-    ['P1', '把合规检查变成发布门禁', '将备案状态、服务类目、隐私保护指引与实际接口调用的核对加入提审清单；规则以公众平台当前提示为准。'],
-    ['P1', '明确多环境映射', '当前 runtime.ts 固定一个 CloudBase EnvID；在准备正式环境前建立开发/测试/生产映射与防误连校验。'],
-    ['P2', '持续清理文档漂移', '产品已移除内嵌 Route Embed，但部分说明仍沿用旧表述；本次先修 README 与需求文档，后续由契约测试保护关键能力描述。'],
+    [
+      'P0',
+      '补齐 UGC 内容安全闭环',
+      '活动标题、说明、昵称和图片目前未见统一安全检查入口；建议在云函数写入前集中接入 msgSecCheck / mediaCheckAsync，并保留审核结果与失败策略。',
+    ],
+    [
+      'P1',
+      '把合规检查变成发布门禁',
+      '将备案状态、服务类目、隐私保护指引与实际接口调用的核对加入提审清单；规则以公众平台当前提示为准。',
+    ],
+    [
+      'P1',
+      '明确多环境映射',
+      '当前 runtime.ts 固定一个 CloudBase EnvID；在准备正式环境前建立开发/测试/生产映射与防误连校验。',
+    ],
+    [
+      'P2',
+      '持续清理文档漂移',
+      '产品已移除内嵌 Route Embed，但部分说明仍沿用旧表述；本次先修 README 与需求文档，后续由契约测试保护关键能力描述。',
+    ],
   ];
   const routeHistory = [];
   let currentRoute = 'activities';
@@ -89,7 +176,9 @@
   function prepareCinemaMotion(pageRoot) {
     cinemaRevealObserver?.disconnect();
     cinemaRevealObserver = undefined;
-    if (!pageRoot) return;
+    if (!pageRoot) {
+      return;
+    }
 
     const heading = pageRoot.querySelector('.pageheading h1');
     if (heading) {
@@ -97,13 +186,17 @@
       let buffer = [];
       [...heading.childNodes].forEach((node) => {
         if (node.nodeName === 'BR') {
-          if (buffer.length) lines.push(buffer);
+          if (buffer.length) {
+            lines.push(buffer);
+          }
           buffer = [];
         } else {
           buffer.push(node.cloneNode(true));
         }
       });
-      if (buffer.length) lines.push(buffer);
+      if (buffer.length) {
+        lines.push(buffer);
+      }
       if (lines.length > 1) {
         const titleDelayTokens = [
           'var(--motion-delay-title)',
@@ -134,7 +227,10 @@
       'var(--motion-delay-story-third)',
       'var(--motion-delay-story-fourth)',
     ];
-    const storyTitles = [...pageRoot.querySelectorAll('.story-title, .story .caption h2')].slice(0, 4);
+    const storyTitles = [...pageRoot.querySelectorAll('.story-title, .story .caption h2')].slice(
+      0,
+      4,
+    );
     storyTitles.forEach((title, index) => {
       title.classList.add('cinema-story-title');
       title.style.setProperty('--cinema-story-delay', storyDelayTokens[index]);
@@ -145,7 +241,11 @@
         ':scope > .card, :scope > .section, .content > .section, .content > .paper, .review-item, .trip-ticket, .club-center-events, .planned-privacy-card, .planned-noti-card, .planned-poster-stage',
       ),
     ].slice(0, 4);
-    if (!revealTargets.length || reduceCinemaMotion?.matches || !('IntersectionObserver' in window)) {
+    if (
+      !revealTargets.length ||
+      reduceCinemaMotion?.matches ||
+      !('IntersectionObserver' in window)
+    ) {
       revealTargets.forEach((target) => target.classList.add('cinema-reveal', 'is-visible'));
       return;
     }
@@ -163,7 +263,9 @@
     cinemaRevealObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
+          if (!entry.isIntersecting) {
+            return;
+          }
           entry.target.classList.add('is-visible');
           cinemaRevealObserver?.unobserve(entry.target);
         });
@@ -175,7 +277,9 @@
 
   function syncCinemaScrollEdges() {
     const phone = container.closest('.phone-inner');
-    if (!phone?.classList.contains('is-cinema-route')) return;
+    if (!phone?.classList.contains('is-cinema-route')) {
+      return;
+    }
     const maxScroll = Math.max(0, container.scrollHeight - container.clientHeight);
     phone.classList.toggle('cinema-can-scroll', maxScroll > 8);
     phone.classList.toggle('cinema-is-scrolled', container.scrollTop > 8);
@@ -185,9 +289,15 @@
   container.addEventListener('scroll', syncCinemaScrollEdges, { passive: true });
 
   const queryParams = new URLSearchParams(window.location.search);
-  if (queryParams.has('capture')) document.body.classList.add('capture');
-  if (queryParams.get('capture') === 'viewport') document.body.classList.add('capture-viewport');
-  if (queryParams.get('viewport') === '340') document.body.classList.add('is-narrow');
+  if (queryParams.has('capture')) {
+    document.body.classList.add('capture');
+  }
+  if (queryParams.get('capture') === 'viewport') {
+    document.body.classList.add('capture-viewport');
+  }
+  if (queryParams.get('viewport') === '340') {
+    document.body.classList.add('is-narrow');
+  }
 
   /* ---------- 对比度（WCAG 2.1 相对亮度），直接读取 CSS 变量计算 ---------- */
   const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -223,7 +333,13 @@
     ['警告色 / 白底', '--color-status-warning', '--color-surface', 4.5, '提醒文字'],
     ['警告色 / 页面底', '--color-status-warning', '--color-bg', 4.5, '提醒文字放在页面底时'],
     ['警告色 / 灰底', '--color-status-warning', '--color-raised', 4.5, '提醒文字放在灰底时'],
-    ['提醒小标签', '--color-status-warning', '--color-status-warning-soft', 4.5, '“⚠ 即将截止 / 名额紧张 / 可能过期”'],
+    [
+      '提醒小标签',
+      '--color-status-warning',
+      '--color-status-warning-soft',
+      4.5,
+      '“⚠ 即将截止 / 名额紧张 / 可能过期”',
+    ],
     ['品牌红线条', '--color-brand', '--color-surface', 3, '待审核描边、信息条短线（非文字）'],
     ['控件描边', '--color-border-strong', '--color-surface', 3, '卡片 / 输入框 / 按钮 2px 描边'],
   ];
@@ -914,19 +1030,19 @@
     });
     nav.innerHTML = groups
       .map(
-        (group) => `<section><h3>${group}</h3>${data.pages
-          .filter((page) => page.group === group)
-          .filter((page) => page.id !== 'capability-card')
-          .sort((left, right) => cinemaOrder(left) - cinemaOrder(right))
-          .map(
-            (page) =>
-              `<button data-route="${page.id}"><span>${String(cinemaOrder(page)).padStart(2, '0')}</span><b>${page.title}</b></button>`,
-          )
-          .join('')}</section>`,
+        (group) =>
+          `<section><h3>${group}</h3>${data.pages
+            .filter((page) => page.group === group)
+            .filter((page) => page.id !== 'capability-card')
+            .sort((left, right) => cinemaOrder(left) - cinemaOrder(right))
+            .map(
+              (page) =>
+                `<button data-route="${page.id}"><span>${String(cinemaOrder(page)).padStart(2, '0')}</span><b>${page.title}</b></button>`,
+            )
+            .join('')}</section>`,
       )
       .join('');
   }
-
 
   function updateChrome(page) {
     const baseState = currentState.split('--')[0];
@@ -975,7 +1091,9 @@
   // 03 骑手旅程动态图：点击 tab 切换右侧 pane，并高亮 SVG 中对应节点
   function bindJourneyInteractive() {
     const canvas = document.querySelector('[data-journey-canvas]');
-    if (!canvas) return;
+    if (!canvas) {
+      return;
+    }
     const tabs = canvas.querySelectorAll('.journey-step');
     const panes = canvas.querySelectorAll('.journey-detail-pane');
     const nodes = canvas.querySelectorAll('.journey-flow-node');
@@ -1037,12 +1155,16 @@
     demo.hidden = false;
     overview.hidden = true;
     const page = pageById.get(canonicalRoute) || pageById.get('activities');
-    if (!options.replace && currentRoute !== page.id) routeHistory.push(currentRoute);
+    if (!options.replace && currentRoute !== page.id) {
+      routeHistory.push(currentRoute);
+    }
     currentRoute = page.id;
     const stateIds = page.states.map(([id]) => id);
     currentState = normalizePrototypeState(stateIds, options.state);
     window.prototypeState = currentState;
-    if (page.id === 'activity-detail') window.prototypeActivityId = options.activityId || '';
+    if (page.id === 'activity-detail') {
+      window.prototypeActivityId = options.activityId || '';
+    }
     container.dataset.route = page.id;
     const cinemaMeta = cinemaRouteMeta[page.id];
     container.closest('.phone-inner')?.classList.toggle('is-cinema-route', Boolean(cinemaMeta));
@@ -1062,14 +1184,17 @@
     updateChrome(page);
     modal.hidden = true;
     const hash = currentState === page.states[0][0] ? `#${page.id}` : `#${page.id}/${currentState}`;
-    if (window.location.hash !== hash) window.history.replaceState(null, '', hash);
+    if (window.location.hash !== hash) {
+      window.history.replaceState(null, '', hash);
+    }
   }
 
   function parseHash() {
     const payload = window.location.hash.slice(1);
-    const route = [...pageById.keys()]
-      .sort((a, b) => b.length - a.length)
-      .find((id) => payload === id || payload.startsWith(`${id}/`)) || payload.split('/')[0];
+    const route =
+      [...pageById.keys()]
+        .sort((a, b) => b.length - a.length)
+        .find((id) => payload === id || payload.startsWith(`${id}/`)) || payload.split('/')[0];
     const state = route && payload.startsWith(`${route}/`) ? payload.slice(route.length + 1) : '';
     const query = new URLSearchParams(window.location.search).get('state');
     return { route, state: state || query || '' };
@@ -1095,34 +1220,48 @@
   }
 
   function showCancelledTripDetail() {
-    modal.innerHTML = `<div class="modal-sheet"><button class="modal-close" data-action="close-modal" aria-label="关闭">×</button><span class="tag tag-muted">已取消</span><h3 class="card-title" style="margin-top:12px">奉贤海湾拉练</h3><div class="row-list"><div class="row"><span>集合时间</span><strong>10月11日 周日 07:00</strong></div><div class="row"><span>集合地点</span><strong>奉贤海湾旅游区集合点</strong></div></div><p class="neutral-note">此行程已取消，不再提供出发凭证。</p></div>`;
+    modal.innerHTML =
+      '<div class="modal-sheet"><button class="modal-close" data-action="close-modal" aria-label="关闭">×</button><span class="tag tag-muted">已取消</span><h3 class="card-title" style="margin-top:12px">奉贤海湾拉练</h3><div class="row-list"><div class="row"><span>集合时间</span><strong>10月11日 周日 07:00</strong></div><div class="row"><span>集合地点</span><strong>奉贤海湾旅游区集合点</strong></div></div><p class="neutral-note">此行程已取消，不再提供出发凭证。</p></div>';
     modal.hidden = false;
   }
 
   function showCopyActivity() {
     modal.innerHTML = `<div class="modal-sheet"><button class="modal-close" data-action="close-modal" aria-label="关闭">×</button><h3 class="card-title">从此活动创建</h3><p class="card-hint">默认带入原活动时间，确认后生成草稿</p>
-      ${[['报名截止', '2026-10-24', '20:00'], ['开始', '2026-10-25', '06:20'], ['结束', '2026-10-25', '15:00']].map(([label, d, t]) => `<div class="field"><div class="field-label">${label}</div><div class="field-2col"><div class="input"><span>${d}</span><span class="unit">›</span></div><div class="input"><span>${t}</span><span class="unit">›</span></div></div></div>`).join('')}
+      ${[
+        ['报名截止', '2026-10-24', '20:00'],
+        ['开始', '2026-10-25', '06:20'],
+        ['结束', '2026-10-25', '15:00'],
+      ]
+        .map(
+          ([label, d, t]) =>
+            `<div class="field"><div class="field-label">${label}</div><div class="field-2col"><div class="input"><span>${d}</span><span class="unit">›</span></div><div class="input"><span>${t}</span><span class="unit">›</span></div></div></div>`,
+        )
+        .join('')}
       <div class="btn-row" style="grid-template-columns:0.82fr 1.18fr"><button class="btn-secondary" data-action="close-modal">取消</button><button class="btn" data-action="toast" data-message="草稿已创建">创建草稿</button></div></div>`;
     modal.hidden = false;
   }
 
   function showSafeCacheConfirmation() {
-    modal.innerHTML = `<div class="modal-sheet settings-cache-modal"><button class="modal-close" data-action="close-modal" aria-label="关闭">×</button><span class="tag tag-neutral">安全清理</span><h3 class="card-title">清理缓存</h3><p class="card-hint">只会清理可重新下载的活动、资料和图片缓存，不会退出登录，也不会删除报名、行程或个人资料。</p><div class="btn-row"><button class="btn-secondary" data-action="close-modal">取消</button><button class="btn" data-action="settings-confirm-clear-cache">确认清理</button></div></div>`;
+    modal.innerHTML =
+      '<div class="modal-sheet settings-cache-modal"><button class="modal-close" data-action="close-modal" aria-label="关闭">×</button><span class="tag tag-neutral">安全清理</span><h3 class="card-title">清理缓存</h3><p class="card-hint">只会清理可重新下载的活动、资料和图片缓存，不会退出登录，也不会删除报名、行程或个人资料。</p><div class="btn-row"><button class="btn-secondary" data-action="close-modal">取消</button><button class="btn" data-action="settings-confirm-clear-cache">确认清理</button></div></div>';
     modal.hidden = false;
   }
 
   function showCancelRegistrationConfirmation() {
-    modal.innerHTML = `<div class="modal-sheet"><button class="modal-close" data-action="close-modal" aria-label="关闭">×</button><span class="tag tag-warning">取消报名</span><h3 class="card-title">确认取消本次报名？</h3><p class="card-hint">取消后当前凭证立即失效并释放名额；之后仍可沿用资料重新报名。</p><div class="btn-row"><button class="btn-secondary" data-action="close-modal">暂不取消</button><button class="btn" data-action="confirm-cancel-registration">确认取消</button></div></div>`;
+    modal.innerHTML =
+      '<div class="modal-sheet"><button class="modal-close" data-action="close-modal" aria-label="关闭">×</button><span class="tag tag-warning">取消报名</span><h3 class="card-title">确认取消本次报名？</h3><p class="card-hint">取消后当前凭证立即失效并释放名额；之后仍可沿用资料重新报名。</p><div class="btn-row"><button class="btn-secondary" data-action="close-modal">暂不取消</button><button class="btn" data-action="confirm-cancel-registration">确认取消</button></div></div>';
     modal.hidden = false;
   }
 
   function showCheckinConfirmation() {
-    modal.innerHTML = `<div class="modal-sheet"><button class="modal-close" data-action="close-modal" aria-label="关闭">×</button><span class="tag tag-neutral">现场签到</span><h3 class="card-title">确认骑友已到场？</h3><p class="card-hint">请核对本人和活动后完成签到；签到完成后报名记录会更新为已签到。</p><div class="btn-row"><button class="btn-secondary" data-action="close-modal">暂不签到</button><button class="btn" data-action="confirm-checkin">确认签到</button></div></div>`;
+    modal.innerHTML =
+      '<div class="modal-sheet"><button class="modal-close" data-action="close-modal" aria-label="关闭">×</button><span class="tag tag-neutral">现场签到</span><h3 class="card-title">确认骑友已到场？</h3><p class="card-hint">请核对本人和活动后完成签到；签到完成后报名记录会更新为已签到。</p><div class="btn-row"><button class="btn-secondary" data-action="close-modal">暂不签到</button><button class="btn" data-action="confirm-checkin">确认签到</button></div></div>';
     modal.hidden = false;
   }
 
   function showNotificationChoice() {
-    modal.innerHTML = `<div class="modal-sheet"><button class="modal-close" data-action="close-modal" aria-label="关闭">×</button><span class="tag tag-neutral">按次订阅</span><h3 class="card-title">接收本次活动通知？</h3><p class="card-hint">每次请求都以微信授权选择为准；接受本次订阅不代表永久开启，拒绝也不影响报名和查看行程。</p><div class="btn-row"><button class="btn-secondary" data-action="notification-decline">本次不订阅</button><button class="btn" data-action="notification-accept">接受本次订阅</button></div></div>`;
+    modal.innerHTML =
+      '<div class="modal-sheet"><button class="modal-close" data-action="close-modal" aria-label="关闭">×</button><span class="tag tag-neutral">按次订阅</span><h3 class="card-title">接收本次活动通知？</h3><p class="card-hint">每次请求都以微信授权选择为准；接受本次订阅不代表永久开启，拒绝也不影响报名和查看行程。</p><div class="btn-row"><button class="btn-secondary" data-action="notification-decline">本次不订阅</button><button class="btn" data-action="notification-accept">接受本次订阅</button></div></div>';
     modal.hidden = false;
   }
 
@@ -1154,7 +1293,9 @@
 
   document.addEventListener('click', (event) => {
     const target = event.target.closest('[data-action], [data-route], [data-journey]');
-    if (!target || target.disabled) return;
+    if (!target || target.disabled) {
+      return;
+    }
     if (target.dataset.journey) {
       runJourney(target.dataset.journey);
       return;
@@ -1168,22 +1309,50 @@
         replace: sameRoute,
       });
     }
-    if (action === 'back') goBack();
-    if (action === 'open-overview') showOverview();
+    if (action === 'back') {
+      goBack();
+    }
+    if (action === 'open-overview') {
+      showOverview();
+    }
     if (action === 'toast') {
       modal.hidden = true;
       showToast(target.dataset.message || '操作已完成');
     }
-    if (action === 'close-modal') modal.hidden = true;
-    if (action === 'rider') showRider(target.dataset.rider);
-    if (action === 'cancelled-trip-detail') showCancelledTripDetail();
+    if (action === 'close-modal') {
+      modal.hidden = true;
+    }
+    if (action === 'rider') {
+      showRider(target.dataset.rider);
+    }
+    if (action === 'cancelled-trip-detail') {
+      showCancelledTripDetail();
+    }
     if (action === 'delete-trip') {
       window.prototypeCancelledTripDeleted = true;
       showPage(currentRoute, { state: currentState, replace: true });
       showToast('已删除行程记录');
     }
-    if (action === 'copy-activity') showCopyActivity();
-    if (action === 'settings-notifications') showNotificationChoice();
+    if (action === 'copy-activity') {
+      showCopyActivity();
+    }
+    if (action === 'settings-appearance') {
+      const { mode } = target.dataset;
+      if (mode !== 'light' && mode !== 'dark') {
+        return;
+      }
+      try {
+        localStorage.setItem('cili-appearance', mode);
+        document.documentElement.dataset.appearance = mode;
+        window.prototypeAppearance = mode;
+        showPage(currentRoute, { state: currentState, replace: true });
+      } catch {
+        showToast('主题未能保存，请稍后重试。', 'warning');
+      }
+    }
+    if (action === 'settings-notifications') {
+      showNotificationChoice();
+    }
     if (action === 'notification-accept') {
       modal.hidden = true;
       showToast('已完成本次订阅选择 · 不代表永久开启');
@@ -1192,21 +1361,33 @@
       modal.hidden = true;
       showToast('本次未订阅，仍可在行程中查看报名状态', 'warning');
     }
-    if (action === 'settings-privacy') showToast('已打开微信隐私管理');
-    if (action === 'settings-clear-cache') showSafeCacheConfirmation();
+    if (action === 'settings-privacy') {
+      showToast('已打开微信隐私管理');
+    }
+    if (action === 'settings-clear-cache') {
+      showSafeCacheConfirmation();
+    }
     if (action === 'settings-confirm-clear-cache') {
       modal.hidden = true;
       showToast('缓存已清理');
     }
-    if (action === 'preview-profile-background') showProfileMedia('background');
-    if (action === 'preview-profile-avatar') showProfileMedia('avatar');
-    if (action === 'request-cancel-registration') showCancelRegistrationConfirmation();
+    if (action === 'preview-profile-background') {
+      showProfileMedia('background');
+    }
+    if (action === 'preview-profile-avatar') {
+      showProfileMedia('avatar');
+    }
+    if (action === 'request-cancel-registration') {
+      showCancelRegistrationConfirmation();
+    }
     if (action === 'confirm-cancel-registration') {
       modal.hidden = true;
       showPage('registrations', { state: 'cancelled' });
       showToast('报名已取消，可随时重新报名');
     }
-    if (action === 'request-checkin') showCheckinConfirmation();
+    if (action === 'request-checkin') {
+      showCheckinConfirmation();
+    }
     if (action === 'confirm-checkin') {
       modal.hidden = true;
       showPage('admin-review-detail', { state: 'checked-in', replace: true });
@@ -1219,9 +1400,13 @@
       showPage('activity-detail', { state: 'copied', replace: true });
       showToast('路线链接已复制');
     }
-    if (action === 'navigate-route-start') showToast('已打开起点导航');
+    if (action === 'navigate-route-start') {
+      showToast('已打开起点导航');
+    }
     if (action === 'choice') {
-      target.parentElement.querySelectorAll('button').forEach((button) => button.classList.remove('is-active'));
+      target.parentElement
+        .querySelectorAll('button')
+        .forEach((button) => button.classList.remove('is-active'));
       target.classList.add('is-active');
     }
     if (action === 'submit-registration') {
@@ -1328,7 +1513,9 @@
   });
 
   window.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') modal.hidden = true;
+    if (event.key === 'Escape') {
+      modal.hidden = true;
+    }
     if (!demo.hidden && ['ArrowUp', 'ArrowDown'].includes(event.key)) {
       event.preventDefault();
       const page = pageById.get(currentRoute);
@@ -1339,7 +1526,9 @@
       showPage(currentRoute, { state: next, replace: true });
       return;
     }
-    if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+    if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) {
+      return;
+    }
     const index = data.pages.findIndex((page) => page.id === currentRoute);
     const delta = event.key === 'ArrowRight' ? 1 : -1;
     const next = (index + delta + data.pages.length) % data.pages.length;
@@ -1348,12 +1537,21 @@
 
   window.addEventListener('hashchange', () => {
     const { route, state } = parseHash();
-    if (overviewSections.has(route)) showOverview(route);
-    else if (pageById.has(route)) showPage(route, { state, replace: route === currentRoute });
+    if (overviewSections.has(route)) {
+      showOverview(route);
+    } else if (pageById.has(route)) {
+      showPage(route, { state, replace: route === currentRoute });
+    }
   });
 
   renderNavigation();
   const initial = parseHash();
-  if (overviewSections.has(initial.route)) showOverview(initial.route);
-  else showPage(pageById.has(initial.route) ? initial.route : 'activities', { state: initial.state, replace: true });
+  if (overviewSections.has(initial.route)) {
+    showOverview(initial.route);
+  } else {
+    showPage(pageById.has(initial.route) ? initial.route : 'activities', {
+      state: initial.state,
+      replace: true,
+    });
+  }
 })();

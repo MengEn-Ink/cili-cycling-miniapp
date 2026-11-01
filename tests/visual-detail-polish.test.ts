@@ -60,7 +60,9 @@ describe('视觉细节收口', () => {
 
   it('短状态与关键身份值保持单行，长文本不再按字符生硬断开', () => {
     const pill = read('miniprogram/components/status-pill/index.wxss');
-    const credential = read('miniprogram/pages/credential/index.wxss');
+    const credential =
+      read('miniprogram/pages/credential/index.wxss') +
+      read('miniprogram/styles/aihero-layout.wxss');
     const reviewDetail = read('miniprogram/pages/admin/review-detail/index.wxss');
 
     expect(pill).toMatch(/\.pill\s*\{[^}]*text-overflow:\s*ellipsis;[^}]*white-space:\s*nowrap/s);

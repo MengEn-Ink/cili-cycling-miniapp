@@ -4,7 +4,9 @@ import { appStore } from '../../../store/app-store';
 
 type ClubAdminMode = 'loading' | 'error' | 'bootstrap' | 'default';
 
-Page({
+import { themedPage } from '../../../services/theme-service';
+
+themedPage({
   data: {
     mode: 'loading' as ClubAdminMode,
     club: null as SoleClubProfile | null,
