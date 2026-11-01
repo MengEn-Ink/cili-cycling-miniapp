@@ -61,7 +61,9 @@ function displayActivity(item: Activity) {
   };
 }
 
-Page({
+import { themedPage } from '../../services/theme-service';
+
+themedPage({
   navigation: createNavigationSingleFlight((options) => wx.navigateTo(options)),
   viewStates: {
     future: createTimelineViewState(),

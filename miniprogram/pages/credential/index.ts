@@ -48,7 +48,9 @@ function confirmCancellation(): Promise<boolean> {
   });
 }
 
-Page({
+import { themedPage } from '../../services/theme-service';
+
+themedPage({
   data: {
     item: null as any,
     activity: null as any,

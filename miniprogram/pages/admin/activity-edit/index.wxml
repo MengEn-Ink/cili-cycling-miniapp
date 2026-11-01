@@ -13,7 +13,8 @@
     group QR chooseGroupQrCode/pendingGroupQrCode/removeGroupQrCode、
     固定底部双按钮保存草稿/发布 + 发布禁用提示。
 -->
-<view class="page-shell activity-editor activity-form-page cinema-page cinema-page--dark" data-v1-layout="admin-form">
+<page-meta page-style="{{appearanceStyle}}" background-text-style="{{appearanceMode === 'light' ? 'dark' : 'light'}}" />
+<view class="page-shell aihero-page activity-editor activity-form-page cinema-page cinema-page--dark" data-v1-layout="admin-form">
   <view wx:if="{{loading}}" class="empty"><view class="empty-copy">正在加载活动…</view></view>
 
   <view wx:elif="{{!allowed}}" class="empty" role="alert">
@@ -40,6 +41,7 @@
       <form data-submit="save">
         <view class="section form-card card">
           <view class="chapterhead">
+            <text class="chapterhead-index">01</text>
             <view class="chapterhead-title">影像与标题</view>
             <view class="chapterhead-aside">活动封面 {{images.length + pendingImages.length}} / 3</view>
           </view>
@@ -83,6 +85,7 @@
 
         <view class="section form-card card">
           <view class="chapterhead">
+            <text class="chapterhead-index">02</text>
             <view class="chapterhead-title">何时，在哪里</view>
             <view class="chapterhead-aside">集合安排</view>
           </view>
@@ -115,6 +118,7 @@
 
         <view class="section form-card card">
           <view class="chapterhead">
+            <text class="chapterhead-index">03</text>
             <view class="chapterhead-title">报名方式</view>
             <view class="chapterhead-aside">报名模式</view>
           </view>
@@ -142,6 +146,7 @@
 
         <view class="section form-card card">
           <view class="chapterhead">
+            <text class="chapterhead-index">04</text>
             <view class="chapterhead-title">路线与说明</view>
             <view class="chapterhead-aside">Strava + GPX 兜底</view>
           </view>
@@ -245,6 +250,7 @@
 
         <view class="section form-card card">
           <view class="chapterhead">
+            <text class="chapterhead-index">05</text>
             <view class="chapterhead-title">活动群</view>
             <view class="chapterhead-aside">选填 · 最多 1 张</view>
           </view>

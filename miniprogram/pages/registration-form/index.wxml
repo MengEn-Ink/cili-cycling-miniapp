@@ -3,11 +3,13 @@
   - 骨架：pageheading(宋体标题) → content.tight(timeline + form + section × 4 + check + notice + 提交) → fixed actionbar
   - 真实业务保留：profile 已读 + 完善入口、集合方式 radio choice（多模式）或默认行、能力自评 radio、备注、紧急联系人、订阅通知、错误汇总、teamId、submitBlockedHint
 -->
-<view class="page form-page cinema-page cinema-page--dark" data-v1-layout="form">
+<page-meta page-style="{{appearanceStyle}}" background-text-style="{{appearanceMode === 'light' ? 'dark' : 'light'}}" />
+<view class="page aihero-page form-page cinema-page cinema-page--dark" data-v1-layout="form">
   <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{submitFeedback}}</view>
   <state-view loading="{{loading}}" error="{{!profile && errors.length ? errors[0] : ''}}" loading-title="正在检查活动、资料与报名条件" loading-copy="正在核对活动名额与个人资料">
     <block wx:if="{{profile}}">
       <view class="pageheading">
+        <view class="eyebrow">此里 · 报名</view>
         <view class="pageheading-title editorial">
           <text class="pageheading-line">下一站，</text>
           <text class="pageheading-line">山顶。</text>
@@ -26,7 +28,7 @@
         <form data-submit="credential">
           <!-- 确认你的资料 -->
           <view class="section section-identity">
-            <view class="chapterhead"><view class="chapterhead-title">确认你的资料</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
+            <view class="chapterhead"><text class="chapterhead-index">01</text><view class="chapterhead-title">确认你的资料</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
             <view class="paper">
               <view class="detailrows">
                 <view class="detailrow"><text class="detailrow-term">本人实名</text><text class="detailrow-desc">{{profile.realName || '未填写'}}</text></view>
@@ -54,7 +56,7 @@
 
           <!-- 怎么去集合点 -->
           <view class="section section-gathering">
-            <view class="chapterhead"><view class="chapterhead-title">怎么去集合点</view><view class="chapterhead-aside" wx:if="{{showGatheringChoice}}">名额分开计</view></view>
+            <view class="chapterhead"><text class="chapterhead-index">02</text><view class="chapterhead-title">怎么去集合点</view><view class="chapterhead-aside" wx:if="{{showGatheringChoice}}">名额分开计</view></view>
             <block wx:if="{{showGatheringChoice}}">
               <view class="paper">
                 <radio-group class="choice-group" data-key="gatheringMode" bindchange="set" role="radiogroup" aria-label="选择集合方式">
@@ -79,7 +81,7 @@
 
           <!-- 你的骑行经验 -->
           <view class="section section-experience">
-            <view class="chapterhead"><view class="chapterhead-title">你的骑行经验</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
+            <view class="chapterhead"><text class="chapterhead-index">03</text><view class="chapterhead-title">你的骑行经验</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
             <view class="paper">
               <view class="field">
                 <view class="field-label">骑行经验<text class="field-flag">必选</text></view>
@@ -102,7 +104,7 @@
 
           <!-- 还有什么想说 -->
           <view class="section section-remark">
-            <view class="chapterhead"><view class="chapterhead-title">还有什么想说</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
+            <view class="chapterhead"><text class="chapterhead-index">04</text><view class="chapterhead-title">还有什么想说</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
             <view class="paper">
               <view class="field">
                 <view class="field-label">报名备注<text class="field-flag">选填</text></view>
@@ -112,9 +114,12 @@
             </view>
           </view>
 
-          <label class="check" for="agreement">
-            <checkbox id="agreement" checked disabled="{{submitting}}"/>我已阅读行前约定，确认以上资料准确。
-          </label>
+          <view class="section section-subscription">
+            <view class="chapterhead"><text class="chapterhead-index">05</text><view class="chapterhead-title">审核结果提醒</view><text class="chapterhead-aside">{{notificationTemplateIds.length ? '提交时询问' : '暂不可用'}}</text></view>
+            <view class="notice" role="status">{{notificationTemplateIds.length ? '点击提交报名时，微信会询问本次审核结果通知订阅。' : '当前暂未取得通知模板，仍可提交报名；请在「我的行程」查看进度。'}}</view>
+            <view class="subscription-note">订阅由微信原生弹窗决定；拒绝订阅或提醒失败不影响报名。没有长期订阅开关。</view>
+          </view>
+          <view class="subscription-note" role="note">提交前请确认资料准确，并阅读活动页的行前约定。</view>
 
           <view class="small muted" data-registration-mode-note>实名与电话仅用于审核和现场联络，公开名单只展示昵称；审核通过后可在「行程」查看凭证。</view>
 

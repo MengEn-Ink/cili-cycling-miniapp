@@ -1,5 +1,6 @@
 <!-- 骑行影像志 · 编辑个人资料（1:1 对齐 docs/designs/2026-10-22-cycling-image-journal/pages/profile-edit.html） -->
-<view class="page profile-edit-page cinema-page cinema-page--dark" data-v1-layout="form">
+<page-meta page-style="{{appearanceStyle}}" background-text-style="{{appearanceMode === 'light' ? 'dark' : 'light'}}" />
+<view class="page aihero-page profile-edit-page cinema-page cinema-page--dark" data-v1-layout="form">
   <view wx:if="{{avatarBusy || photoBusy}}" class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{mediaProgress || (avatarBusy ? '正在更新头像…' : '正在处理背景图…')}}</view>
   <state-view loading="{{loading}}" error="{{!p ? error : ''}}" loading-title="正在读取个人资料" loading-copy="正在加载已保存的个人资料">
   <block wx:if="{{p}}">
@@ -31,6 +32,7 @@
       <!-- Section：头像与背景 -->
       <view class="section section-media">
         <view class="chapterhead">
+          <text class="chapterhead-index">01</text>
           <view class="chapterhead-title">头像与背景</view>
           <view class="chapterhead-rule" aria-hidden="true"></view>
         </view>
@@ -71,6 +73,7 @@
       <view class="profile-details" data-profile-details wx:if="{{canEditDetails}}">
         <view class="section section-basic">
           <view class="chapterhead">
+            <text class="chapterhead-index">02</text>
             <view class="chapterhead-title">基础资料</view>
             <view class="chapterhead-rule" aria-hidden="true"></view>
           </view>
@@ -100,6 +103,7 @@
 
         <view class="section section-emergency">
           <view class="chapterhead">
+            <text class="chapterhead-index">03</text>
             <view class="chapterhead-title">紧急联系人</view>
             <view class="chapterhead-rule" aria-hidden="true"></view>
           </view>

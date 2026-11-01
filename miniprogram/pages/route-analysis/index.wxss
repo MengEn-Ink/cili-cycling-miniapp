@@ -117,9 +117,9 @@
 }
 .strategy-tags text {
   padding: 6rpx 16rpx;
-  border: 2rpx solid var(--color-on-action);
+  border: 2rpx solid var(--color-border-strong);
   border-radius: var(--radius-full);
-  color: var(--color-on-action);
+  color: var(--color-text);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-label);
   letter-spacing: 1rpx;
@@ -774,3 +774,5 @@
 .route-analysis-page .actionbar .btn {
   border-radius: 10rpx;
 }
+
+@import '../../styles/aihero-layout.wxss';

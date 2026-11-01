@@ -3,12 +3,14 @@
   - 骨架：pageheading(宋体标题) → content.tight(section × 骑行票据 ticket + 空状态/刷新/骨架) → tabbar
   - 真实业务保留：状态计数 statsCounts、骨架、刷新错误、cancelled 左滑删除、open/confirmDelete、state-view loading/error/empty/retry、deletingId
 -->
-<view class="page registrations-page cinema-page cinema-page--dark" data-v1-layout="content" style="padding-top: {{navigationTopPx}}px">
+<page-meta page-style="{{appearanceStyle}}" background-text-style="{{appearanceMode === 'light' ? 'dark' : 'light'}}" />
+<view class="page registrations-page aihero-page cinema-page cinema-page--dark" data-v1-layout="content" style="padding-top: {{navigationTopPx}}px">
   <view class="custom-nav-title" style="top: {{navigationTopPx - 44}}px">我的行程</view>
   <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{refreshing ? '正在刷新行程' : ''}}</view>
   <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{refreshError}}</view>
 
   <view class="pageheading">
+    <view class="eyebrow">{{loading && !items.length ? '同步中' : '共 ' + items.length + ' 场'}}</view>
     <view class="pageheading-title editorial">
       <text class="pageheading-line">每次出发，</text>
       <text class="pageheading-line">都有一张记忆。</text>
@@ -49,6 +51,7 @@
               <text>{{deletingId === item.id ? '删除中' : '删除记录'}}</text>
             </view>
             <view class="ticket status-{{item.status}}" style="transform: translateX({{item.swipeX}}px)" data-id="{{item.id}}" bindtap="open" bindtouchstart="onRowTouchStart" bindtouchmove="onRowTouchMove" bindtouchend="onRowTouchEnd" bindtouchcancel="onRowTouchCancel" hover-class="ticket--pressed" role="button" aria-label="{{item.activity.title}}，票据状态{{item.displayStatusText}}，{{item.destinationLabel}}">
+              <view class="ticket-main">
               <view class="photo ticketphoto">
                 <generated-activity-cover item="{{item.activity}}" variant="card" />
                 <view class="shade" aria-hidden="true"></view>
@@ -82,6 +85,7 @@
                   <text>{{item.statusGuidance}}</text>
                 </view>
               </view>
+              </view><!-- ticket-main -->
               <view class="ticketfooter">
                 <text class="muted" wx:if="{{item.status !== 'cancelled'}}">{{item.statusGuidance}}</text>
                 <text class="muted" wx:else>可左滑或点击删除记录</text>

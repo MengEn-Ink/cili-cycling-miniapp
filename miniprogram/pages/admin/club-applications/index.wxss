@@ -333,3 +333,5 @@
     line-height: 60rpx;
   }
 }
+
+@import '../../../styles/aihero-layout.wxss';

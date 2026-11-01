@@ -120,6 +120,14 @@ export function createAffectedPlan(changedFiles) {
     ),
   );
   const scriptTests = unique([
+    // 消费者读取 app、共享样式与所有注册页的 WXML/WXSS；主题服务控制令牌应用。
+    ...(files.some((file) =>
+      /^miniprogram\/(?:.*\.(?:wxml|wxss)|config\/appearance\.ts|services\/theme-service\.ts)$/.test(
+        file,
+      ),
+    )
+      ? ['tests/theme-consumer-regression.node-test.mjs']
+      : []),
     ...files.filter(
       (file) =>
         (file.startsWith('scripts/') || file.startsWith('tests/')) && NODE_TEST_PATTERN.test(file),
@@ -180,36 +188,40 @@ export function changedFilesBetween(base, head) {
   return lines(execFileSync('git', ['diff', '--name-only', range], { encoding: 'utf8' }));
 }
 
-function run(command, args = []) {
-  console.log(`\n$ ${command} ${args.join(' ')}`);
-  execFileSync(command, args, { stdio: 'inherit', env: process.env });
-}
-
-function runNpm(script, extra = []) {
-  run('npm', ['run', script, ...(extra.length ? ['--', ...extra] : [])]);
-}
-
-function runNodeTests(files) {
-  if (files.length > 0) run('node', ['--test', ...files]);
-}
-
-function runRelatedVitest(sources, explicitTests) {
-  if (explicitTests.length > 0) run('npx', ['vitest', 'run', ...explicitTests]);
-  if (sources.length === 0) return;
-  const result = spawnSync('npx', ['vitest', 'related', '--run', ...sources], {
-    stdio: 'inherit',
-    env: process.env,
-  });
-  if (result.status === 0) return;
-  if (result.status === 1) {
-    console.warn('未找到稳定的关联测试或关联测试失败，按 fail-safe 回退全部 Vitest。');
-    runNpm('test');
-    return;
+export function runAffectedPlan(plan, commands = { execFileSync, spawnSync }) {
+  function run(command, args = []) {
+    console.log(`\n$ ${command} ${args.join(' ')}`);
+    commands.execFileSync(command, args, { stdio: 'inherit', env: process.env });
   }
-  throw new Error(`Vitest related 异常退出：${result.status ?? 'unknown'}`);
-}
 
-export function runAffectedPlan(plan) {
+  function runNpm(script, extra = []) {
+    run('npm', ['run', script, ...(extra.length ? ['--', ...extra] : [])]);
+  }
+
+  function runNodeTests(files) {
+    // 消费者回归实际启动 Chromium，干净 runner 必须先安装浏览器及系统库。
+    if (files.includes('tests/theme-consumer-regression.node-test.mjs')) {
+      run('npx', ['playwright', 'install', '--with-deps', 'chromium']);
+    }
+    if (files.length > 0) run('node', ['--test', ...files]);
+  }
+
+  function runRelatedVitest(sources, explicitTests) {
+    if (explicitTests.length > 0) run('npx', ['vitest', 'run', ...explicitTests]);
+    if (sources.length === 0) return;
+    const result = commands.spawnSync('npx', ['vitest', 'related', '--run', ...sources], {
+      stdio: 'inherit',
+      env: process.env,
+    });
+    if (result.status === 0) return;
+    if (result.status === 1) {
+      console.warn('未找到稳定的关联测试或关联测试失败，按 fail-safe 回退全部 Vitest。');
+      runNpm('test');
+      return;
+    }
+    throw new Error(`Vitest related 异常退出：${result.status ?? 'unknown'}`);
+  }
+
   console.log(`影响面模式：${plan.mode}（${plan.reason}）`);
   console.log(`变更文件：${plan.files.length}`);
 

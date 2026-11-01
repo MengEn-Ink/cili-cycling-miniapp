@@ -1,4 +1,5 @@
-<view class="page profile-page cinema-page cinema-page--dark" data-v1-layout="content" style="padding-top: {{navigationTopPx}}px">
+<page-meta page-style="{{appearanceStyle}}" background-text-style="{{appearanceMode === 'light' ? 'dark' : 'light'}}" />
+<view class="page profile-page aihero-page cinema-page cinema-page--dark" data-v1-layout="content" style="padding-top: {{navigationTopPx}}px">
 <view class="custom-nav-title" style="top: {{navigationTopPx - 44}}px">我的</view>
 <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{loading ? '正在同步个人资料' : (refreshing ? '正在刷新个人资料' : (!error ? '个人资料已就绪' : ''))}}</view>
 <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{error}}</view>
@@ -55,6 +56,7 @@
 <view class="profile-progress-missing" wx:if="{{profile.missing && profile.missing.length}}">还差：<text wx:for="{{profile.missing}}" wx:key="*this">{{item}}{{index < profile.missing.length - 1 ? '、' : ''}}</text></view>
 <button class="profile-progress-action" bindtap="edit">完善报名资料</button>
 </view>
+<view class="profile-links" role="group" aria-label="个人资料与应用入口">
 <button class="row rowlink rowbutton row-club" wx:if="{{profile}}" bindtap="openClubCenter" aria-label="打开我的俱乐部">
 <view class="lead">
 <view class="rowicon rowicon--club rowicon--avatar" aria-hidden="true">
@@ -88,6 +90,7 @@
 </view>
 <view class="chev" aria-hidden="true"></view>
 </button>
+</view><!-- profile-links -->
 <view class="section section-admin" wx:if="{{isAdmin}}" data-admin-only>
 <view class="chapterhead">
 <view class="chapterhead-title">管理工作台</view>

@@ -441,7 +441,9 @@ function confirmsAvatar(
   );
 }
 
-Page({
+import { themedPage } from '../../services/theme-service';
+
+themedPage({
   unloaded: false,
   avatarMediaGeneration: 0,
   backgroundMediaGeneration: 0,

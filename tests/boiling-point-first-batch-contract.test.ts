@@ -1,11 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { declaration, effectiveBlock, expectSemantic, read } from './theme-contract-helpers';
+import {
+  declaration,
+  effectiveBlock,
+  expectSemantic,
+  read,
+  readStyles,
+} from './theme-contract-helpers';
 
 describe('沸点首批六页尺寸契约', () => {
   it('活动首页使用统一页边距，并以 pageheading + segment 承载时间与紧凑切换', () => {
     const app = read('miniprogram/app.wxss');
     const template = read('miniprogram/pages/activities/index.wxml');
-    const styles = read('miniprogram/pages/activities/index.wxss');
+    const styles = readStyles('miniprogram/pages/activities/index.wxss');
     expect(app).toContain('padding: 32rpx var(--page-gutter);');
     expect(template).toContain('class="pageheading"');
     expect(template).toContain('class="pageheading-title editorial"');
@@ -16,7 +22,7 @@ describe('沸点首批六页尺寸契约', () => {
 
   it('我的行程使用 pageheading + content.tight + ticket 票据结构', () => {
     const template = read('miniprogram/pages/registrations/index.wxml');
-    const styles = read('miniprogram/pages/registrations/index.wxss');
+    const styles = readStyles('miniprogram/pages/registrations/index.wxss');
     expect(template).toContain('class="pageheading"');
     expect(template).toContain('class="content tight"');
     expect(template).toMatch(/class="ticket status-\{\{item\.status\}\}"/);
@@ -103,7 +109,7 @@ describe('沸点首批六页尺寸契约', () => {
   });
 
   it('报名凭证页禁用历史硬编码色并把关键文字收口到沸点 token', () => {
-    const styles = read('miniprogram/pages/credential/index.wxss');
+    const styles = readStyles('miniprogram/pages/credential/index.wxss');
     const forbidden = [
       '#f7f7f5',
       '#c8c8cc',
@@ -126,11 +132,11 @@ describe('沸点首批六页尺寸契约', () => {
     }
     expectSemantic(
       declaration(effectiveBlock(styles, '.credential-page'), 'background'),
-      '--color-cinema-bg',
+      '--color-bg',
     );
-    // 新结构：ticket.voucher 承载凭证主体
+    // AI Hero scoped voucher overrides the retired cinematic surface.
     expectSemantic(
-      declaration(effectiveBlock(styles, '.ticket.voucher'), 'background'),
+      declaration(effectiveBlock(styles, '.credential-page.aihero-page .voucher'), 'background'),
       '--color-surface',
     );
     expectSemantic(declaration(effectiveBlock(styles, '.person-meta'), 'color'), '--color-muted');

@@ -22,8 +22,7 @@
   const snapshotData = tripClubSnapshots || {};
   const SINGLE_CLUB_LABEL = identityData.singleClubLabel || '辛庄桥小火车';
   const ACTIVITY_IDENTITY_NOTE =
-    identityData.snapshotNote ||
-    '活动列表与详情优先使用当前俱乐部资料；资料不可用时回退发布快照。';
+    identityData.snapshotNote || '活动列表与详情优先使用当前俱乐部资料；资料不可用时回退发布快照。';
   const HISTORY_IDENTITY_NOTE =
     identityData.historySnapshotNote ||
     '历史行程与凭证保留发布或成行时的活动归属，不随当前成员关系变化。';
@@ -49,9 +48,13 @@
     ]),
   );
   const normalizeClub = (club) => {
-    if (!club) return null;
+    if (!club) {
+      return null;
+    }
     const name = club.name || club.clubNameSnapshot;
-    if (!name) return null;
+    if (!name) {
+      return null;
+    }
     return {
       id: club.id || club.clubId,
       name,
@@ -84,14 +87,21 @@
   const activityClubSnapshots = identityData.activitySnapshots || {};
   const activityHost = (activity) => {
     const current = normalizeClub(
-      activity && activity.hostClub && activity.hostClub.status !== 'suspended' && activity.hostClub.status !== 'closed'
+      activity &&
+        activity.hostClub &&
+        activity.hostClub.status !== 'suspended' &&
+        activity.hostClub.status !== 'closed'
         ? clubById.get(activity.hostClub.id) || activity.hostClub
         : null,
     );
-    if (current) return { kind: 'club', club: current, historical: false };
+    if (current) {
+      return { kind: 'club', club: current, historical: false };
+    }
     const snapshot = activity && activity.id ? activityClubSnapshots[activity.id] : null;
     const snapshotClub = normalizeClub(snapshot);
-    if (snapshotClub) return { kind: 'club', club: snapshotClub, historical: true };
+    if (snapshotClub) {
+      return { kind: 'club', club: snapshotClub, historical: true };
+    }
     return { kind: 'club', club: canonicalClub, historical: false };
   };
   const getTripSnapshot = ({ activityId, credentialId = '' }) =>
@@ -114,24 +124,6 @@
         snapshot.membershipStatus === 'left',
     );
   };
-  const activeMembershipIds = (membership) => {
-    if (!membership) return [];
-    if (Array.isArray(membership.memberships)) {
-      return membership.memberships
-        .filter((item) => item && item.status === 'active')
-        .map((item) => item.clubId);
-    }
-    return Array.isArray(membership.clubIds) ? membership.clubIds : [];
-  };
-  // 俱乐部头像组：单俱乐部收口后仅展示该唯一俱乐部头像；保留 overflow 容错以兼容历史数据。
-  const clubAvatarStack = (ids) => {
-    const list = ids.map((id) => clubById.get(id)).filter(Boolean);
-    const visible = list.slice(0, 4);
-    const overflow = Math.max(0, list.length - visible.length);
-    return `<span class="club-avatar-stack" role="img" aria-label="已加入 ${list.length} 个俱乐部">${visible
-      .map((club) => clubAvatar(club, 'sm'))
-      .join('')}${overflow ? `<span class="club-avatar club-avatar-sm club-avatar-overflow"><b>+${overflow}</b></span>` : ''}</span>`;
-  };
 
   /* ---------- 公共组件（与设计说明“公共规范”对应） ---------- */
   const brandLogo = (meta) =>
@@ -139,10 +131,9 @@
   // 旧模板调用保留空兼容，正式页面不再渲染与原生导航重复的场记横幅。
   const cinemaSlate = () => '';
   const tag = (type, label) => `<span class="tag tag-${type}">${label}</span>`;
-  const row = (k, v) => `<div class="row"><span class="k">${k}</span><span class="v">${v}</span></div>`;
+  const row = (k, v) =>
+    `<div class="row"><span class="k">${k}</span><span class="v">${v}</span></div>`;
   const rows = (list) => `<div class="rows">${list.map(([k, v]) => row(k, v)).join('')}</div>`;
-  const linkRow = (icon, title, sub, route, right = '') =>
-    `<button class="row is-link" data-route="${route}"><span class="k"><span class="menu-icon ${icon}"><i></i></span><span>${title}<small>${sub}</small></span></span><span class="v">${right}<span class="chev">›</span></span></button>`;
   // 影像志设计的三栏指标条：div > strong(含 .unit) + span，统一承载在暗色信息层中。
   const metric = (value, label, extra = '') => {
     const match = String(value).match(/^(.+?)\s+(km|m|h|人|小时)$/);
@@ -155,23 +146,10 @@
     `<div class="metrics${extra ? ` ${extra}` : ''}">${list.map(([v, l, e]) => metric(v, l, e)).join('')}</div>`;
   const cardHead = (no, title, right = '', hint = '') =>
     `<div class="card-head">${no ? `<span class="card-no">${no}</span>` : ''}<h3 class="card-title">${title}</h3>${right}</div>${hint ? `<p class="card-hint">${hint}</p>` : ''}`;
-  const btn = (label, attrs = '', kind = 'btn') => `<button class="${kind}" ${attrs}>${label}</button>`;
+  const btn = (label, attrs = '', kind = 'btn') =>
+    `<button class="${kind}" ${attrs}>${label}</button>`;
   const go = (route) => `data-route="${route}"`;
   const toast = (message) => `data-action="toast" data-message="${message}"`;
-  const steps = (current) => {
-    const stages = [
-      ['填写报名', '当前'],
-      ['组织审核', '提交后'],
-      ['获取凭证', '通过后'],
-    ];
-    return `<div class="steps" role="list" aria-label="报名流程，共三阶段">${stages
-      .map(([label, state], index) => {
-        const n = index + 1;
-        const cls = n === current ? 'is-current' : n < current ? 'is-done' : '';
-        return `<div class="step ${cls}" role="listitem" ${n === current ? 'aria-current="step"' : ''}><b>${n < current ? '✓' : n}</b><span><strong>${label}</strong><small>${state}</small></span></div>`;
-      })
-      .join('')}</div>`;
-  };
   const fixedBar = (hint, actions, neutral = false) =>
     `<div class="fixed-bar">${hint ? `<p class="bar-hint ${neutral ? 'is-neutral' : ''}">${hint}</p>` : ''}<div class="bar-actions ${actions.length === 1 ? 'single' : ''}">${actions.join('')}</div></div>`;
   const stateView = (mark, title, desc, action = '', error = false) =>
@@ -187,21 +165,30 @@
   const choices = (list, active) =>
     `<div class="seg">${list.map((label) => `<button class="${label === active ? 'is-active' : ''}" data-action="choice">${label}</button>`).join('')}</div>`;
 
-  const routePath = 'M14 118 C 48 112, 58 64, 96 70 S 140 122, 176 96 S 214 28, 252 40 S 296 86, 306 30';
+  const routePath =
+    'M14 118 C 48 112, 58 64, 96 70 S 140 122, 176 96 S 214 28, 252 40 S 296 86, 306 30';
   const routeSvg = (label) =>
     `<div class="route-canvas" role="img" aria-label="${label}"><svg viewBox="0 0 320 148" preserveAspectRatio="none"><path d="${routePath}" style="fill:none;stroke:var(--color-text);stroke-width:3;stroke-linecap:round"/><circle cx="14" cy="118" r="6" style="fill:var(--color-brand)"/><circle cx="306" cy="30" r="6" style="fill:var(--color-text)"/></svg><span class="tag tag-neutral cap">起点 · 终点</span></div>`;
-  const elevSvg = (label) =>
-    `<div class="route-canvas" role="img" aria-label="${label}"><svg viewBox="0 0 320 148" preserveAspectRatio="none"><path d="M0 132 L0 120 L30 112 L60 96 L84 70 L110 82 L140 40 L168 28 L196 58 L222 72 L250 46 L278 90 L300 110 L320 118 L320 132 Z" style="fill:var(--color-raised);stroke:var(--color-text);stroke-width:2"/></svg><span class="tag tag-neutral cap">${primary.elevationMinM}–${primary.elevationMaxM} m</span></div>`;
   const qr = (seed = 7) => {
     const size = 21;
     const cells = [];
     const finder = (x, y) => {
       const inBox = (ox, oy) => x >= ox && x < ox + 7 && y >= oy && y < oy + 7;
-      for (const [ox, oy] of [[0, 0], [14, 0], [0, 14]]) {
+      for (const [ox, oy] of [
+        [0, 0],
+        [14, 0],
+        [0, 14],
+      ]) {
         if (inBox(ox, oy)) {
           const dx = x - ox;
           const dy = y - oy;
-          return dx === 0 || dx === 6 || dy === 0 || dy === 6 || (dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4) ? 1 : 0;
+          return dx === 0 ||
+            dx === 6 ||
+            dy === 0 ||
+            dy === 6 ||
+            (dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4)
+            ? 1
+            : 0;
         }
       }
       return -1;
@@ -209,25 +196,28 @@
     for (let y = 0; y < size; y += 1) {
       for (let x = 0; x < size; x += 1) {
         const f = finder(x, y);
-        const on = f === -1 ? ((x * 31 + y * 17 + seed * (x ^ y)) % 7) < 3 : f === 1;
-        if (on) cells.push(`<rect x="${x}" y="${y}" width="1" height="1"/>`);
+        const on = f === -1 ? (x * 31 + y * 17 + seed * (x ^ y)) % 7 < 3 : f === 1;
+        if (on) {
+          cells.push(`<rect x="${x}" y="${y}" width="1" height="1"/>`);
+        }
       }
     }
     return `<div class="qr" role="img" aria-label="二维码示意"><svg viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges">${cells.join('')}</svg></div>`;
   };
-  const emptyMediaInner = () =>
-    `<svg viewBox="0 0 360 168" preserveAspectRatio="none"><path d="M-10 140 C 60 120, 90 60, 150 72 S 240 150, 300 90 S 350 30, 380 40" style="fill:none;stroke:var(--color-muted);stroke-width:2"/><path d="M-10 160 C 70 140, 110 96, 170 104 S 250 160, 380 110" style="fill:none;stroke:var(--color-muted);stroke-width:1.5"/><path d="M20 128 C 80 112, 104 70, 150 78" style="fill:none;stroke:var(--color-brand);stroke-width:3;stroke-linecap:round"/></svg><span class="brand-word">CILI RIDER</span>`;
-  const emptyMedia = () => `<div class="rider-card-media is-empty">${emptyMediaInner()}</div>`;
 
   const templates = {
     'club/center': () => {
       const centerData = clubCenterPrototype || {};
       const club = centerData.club || {};
       const viewer = centerData.viewer || {};
-      const recentActivities = Array.isArray(centerData.activities) ? centerData.activities.slice(0, 3) : [];
+      const recentActivities = Array.isArray(centerData.activities)
+        ? centerData.activities.slice(0, 3)
+        : [];
       const requestedMode = st() || 'home';
       const route = 'club/center';
-      const canManage = ['ADMIN', 'OWNER', 'CLUB_ADMIN', 'PLATFORM_OWNER'].includes(viewer.roleToken);
+      const canManage = ['ADMIN', 'OWNER', 'CLUB_ADMIN', 'PLATFORM_OWNER'].includes(
+        viewer.roleToken,
+      );
       const mode = requestedMode === 'manage' && !canManage ? 'home' : requestedMode;
       const modeLink = (label, nextMode, kind = 'btn-secondary') =>
         btn(label, `data-action="route" data-route="${route}" data-state="${nextMode}"`, kind);
@@ -257,7 +247,9 @@
         <p class="club-center-intro">${club.intro || '欢迎来到俱乐部主页。'}</p>
         ${manageMeta}
       </section>`;
-      const activityRow = (activity) => `<button class="club-event-row" data-route="activity-detail" data-state="${activity.registrationMode === 'open' ? 'open-public' : 'open-approval'}" data-activity-id="${activity.id}" aria-label="${activity.title}，${activity.date} ${activity.weekday}，${activity.time}，${activity.meetingPoint}，${activity.distanceKm} 公里，${activity.elevationM} 米爬升，${activity.registration}">
+      const activityRow = (
+        activity,
+      ) => `<button class="club-event-row" data-route="activity-detail" data-state="${activity.registrationMode === 'open' ? 'open-public' : 'open-approval'}" data-activity-id="${activity.id}" aria-label="${activity.title}，${activity.date} ${activity.weekday}，${activity.time}，${activity.meetingPoint}，${activity.distanceKm} 公里，${activity.elevationM} 米爬升，${activity.registration}">
         <span class="club-event-date" aria-hidden="true"><b>${activity.date}</b><small>${activity.weekday}</small></span>
         <span class="club-event-body">
           <span class="club-event-titleline"><strong>${activity.title}</strong><em class="club-event-status is-${activity.statusTone || 'open'}">${activity.status}</em></span>
@@ -290,7 +282,12 @@
 
       const activityContent =
         mode === 'empty' || recentActivities.length === 0
-          ? stateView('0', '近期还没有活动', '新活动发布后会出现在这里，可以稍后再来看看。', btn('查看全部活动', go('activities'), 'btn-secondary'))
+          ? stateView(
+              '0',
+              '近期还没有活动',
+              '新活动发布后会出现在这里，可以稍后再来看看。',
+              btn('查看全部活动', go('activities'), 'btn-secondary'),
+            )
           : `<div class="club-event-list" role="list">${recentActivities.map(activityRow).join('')}</div>`;
       const activityHint =
         mode === 'empty' || recentActivities.length === 0
@@ -330,6 +327,7 @@
       // default：唯一俱乐部资料概览
       return `<div class="pg club-admin-list" data-club-admin-list data-mode="default">
         <header class="pageheading"><div class="eyebrow">此里 · 平台管理员</div><h1 class="editorial">俱乐部管理。</h1><p>全平台只有一个俱乐部，本页展示其资料并提供编辑入口；不再出现新建或列表。</p></header>
+        <div class="club-admin-cover">${journalImage((club && club.coverImage) || IMG.rider, '俱乐部封面')}<div class="shade"></div><div class="caption"><div class="eyebrow">${(club && club.city) || '全平台唯一'}</div><h2>${(club && club.name) || '辛庄桥小火车'}</h2></div></div>
         <article class="card club-admin-card club-admin-card-single">
           <span class="club-admin-card-avatar"><img src="${(club && club.avatarImage) || IMG.avatar}" alt="${(club && club.name) || '辛庄桥小火车'}头像" /></span>
           <span class="club-admin-card-copy"><b>${(club && club.name) || '辛庄桥小火车'}</b><small>${(club && club.city) || '北京 · 海淀'} · 全平台唯一</small></span>
@@ -363,8 +361,16 @@
         ? '平台尚未创建俱乐部，本次创建后将成为全平台唯一俱乐部，之后此入口不再出现。'
         : '全平台只允许存在一个俱乐部，本页只能编辑该俱乐部资料；不能创建第二个俱乐部。';
       const submitLabel = bootstrap
-        ? (submitting ? '正在创建' : submitError ? '重试创建' : '创建并立即生效')
-        : (submitting ? '正在保存' : submitError ? '重试保存' : '保存资料');
+        ? submitting
+          ? '正在创建'
+          : submitError
+            ? '重试创建'
+            : '创建并立即生效'
+        : submitting
+          ? '正在保存'
+          : submitError
+            ? '重试保存'
+            : '保存资料';
       if (viewState === 'success') {
         return `<div class="pg club-create-page" data-club-create data-mode="success">
           <p class="prototype-mock-badge">平台管理员 · 本地原型演示</p>
@@ -401,7 +407,7 @@
         <section class="card club-create-basics-card">
           ${cardHead('03', '基本资料')}
           ${field('俱乐部名称', input(validationError ? '' : source.name, { ph: '例如：辛庄桥小火车', cls: validationError ? 'is-error' : '', error: validationError ? '请填写俱乐部名称' : '' }), tag('pending', '必填'))}
-          ${field('所在地区', input(validationError ? '' : (source.locationLabel || source.city), { ph: '请输入所在地区', cls: validationError ? 'is-error' : '', error: validationError ? '请填写所在地区' : '' }), tag('pending', '必填'))}
+          ${field('所在地区', input(validationError ? '' : source.locationLabel || source.city, { ph: '请输入所在地区', cls: validationError ? 'is-error' : '', error: validationError ? '请填写所在地区' : '' }), tag('pending', '必填'))}
           ${field('俱乐部简介', input(source.intro, { cls: 'textarea', ph: '介绍骑行节奏、安全约定与活动范围', count: `${(source.intro || '').length}/200` }))}
         </section>
         ${submitError ? `<p class="field-msg is-error club-create-submit-error" role="alert">${bootstrap ? '创建' : '保存'}失败，已保留全部内容；请重试。</p>` : ''}
@@ -410,28 +416,52 @@
       </div>`;
     },
     activities: () => {
-      if (is('loading')) return `<div class="pg activities-journal"><header class="pageheading"><div class="eyebrow">此里 · 一起出发</div><h1 class="editorial">周末，交给山路。</h1></header>${skeletons(2, true)}</div>`;
-      const head = `<header class="pageheading"><div class="eyebrow">此里 · 一起出发</div><h1 class="editorial">周末，交给山路。</h1><p>每一次转弯，都有值得记住的风景。</p></header>
+      if (is('loading')) {
+        return `<div class="pg activities-journal"><header class="pageheading"><div class="eyebrow">此里 · 一起出发</div><h1 class="editorial">周末，<br>交给山路。</h1></header>${skeletons(2, true)}</div>`;
+      }
+      const head = `<header class="pageheading"><div class="eyebrow">此里 · 一起出发</div><h1 class="editorial">周末，<br>交给山路。</h1><p>每一次转弯，都有值得记住的风景。</p></header>
         <div class="segment" role="tablist" aria-label="活动列表切换"><button role="tab" aria-selected="${is('history') ? 'false' : 'true'}" data-route="activities" data-state="default">近期活动</button><button role="tab" aria-selected="${is('history') ? 'true' : 'false'}" data-route="activities" data-state="history">往期影像</button></div>`;
-      if (is('empty'))
+      if (is('empty')) {
         return `<div class="pg activities-journal">${head}${stateView('0', '近期暂无活动', '新的骑行发布后会出现在这里，可以先看看往期影像。', btn('查看往期影像', 'data-route="activities" data-state="history"', 'btn secondary'))}</div>`;
-      if (is('error'))
+      }
+      if (is('error')) {
         return `<div class="pg activities-journal">${head}${stateView('!', '活动加载失败', '网络不稳定，请检查网络后重试。', btn('重新加载', toast('正在重新加载')), true)}</div>`;
+      }
       const historyMode = is('history');
       const carouselItems = historyMode
         ? [activityCarouselItems[1]]
         : activityCarouselItems.slice(0, 3);
       const activityPresentation = (activity, index) => {
         if (historyMode) {
-          return { state: 'history', label: '已结束', cta: '查看活动回顾', attrs: 'data-route="activity-detail"' };
+          return {
+            state: 'history',
+            label: '已结束',
+            cta: '查看活动回顾',
+            attrs: 'data-route="activity-detail"',
+          };
         }
         if (activity.carouselState === 'closing') {
-          return { state: 'closing', label: '即将满员', cta: '立即报名', attrs: 'data-route="registration-form"' };
+          return {
+            state: 'closing',
+            label: '即将满员',
+            cta: '立即报名',
+            attrs: 'data-route="registration-form"',
+          };
         }
         if (index === 1) {
-          return { state: 'joined', label: '我已报名', cta: '查看我的行程', attrs: 'data-route="registrations"' };
+          return {
+            state: 'joined',
+            label: '我已报名',
+            cta: '查看我的行程',
+            attrs: 'data-route="registrations"',
+          };
         }
-        return { state: 'open', label: '报名中', cta: '查看活动', attrs: 'data-route="activity-detail"' };
+        return {
+          state: 'open',
+          label: '报名中',
+          cta: '查看活动',
+          attrs: 'data-route="activity-detail"',
+        };
       };
       return `<div class="pg activities-journal">${head}
         ${carouselItems
@@ -439,12 +469,15 @@
             const presentation = activityPresentation(activity, index);
             const host = activityHost(activity);
             const cover = journalImage(
-              historyMode ? IMG.club : [IMG.mountain, IMG.lakeside, IMG.club][index] || IMG.mountain,
+              historyMode
+                ? IMG.club
+                : [IMG.mountain, IMG.lakeside, IMG.club][index] || IMG.mountain,
               `${activity.title}骑行影像`,
             );
             return `<a class="story${index === 0 ? ' story-opening' : ''}" role="button" data-action="route" ${presentation.attrs} aria-label="${activity.title}，${presentation.cta}">
-              <div class="photo">${cover}<div class="shade"></div><span class="tag dark story-badge">${presentation.label}</span><div class="caption"><div class="eyebrow">${activity.date} · ${activity.time}</div><h2 class="editorial">${activity.title}</h2><p>${host.club.name}</p></div></div>
-              <div class="storyfacts"><span><strong>${activity.distanceKm}</strong> km 距离</span><span><strong>${activity.elevationM}</strong> m 爬升</span><span><strong>${activity.estimatedRideTime || '待定'}</strong> 骑行</span></div>
+              <div class="photo">${cover}<div class="shade"></div><span class="tag dark story-badge">${presentation.label}</span><div class="caption"><div class="eyebrow">${activity.date} · ${activity.time}</div><h2 class="editorial">${activity.title}</h2></div></div>
+              <div class="story-host"><span>${host.club.name}</span>${activity.level ? tag('neutral', activity.level) : ''}</div>
+              <div class="storyfacts"><span><strong>${activity.distanceKm}</strong><small>km · 距离</small></span><span><strong>${activity.elevationM}</strong><small>m · 爬升</small></span><span><strong>${activity.estimatedRideTime || '待定'}</strong><small>骑行</small></span></div>
               <div class="storymeta"><span>${host.club.name} · ${activity.start}</span><span class="go">${presentation.cta} →</span></div>
             </a>`;
           })
@@ -464,10 +497,15 @@
             start: selectedClubActivity.meetingPoint,
           }
         : activities[0];
-      const registrationModes = (window.prototypeData && window.prototypeData.registrationModes) || {};
+      const registrationModes =
+        (window.prototypeData && window.prototypeData.registrationModes) || {};
       const modeOptions = Array.isArray(registrationModes.options) ? registrationModes.options : [];
       const modeByKey = Object.fromEntries(modeOptions.map((option) => [option.key, option]));
-      const stateDrivenMode = is('open-public', 'open-public-full') ? 'open' : is('open-approval') ? 'approval' : '';
+      const stateDrivenMode = is('open-public', 'open-public-full')
+        ? 'open'
+        : is('open-approval')
+          ? 'approval'
+          : '';
       const activityMode = stateDrivenMode || primary.registrationMode || 'approval';
       const modeMeta = modeByKey[activityMode] || modeByKey.approval || modeOptions[0] || {};
       const approved = is('', 'approved', 'copied', 'copy-failed');
@@ -478,13 +516,23 @@
       const openMode = openPublic || openApproval;
       const modePill = `<span class="mode-pill mode-pill-${activityMode}" data-registration-mode="${activityMode}" data-activity-mode="${activityMode}">${activityMode === 'open' ? '公开报名 · 直接加入' : '审批报名 · 需审核'}</span>`;
       // 影像志改版：报名 CTA 从底部 fixedBar 迁入墨黑 .decision 块，报名模式分支、名额与起止态逻辑完整保留。
-      const decisionTitle = ended ? '山路，下次见。' : approved && !openMode ? '位置已就位。' : full ? '名额已满。' : openPublic ? '山路见，直接加入。' : '山路见，先留一个位置。';
+      const decisionTitle = ended
+        ? '山路，下次见。'
+        : approved && !openMode
+          ? '位置已就位。'
+          : full
+            ? '名额已满。'
+            : openPublic
+              ? '山路见，直接加入。'
+              : '山路见，先留一个位置。';
       const decisionHint = ended
         ? '活动已结束（T+1 自然结束）· 仅供查看'
         : approved && !openMode
           ? '你已通过审核，出发前请查看凭证'
           : full
-            ? (openPublic ? '名额已满，不接受新的加入' : '名额已满，可关注下一场活动')
+            ? openPublic
+              ? '名额已满，不接受新的加入'
+              : '名额已满，可关注下一场活动'
             : openPublic
               ? `公开报名 · 剩余 ${primary.capacity - primary.approved} 个名额，加入即生效`
               : openApproval
@@ -497,20 +545,49 @@
           : full
             ? btn('名额已满', 'disabled', 'btn is-disabled')
             : openPublic
-              ? btn(modeMeta.cta || '立即加入', go('registration-form') + ' data-state="confirm"', 'btn mode-cta-open')
+              ? btn(
+                  modeMeta.cta || '立即加入',
+                  `${go('registration-form')} data-state="confirm"`,
+                  'btn mode-cta-open',
+                )
               : openApproval
-                ? btn(modeMeta.cta || '提交报名申请', go('registration-form') + ' data-state="default"', 'btn mode-cta-approval')
+                ? btn(
+                    modeMeta.cta || '提交报名申请',
+                    `${go('registration-form')} data-state="default"`,
+                    'btn mode-cta-approval',
+                  )
                 : btn('立即报名', go('registration-form'));
-      const cornerLabel = ended ? '已结束' : approved && !openMode ? '已通过' : full ? '名额已满' : openPublic ? '直接加入' : openApproval ? '待审核' : '报名中';
-      const copyToast = is('copied') ? '<div class="inline-toast" role="status"><b aria-hidden="true">✓</b>路线链接已复制</div>' : is('copy-failed') ? '<div class="inline-toast is-error" role="alert"><b aria-hidden="true">!</b>复制失败，请稍后重试</div>' : '';
+      const cornerLabel = ended
+        ? '已结束'
+        : approved && !openMode
+          ? '已通过'
+          : full
+            ? '名额已满'
+            : openPublic
+              ? '直接加入'
+              : openApproval
+                ? '待审核'
+                : '报名中';
+      const copyToast = is('copied')
+        ? '<div class="inline-toast" role="status"><b aria-hidden="true">✓</b>路线链接已复制</div>'
+        : is('copy-failed')
+          ? '<div class="inline-toast is-error" role="alert"><b aria-hidden="true">!</b>复制失败，请稍后重试</div>'
+          : '';
       const detailHost = activityHost(primary);
-      const hostNote = detailHost.historical ? '发布时俱乐部快照' : `所属俱乐部 · 发起人 ${primary.hostClub.organizer || '活动发起人'}`;
+      const hostNote = detailHost.historical
+        ? '发布时俱乐部快照'
+        : `所属俱乐部 · 发起人 ${primary.hostClub.organizer || '活动发起人'}`;
       const routeMapSvg = `<svg viewBox="0 0 320 180" role="img" aria-label="${primary.title}路线示意"><rect width="320" height="180" fill="var(--color-raised)"/><path d="M24 150 C 70 122 92 70 150 78 S 244 142 296 60" fill="none" stroke="var(--color-brand)" stroke-width="3" stroke-linecap="round"/><circle cx="24" cy="150" r="5" fill="var(--color-surface)" stroke="var(--color-action)" stroke-width="2"/><circle cx="296" cy="60" r="5" fill="var(--color-surface)" stroke="var(--color-action)" stroke-width="2"/></svg>`;
-      const routeElevSvg = `<svg viewBox="0 0 320 120" role="img" aria-label="海拔示意"><path d="M16 96 L48 88 L88 72 L140 40 L176 54 L232 36 L300 84 L304 96 Z" fill="var(--color-raised)"/><path d="M16 96 L48 88 L88 72 L140 40 L176 54 L232 36 L300 84" fill="none" stroke="var(--color-action)" stroke-width="2.5"/></svg>`;
+      const routeElevSvg =
+        '<svg viewBox="0 0 320 120" role="img" aria-label="海拔示意"><path d="M16 96 L48 88 L88 72 L140 40 L176 54 L232 36 L300 84 L304 96 Z" fill="var(--color-raised)"/><path d="M16 96 L48 88 L88 72 L140 40 L176 54 L232 36 L300 84" fill="none" stroke="var(--color-action)" stroke-width="2.5"/></svg>';
       return `<div class="pg has-bar activity-detail-pg activity-detail-journal" data-activity-mode="${activityMode}" data-registration-mode="${activityMode}">
         <div class="photo hero detail journal-detail-cover">${journalImage(IMG.mountain, `${primary.title}山地骑行封面`)}<div class="shade"></div><div class="corner"><span class="tag dark">${cornerLabel}</span></div><div class="caption detail-hero-caption"><div class="eyebrow">${primary.date} · ${primary.level}</div><h1 class="editorial">${primary.title}</h1><p>${primary.time}集合 · ${primary.start}</p></div></div>
         <div class="ink detail-fact-strip">
-          ${metrics([[`${primary.distanceKm} km`, '全程距离'], [`${primary.elevationM} m`, '累计爬升'], [primary.estimatedRideTime, '预计骑行']])}
+          ${metrics([
+            [`${primary.distanceKm} km`, '全程距离'],
+            [`${primary.elevationM} m`, '累计爬升'],
+            [primary.estimatedRideTime, '预计骑行'],
+          ])}
           <div class="row detail-meeting-strip"><div class="lead"><div><strong>${primary.time} 集合</strong><small>${primary.date} · ${primary.start}</small></div></div><span class="trailing">${modePill}</span></div>
         </div>
         <div class="content">
@@ -540,9 +617,12 @@
           <section class="section detail-section detail-riders">
             <div class="chapterhead"><h2>一起出发的骑友</h2><span>${primary.approved} / ${primary.capacity} · 昵称与已同意的头像</span></div>
             <div class="riderlist avatar-row detail-rider-strip"><button class="rider attendee-authorization-card" data-action="toast" data-message="将打开资料编辑，选择头像与骑行背景"><span class="avatar initialavatar">${(attendees[0] || '骑').slice(0, 1)}</span><small>${attendees[0]}</small><b>授权获取头像与骑行背景</b></button>${attendees
-            .slice(1)
-            .map((name) => `<button class="rider" data-action="rider" data-rider="${name}"><span class="avatar initialavatar">${name.slice(0, 1)}</span><small>${name}</small></button>`)
-            .join('')}</div>
+              .slice(1)
+              .map(
+                (name) =>
+                  `<button class="rider" data-action="rider" data-rider="${name}"><span class="avatar initialavatar">${name.slice(0, 1)}</span><small>${name}</small></button>`,
+              )
+              .join('')}</div>
             <p class="small muted">头像与昵称经本人授权展示；其他骑友缺少素材时只显示昵称和报名状态。</p>
           </section>
           <section class="section detail-section">
@@ -564,22 +644,33 @@
     },
 
     'registration-form': () => {
-      const openConfirm = is('confirm', 'confirm-submitting', 'confirm-full', 'confirm-capacity-changed');
+      const openConfirm = is(
+        'confirm',
+        'confirm-submitting',
+        'confirm-full',
+        'confirm-capacity-changed',
+      );
       const openSubmitting = is('confirm-submitting');
       const openFull = is('confirm-full');
       const openCapacityChanged = is('confirm-capacity-changed');
       const approvalSelected = is('selected', 'submitting');
       const approvalSubmitting = is('submitting');
       // 影像志改版：三阶段进度用 .timeline 呈现；steps(1) 的语义（当前=填写报名）保持不变。
-      const timeline = `<div class="timeline" role="list" aria-label="报名流程，共三阶段"><span class="active" role="listitem" aria-current="step"><b>1</b>填写报名</span><span role="listitem"><b>2</b>组织者审核</span><span role="listitem"><b>3</b>获取凭证</span></div>`;
+      const timeline =
+        '<div class="timeline" role="list" aria-label="报名流程，共三阶段"><span class="active" role="listitem" aria-current="step"><b>1</b>填写报名</span><span role="listitem"><b>2</b>组织者审核</span><span role="listitem"><b>3</b>获取凭证</span></div>';
       const regNav = () => '';
-      const profileRow = `<button class="row rowlink" data-route="profile-edit" aria-label="修改个人资料"><span class="lead"><div><strong>修改个人资料</strong><small>仅你本人与审核管理员可见</small></div></span><span class="trailing">›</span></button>`;
+      const profileRow =
+        '<button class="row rowlink" data-route="profile-edit" aria-label="修改个人资料"><span class="lead"><div><strong>修改个人资料</strong><small>仅你本人与审核管理员可见</small></div></span><span class="trailing">›</span></button>';
       if (openConfirm) {
         const action = openFull
           ? btn('名额已满', 'disabled', 'btn is-disabled')
           : openSubmitting
             ? btn('加入中', 'disabled', 'btn is-loading')
-            : btn('确认加入', `data-action="submit-registration" data-registration-mode="open" data-capacity-available="${openCapacityChanged ? 'false' : 'true'}"`, 'btn mode-cta-open');
+            : btn(
+                '确认加入',
+                `data-action="submit-registration" data-registration-mode="open" data-capacity-available="${openCapacityChanged ? 'false' : 'true'}"`,
+                'btn mode-cta-open',
+              );
         return `<div class="pg registration-page registration-page-open registration-journal" data-registration-mode="open">
           ${regNav('确认加入')}
           <header class="pageheading"><div class="eyebrow">此里 · 公开报名</div><h1 class="editorial">山路见，直接加入。</h1><p>${primary.title} · ${primary.date} ${primary.time}</p></header>
@@ -604,7 +695,7 @@
             </section>
             <div class="actionbar">
               <p class="small muted">${openFull ? '名额已满，不接受新的加入' : openSubmitting ? '正在校验名额并生成凭证…' : '确认后将直接加入并生成凭证'}</p>
-              <div class="buttonpair">${btn('返回活动', go('activity-detail') + ' data-state="open-public"', 'btn secondary')}${action}</div>
+              <div class="buttonpair">${btn('返回活动', `${go('activity-detail')} data-state="open-public"`, 'btn secondary')}${action}</div>
             </div>
           </div>
         </div>`;
@@ -612,7 +703,10 @@
       const action = approvalSubmitting
         ? btn('提交中', 'disabled', 'btn is-loading')
         : approvalSelected
-          ? btn('提交报名申请', 'data-action="submit-registration" data-registration-mode="approval"')
+          ? btn(
+              '提交报名申请',
+              'data-action="submit-registration" data-registration-mode="approval"',
+            )
           : btn('提交报名申请', 'disabled', 'btn is-disabled');
       return `<div class="pg registration-page registration-page-approval registration-journal" data-registration-mode="approval">
         ${regNav('填写报名')}
@@ -639,10 +733,11 @@
             <div class="chapterhead"><h2>还有什么想说</h2><span>选填</span></div>
             <div class="field"><label>备注与安全</label>${input('', { cls: 'textarea', ph: '饮食、集合或其他备注', count: '0/500' })}<small>仅填写组织方需要提前了解的信息。</small></div>
           </section>
+          <section class="section section-subscription"><div class="chapterhead"><h2>审核结果提醒</h2><span>提交时询问</span></div><div class="notice">点击提交报名时，微信会询问本次审核结果通知订阅；拒绝或发送失败不影响报名。原型仅演示，不调用微信订阅 API。</div></section>
           <div class="notice"><span>实名与电话用于审核和现场联络，公开名单只展示昵称。</span></div>
           <div class="actionbar">
             <p class="small muted">${approvalSelected ? '资料已完整，可以提交审核' : '还差 1 项：骑行经验'}</p>
-            <div class="buttonpair">${btn('返回活动', go('activity-detail') + ' data-state="open-approval"', 'btn secondary')}${action}</div>
+            <div class="buttonpair">${btn('返回活动', `${go('activity-detail')} data-state="open-approval"`, 'btn secondary')}${action}</div>
           </div>
         </div>
       </div>`;
@@ -652,9 +747,12 @@
       const cancelledDeleted = Boolean(window.prototypeCancelledTripDeleted);
       const tripCount = is('empty') ? 0 : cancelledDeleted ? 1 : 2;
       const head = `<header class="pageheading"><div class="eyebrow">此里 · 每一次出发</div><h1 class="editorial">我的行程。</h1><p>审核状态与出发凭证，一处确认 · ${is('loading') ? '同步中' : `共 ${tripCount} 场`}</p></header>`;
-      if (is('loading')) return `<div class="pg registrations-prototype">${head}${skeletons(2)}</div>`;
-      if (is('empty'))
+      if (is('loading')) {
+        return `<div class="pg registrations-prototype">${head}${skeletons(2)}</div>`;
+      }
+      if (is('empty')) {
         return `<div class="pg registrations-prototype">${head}<div class="trip-summary">${metric('0', '审核中')}${metric('0', '可出发', 'is-ready')}${metric('0', '已失效')}</div>${stateView('0', '还没有行程', '报名活动后，审核进度和出发凭证都会出现在这里。', btn('去看看活动', go('activities')))}</div>`;
+      }
       const readyTrip = getTripSnapshot({ activityId: 'trip-pudong-sunset' }) || {
         title: '浦东滨江夜骑 · 鎏金落日线',
         date: '10月18日 周日',
@@ -677,7 +775,11 @@
             mode: 'approval',
             tag: tag('pending', '待审核'),
             guidance: '报名已提交，等待组织者确认',
-            action: btn('查看报名', go('credential') + ' data-state="pending"', 'btn-secondary trip-ticket-primary'),
+            action: btn(
+              '查看报名',
+              `${go('credential')} data-state="pending"`,
+              'btn-secondary trip-ticket-primary',
+            ),
           }
         : is('full-waiting', 'waitlist')
           ? {
@@ -685,7 +787,11 @@
               mode: 'open',
               tag: tag('warning', '⚠ 候补中'),
               guidance: '本场名额已满，名额释放后再确认',
-              action: btn('查看报名', go('credential') + ' data-state="waiting"', 'btn-secondary trip-ticket-primary'),
+              action: btn(
+                '查看报名',
+                `${go('credential')} data-state="waiting"`,
+                'btn-secondary trip-ticket-primary',
+              ),
             }
           : is('cancelled')
             ? {
@@ -693,7 +799,11 @@
                 mode: 'approval',
                 tag: tag('muted', '已取消'),
                 guidance: '本次报名已取消，需要时可重新报名',
-                action: btn('重新报名', go('registration-form') + ' data-state="selected"', 'btn trip-ticket-primary'),
+                action: btn(
+                  '重新报名',
+                  `${go('registration-form')} data-state="selected"`,
+                  'btn trip-ticket-primary',
+                ),
               }
             : is('open-approved')
               ? {
@@ -736,7 +846,8 @@
         kind: 'club',
       };
       const credHostLine = snapshotHostLine(credential);
-      const credentialClub = normalizeClub(credential.kind === 'club' ? credential : null) || canonicalClub;
+      const credentialClub =
+        normalizeClub(credential.kind === 'club' ? credential : null) || canonicalClub;
       const rejected = is('rejected');
       const pending = is('pending');
       const waiting = is('waiting');
@@ -794,14 +905,16 @@
         <div class="credential-share-action">${btn('分享活动', 'data-action="share-activity"')}<p class="card-hint">仅分享公开活动详情，不含本人的凭证、实名或电话。</p></div>
         <div class="card">${cardHead('', '队伍：风向小队')}<p class="card-hint">我是队长，可使用右上角分享邀请队员。队伍仅用于本次活动分组，与俱乐部身份独立。</p></div>
         <div style="margin-top:12px">${btn('查看路线分析', go('route-analysis'), 'btn-secondary')}</div>
-        ${rejected ? `<div style="margin-top:12px">${btn('修改后重新提交', go('registration-form') + ' data-state="selected"', 'btn')}</div>` : cancelled ? `<div style="margin-top:12px">${btn('重新报名', go('registration-form') + ' data-state="selected"', 'btn')}</div>` : used ? '' : `<div style="margin-top:12px">${btn('取消报名', 'data-action="request-cancel-registration"', 'btn-secondary')}</div>`}
+        ${rejected ? `<div style="margin-top:12px">${btn('修改后重新提交', `${go('registration-form')} data-state="selected"`, 'btn')}</div>` : cancelled ? `<div style="margin-top:12px">${btn('重新报名', `${go('registration-form')} data-state="selected"`, 'btn')}</div>` : used ? '' : `<div style="margin-top:12px">${btn('取消报名', 'data-action="request-cancel-registration"', 'btn-secondary')}</div>`}
       </div>`;
     },
 
     profile: () => {
-      const notice = '<p class="neutral-note">联系电话仅用于活动联络；紧急联系人仅在骑行安全需要时使用。</p>';
-      if (is('guest'))
+      const notice =
+        '<p class="neutral-note">联系电话仅用于活动联络；紧急联系人仅在骑行安全需要时使用。</p>';
+      if (is('guest')) {
         return `<div class="pg">${brandLogo('此里')}<header class="pageheading"><div class="eyebrow">此里 · 同行从这里开始</div><h1 class="editorial">先认识你。</h1></header>${stateView('此', '微信未登录', '使用微信身份登录，报名资料仅用于活动联络与安全保障。', btn('重新登录', toast('微信授权中')))}${notice}</div>`;
+      }
       const admin = is('', 'admin');
       // 全平台只有一个俱乐部：直接展示唯一俱乐部入口，普通用户直达 home，管理员额外可见“管理俱乐部资料”。
       const singleKey = admin
@@ -832,8 +945,8 @@
         <div class="content">
           <div class="profile-status"><span>✓ 已登录 · 当前为你的个人资料</span></div>
           ${clubBlock}
-          ${admin ? `<a class="row rowlink" data-route="admin-activity-list"><span class="lead"><span class="avatar initialavatar">管</span><div><strong>活动管理</strong><small>创建、编辑、上下架与报名审批</small></div></span><span class="trailing">›</span></a>` : ''}
-          ${admin ? `<a class="row rowlink" data-route="admin-club-applications"><span class="lead"><span class="avatar initialavatar">部</span><div><strong>管理俱乐部资料</strong><small>编辑唯一俱乐部的名称、简介、地区与媒体</small></div></span><span class="trailing">›</span></a>` : ''}
+          ${admin ? '<a class="row rowlink" data-route="admin-activity-list"><span class="lead"><span class="avatar initialavatar">管</span><div><strong>活动管理</strong><small>创建、编辑、上下架与报名审批</small></div></span><span class="trailing">›</span></a>' : ''}
+          ${admin ? '<a class="row rowlink" data-route="admin-club-applications"><span class="lead"><span class="avatar initialavatar">部</span><div><strong>管理俱乐部资料</strong><small>编辑唯一俱乐部的名称、简介、地区与媒体</small></div></span><span class="trailing">›</span></a>' : ''}
           <a class="row rowlink" data-route="profile-edit"><span class="lead"><span class="avatar initialavatar">料</span><div><strong>报名资料</strong><small>头像、昵称、实名、电话与紧急联系人</small></div></span><span class="trailing">›</span></a>
           <a class="row rowlink" data-route="settings"><span class="lead"><span class="avatar initialavatar">设</span><div><strong>设置</strong><small>查看当前版本与本次更新内容</small></div></span><span class="trailing">›</span></a>
           <div class="notice"><span>联系电话仅用于活动联络；紧急联系人仅在骑行安全需要时使用。资料仅你本人和报名审核员可见。</span></div>
@@ -847,19 +960,25 @@
       const managementRow = (titleText, description, actionText, action) =>
         `<button class="settings-management-row" data-action="${action}"><span class="settings-management-copy"><b>${titleText}</b><small>${description}</small></span><span class="settings-management-action">${actionText} ›</span></button>`;
       const stravaRow = admin
-        ? `<button class="settings-management-row settings-management-row--strava" data-action="settings-strava-sync"><span class="settings-management-copy"><b>同步 Strava 线路信息</b><small>管理授权状态，用于创建活动时直接选用线路</small></span><span class="settings-management-strava"><svg class="strava-mark" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" fill="#fc4c02"/></svg><span class="strava-wordmark">Strava</span><span class="settings-management-action">管理 ›</span></span></button>`
+        ? '<button class="settings-management-row settings-management-row--strava" data-action="settings-strava-sync"><span class="settings-management-copy"><b>同步 Strava 线路信息</b><small>管理授权状态，用于创建活动时直接选用线路</small></span><span class="settings-management-strava"><svg class="strava-mark" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" fill="#fc4c02"/></svg><span class="strava-wordmark">Strava</span><span class="settings-management-action">管理 ›</span></span></button>'
         : '';
       return `<div class="pg settings-page" data-viewer="${admin ? 'admin' : 'rider'}"><header class="pageheading"><div class="eyebrow">此里 · 为每次出发升级</div><h1 class="editorial">设置。</h1><p>管理活动通知、隐私与本地缓存，查看当前版本更新</p></header>
-      <section class="card settings-management-card">${cardHead('01', '常用管理')}
-        <div class="settings-management-list">
-          ${managementRow('活动通知', '按需订阅报名审核等活动提醒，每次选择以微信授权结果为准', '订阅', 'settings-notifications')}
-          ${managementRow('隐私管理', '查看微信隐私说明及已使用的信息', '查看', 'settings-privacy')}
-          ${managementRow('清理缓存', '仅清理可重新下载的活动、资料和图片，不会退出登录或删除业务数据', '清理', 'settings-clear-cache')}
-          ${stravaRow}
-        </div>
+      <div class="content tight">
+      <section class="section section-appearance settings-appearance-card"><div class="chapterhead"><span class="chapterhead-index">00</span><h2>显示主题</h2></div>
+        <div class="appearance-options" role="radiogroup" aria-label="显示主题">
+          ${['light', 'dark'].map((mode) => `<button class="appearance-option ${(window.prototypeAppearance || 'dark') === mode ? 'is-selected' : ''}" data-action="settings-appearance" data-mode="${mode}" role="radio" aria-checked="${(window.prototypeAppearance || 'dark') === mode}">${mode === 'light' ? '浅色' : '暗色'}</button>`).join('')}
+        </div><p class="appearance-hint">选择将保留在当前设备上，不影响登录与报名。此处为本地原型。</p>
       </section>
-      <section class="card settings-release-card">${cardHead('02', 'App 更新', '', '当前版本的更新概览')}
-        <div class="release release-current">
+      <section class="section section-notifications settings-management-card"><div class="chapterhead"><h2>通知</h2></div>
+        ${managementRow('订阅活动通知', '由微信询问本次订阅选择', '订阅', 'settings-notifications')}
+      </section>
+      <section class="section section-privacy"><div class="chapterhead"><h2>隐私</h2></div>
+        ${managementRow('微信隐私管理', '查看小程序隐私保护指引', '查看', 'settings-privacy')}
+        <p class="notice">实名与电话仅本人和审核管理员完整可见；其他骑友只见昵称与同意公开的头像。</p>
+      </section>
+      <section class="section section-app settings-release-card"><div class="chapterhead"><h2>应用</h2></div>
+        ${managementRow('清理可重建缓存', '仅清理可重新下载的活动、资料和图片，不会退出登录或删除业务数据', '清理', 'settings-clear-cache')}
+        <div class="release release-current" aria-label="App 更新">
           <div class="release-meta-row"><code>V${version}</code>${tag('solid', '当前版本')}<span class="release-date">${version.split('.').slice(0, 3).join('.')}</span></div>
           <p class="release-title">${title}</p>
           <p class="release-summary">${summary}</p>
@@ -870,12 +989,12 @@
           </ul>
         </div>
       </section>
-      <p class="neutral-note">此里 · 持续为每一次出发升级</p></div>`;
+      ${admin ? `<section class="section section-strava" data-admin-only><div class="chapterhead"><h2>Strava 线路同步</h2></div>${stravaRow}</section>` : ''}
+      </div><p class="neutral-note">此里 · 持续为每一次出发升级</p></div>`;
     },
 
-    'capability-card': () => {
-      return `<div class="pg capability-card-redirect" data-compat-redirect="profile">${stateView('此', '骑行名片已并入“我的”', '历史地址继续保留，当前会自动回到“我的”。', btn('返回我的', go('profile')))}</div>`;
-    },
+    'capability-card': () =>
+      `<div class="pg capability-card-redirect" data-compat-redirect="profile">${stateView('此', '骑行名片已并入“我的”', '历史地址继续保留，当前会自动回到“我的”。', btn('返回我的', go('profile')))}</div>`,
 
     'profile-edit': () => {
       const focus = is('focus');
@@ -907,28 +1026,77 @@
     'admin-activity-list': () => {
       const head = `<header class="pageheading"><div class="eyebrow">此里 · 俱乐部活动</div><h1 class="editorial">我的活动。</h1><p>管理唯一俱乐部的全部活动与发布状态</p></header>
         <div class="seg"><button class="${is('rejected') ? '' : 'is-active'}" data-action="choice">全部 <small>4</small></button><button data-action="choice">已下架 <small>1</small></button><button class="${is('rejected') ? 'is-active' : ''}" data-action="choice">已驳回 <small>1</small></button><button data-action="choice">已上线 <small>1</small></button><button data-action="choice">已结束 <small>1</small></button></div>`;
-      const footer = `<div class="btn-row" style="margin-top:16px">${btn('报名审批', go('admin-reviews'), 'btn-secondary')}${btn('创建活动草稿', go('admin-activity-edit') + ' data-state="create"')}</div>`;
-      if (is('loading')) return `<div class="pg">${head}${skeletons(2)}</div>`;
-      if (is('empty'))
-        return `<div class="pg">${head}${stateView('0', '还没有活动', '创建第一场骑行活动草稿，发布后骑友即可报名。', btn('创建活动草稿', go('admin-activity-edit') + ' data-state="create"'))}</div>`;
-      const rejectedActivity = { title: '夜骑安全训练', date: '10月25日 周日', time: '早上 8 点整', start: '滨江公园', distanceKm: 42, elevationM: 180, adminStatus: '已驳回', registrationMode: 'approval', approved: 0, pending: 0, signups: 0 };
+      const footer = `<div class="btn-row" style="margin-top:16px">${btn('报名审批', go('admin-reviews'), 'btn-secondary')}${btn('创建活动草稿', `${go('admin-activity-edit')} data-state="create"`)}</div>`;
+      if (is('loading')) {
+        return `<div class="pg">${head}${skeletons(2)}</div>`;
+      }
+      if (is('empty')) {
+        return `<div class="pg">${head}${stateView('0', '还没有活动', '创建第一场骑行活动草稿，发布后骑友即可报名。', btn('创建活动草稿', `${go('admin-activity-edit')} data-state="create"`))}</div>`;
+      }
+      const rejectedActivity = {
+        title: '夜骑安全训练',
+        date: '10月25日 周日',
+        time: '早上 8 点整',
+        start: '滨江公园',
+        distanceKm: 42,
+        elevationM: 180,
+        adminStatus: '已驳回',
+        registrationMode: 'approval',
+        approved: 0,
+        pending: 0,
+        signups: 0,
+      };
       const regularActivities = [
-        ...activities.map((a, index) => ({ ...a, registrationMode: index === 0 ? 'open' : 'approval', signups: a.approved + a.pending })),
-        { title: '秋日环湖耐力骑', date: '10月11日 周六', time: '早上 7 点整', start: '奥森南门', distanceKm: 82, elevationM: 680, adminStatus: '已结束', registrationMode: 'open', approved: 16, pending: 0, signups: 17 },
+        ...activities.map((a, index) => ({
+          ...a,
+          registrationMode: index === 0 ? 'open' : 'approval',
+          signups: a.approved + a.pending,
+        })),
+        {
+          title: '秋日环湖耐力骑',
+          date: '10月11日 周六',
+          time: '早上 7 点整',
+          start: '奥森南门',
+          distanceKm: 82,
+          elevationM: 680,
+          adminStatus: '已结束',
+          registrationMode: 'open',
+          approved: 16,
+          pending: 0,
+          signups: 17,
+        },
       ];
       const list = is('rejected') ? [rejectedActivity] : [rejectedActivity, ...regularActivities];
       return `<div class="pg">${head}<div class="list-count"><span>活动列表</span><b>共 ${list.length} 场</b></div>
         ${list
           .map((a) => {
-            const statusTag = a.adminStatus === '已上线' ? tag('solid', '已上线') : a.adminStatus === '已驳回' ? tag('outline', '已驳回') : a.adminStatus === '已下架' ? tag('outline', '已下架') : tag('muted', '已结束');
+            const statusTag =
+              a.adminStatus === '已上线'
+                ? tag('solid', '已上线')
+                : a.adminStatus === '已驳回'
+                  ? tag('outline', '已驳回')
+                  : a.adminStatus === '已下架'
+                    ? tag('outline', '已下架')
+                    : tag('muted', '已结束');
             const openRegistration = a.registrationMode === 'open';
             const modeTag = `<span class="mode-pill ${openRegistration ? 'mode-pill-open' : 'mode-pill-approval'} mode-pill-inline">${openRegistration ? '公开报名' : '审批报名'}</span>`;
             const registrationMetrics = openRegistration
               ? `<div class="metrics admin-metrics"><div><strong>${a.signups}</strong><span>报名</span></div><div><strong>${a.approved}</strong><span>已加入</span></div><div><strong>0</strong><span>已签到</span></div></div>`
               : `<div class="metrics admin-metrics"><div><strong>${a.signups}</strong><span>报名</span></div><div class="${a.pending ? 'is-pending' : ''}"><strong>${a.pending}</strong><span>待审核</span></div><div><strong>${a.approved}</strong><span>已通过</span></div></div>`;
-            const toggle = btn(a.adminStatus === '已上线' ? '下架' : '上架', toast(a.adminStatus === '已上线' ? '活动已下架' : '活动已上架'), 'btn-secondary btn-sm');
-            const manageRegistrations = btn(openRegistration ? '参与成员' : '报名审批', go('admin-reviews') + (openRegistration ? ' data-state="open-mode-members"' : ''), 'btn-secondary btn-sm');
-            const actions = a.adminStatus === '已驳回' ? btn('查看驳回原因', toast('路线信息需要补充'), 'btn-secondary btn-sm') : `${btn('编辑', go('admin-activity-edit'), 'btn-secondary btn-sm')}${manageRegistrations}${toggle}`;
+            const toggle = btn(
+              a.adminStatus === '已上线' ? '下架' : '上架',
+              toast(a.adminStatus === '已上线' ? '活动已下架' : '活动已上架'),
+              'btn-secondary btn-sm',
+            );
+            const manageRegistrations = btn(
+              openRegistration ? '参与成员' : '报名审批',
+              go('admin-reviews') + (openRegistration ? ' data-state="open-mode-members"' : ''),
+              'btn-secondary btn-sm',
+            );
+            const actions =
+              a.adminStatus === '已驳回'
+                ? btn('查看驳回原因', toast('路线信息需要补充'), 'btn-secondary btn-sm')
+                : `${btn('编辑', go('admin-activity-edit'), 'btn-secondary btn-sm')}${manageRegistrations}${toggle}`;
             return `<article class="admin-card"><div class="admin-card-head"><span>${statusTag}${modeTag}</span><span class="meta-line">${a.date} · ${a.time}</span></div><h3>${a.title}</h3><p class="meta-line">唯一俱乐部 · ${a.start}集合 · ${a.distanceKm} km · ${a.elevationM} m</p>
               ${registrationMetrics}
               <div class="btn-row">${actions}</div>
@@ -941,7 +1109,6 @@
       const create = is('create');
       const error = is('error');
       const uploading = is('uploading');
-      const resubmit = is('rejected-resubmit');
       const editOpen = is('edit-open');
       const modeLocked = is('mode-locked');
       const gpxMissing = is('gpx-missing');
@@ -959,21 +1126,33 @@
       const boostOpen = is('boost-open') || uploading || gpxMissing || gpxFailed;
       const boostConflict = is('boost-conflict');
       const registrationMode = editOpen ? 'open' : 'approval';
-      const filled = !create && !error && !linkTyping && !linkParsing && !linkInvalid && !linkNetError;
+      const filled =
+        !create && !error && !linkTyping && !linkParsing && !linkInvalid && !linkNetError;
       const v = (value) => (filled || uploading ? value : '');
       const stravaConn = stravaExpired
-        ? { tone: 'error', label: '已失效', note: '上次 Strava 同步已失效，粘贴链接前请先在设置中重新同步。' }
+        ? {
+            tone: 'error',
+            label: '已失效',
+            note: '上次 Strava 同步已失效，粘贴链接前请先在设置中重新同步。',
+          }
         : stravaExpiring
-          ? { tone: 'warning', label: '即将失效', note: 'Strava 同步即将在 3 天后失效，可提前在设置中续期。' }
+          ? {
+              tone: 'warning',
+              label: '即将失效',
+              note: 'Strava 同步即将在 3 天后失效，可提前在设置中续期。',
+            }
           : stravaDisconnected
-            ? { tone: 'muted', label: '未连接', note: '尚未同步 Strava 账号，粘贴链接前请先在设置中完成同步。' }
+            ? {
+                tone: 'muted',
+                label: '未连接',
+                note: '尚未同步 Strava 账号，粘贴链接前请先在设置中完成同步。',
+              }
             : { tone: 'success', label: '已连接', note: '连接正常，可直接粘贴线路链接解析。' };
-      const linkInputDisabled = stravaExpired || stravaDisconnected;
       const linkValue = linkTyping
         ? 'https://www.strava.com/routes/12345'
         : linkInvalid
           ? 'https://example.com/share/foo'
-          : (linkNetError || linkParsing)
+          : linkNetError || linkParsing
             ? 'https://www.strava.com/routes/3271892'
             : filled || uploading
               ? primary.routeUrl
@@ -988,7 +1167,11 @@
       const routePreview = filled
         ? `<div class="route-link-preview">
             <div class="row" style="margin-top:8px"><span class="k">${primary.routeName.replace(' GPX', '')}</span>${tag('solid', '线路已解析')}</div>
-            ${metrics([[`${primary.distanceKm} km`, '全程距离'], [`${primary.elevationM} m`, '累计爬升'], [primary.estimatedRideTime, '此里估算骑行']])}
+            ${metrics([
+              [`${primary.distanceKm} km`, '全程距离'],
+              [`${primary.elevationM} m`, '累计爬升'],
+              [primary.estimatedRideTime, '此里估算骑行'],
+            ])}
             ${routeSvg('公开路线轮廓')}
           </div>`
         : '';
@@ -1061,15 +1244,50 @@
           { name: '小北', way: '需要后援车', joinedAt: '10月14日 08:47' },
           { name: '阿远', way: '自行前往', joinedAt: '10月13日 22:10' },
         ];
-        return `<div class="pg admin-reviews-cinema" data-registration-mode="open">${cinemaSlate('报名审核', '13')}<header class="pageheading"><div class="eyebrow">此里 · 审核工作台</div><h1 class="editorial">每一位同行者，<br />都认真确认。</h1></header><section class="info-bar" style="margin-top:0"><div class="info-head"><h2 class="info-title">${primary.title}</h2><span class="info-tag">公开报名</span></div><p class="status-explain">公开报名活动不走审批流程，这里只管理参与成员与签到；活动仍归属唯一俱乐部。</p><div style="margin-top:12px">${btn('切换活动', toast('已打开活动选择'), 'btn-inverse is-ghost')}</div></section><div class="review-filter">${[['全部成员', members.length], ['已签到', 0], ['已取消', 1]].map(([label, n]) => `<button class="${label === '全部成员' ? 'is-active' : ''}" data-action="choice">${label}<small>${n}</small></button>`).join('')}</div><div class="list-count"><span>参与成员</span><b>共 ${members.length} 人</b></div>${members.map((m) => `<article class="review-item open-member-item"><div class="review-item-head"><span class="avatar">${m.name.slice(0, 1)}</span><div class="review-person"><h3>${m.name === rider.nickname ? rider.realName : m.name}</h3><p class="meta-line">加入时间 · ${m.joinedAt}</p></div>${tag('solid', '已加入')}</div><dl class="review-facts"><div><dt>集合方式</dt><dd>${m.way}</dd></div><div><dt>加入方式</dt><dd>公开报名 · 直接生效</dd></div></dl><div class="btn-row"><button class="btn-secondary btn-sm" data-action="toast" data-text="已记为签到">记为签到</button><button class="btn-secondary btn-sm" data-action="toast" data-text="已移出该成员">移出</button></div></article>`).join('')}<div class="card reminder-card">${cardHead('', '活动提醒', '', '仅向当前已加入的骑友发送；重复操作不会重复发送。')}${btn('发送活动提醒', toast(`提醒已发送给 ${members.length} 位骑友`), 'btn-secondary')}</div></div>`;
+        return `<div class="pg admin-reviews-cinema" data-registration-mode="open">${cinemaSlate('报名审核', '13')}<header class="pageheading"><div class="eyebrow">此里 · 审核工作台</div><h1 class="editorial">每一位同行者，<br />都认真确认。</h1></header><section class="info-bar" style="margin-top:0"><div class="info-head"><h2 class="info-title">${primary.title}</h2><span class="info-tag">公开报名</span></div><p class="status-explain">公开报名活动不走审批流程，这里只管理参与成员与签到；活动仍归属唯一俱乐部。</p><div style="margin-top:12px">${btn('切换活动', toast('已打开活动选择'), 'btn-inverse is-ghost')}</div></section><div class="review-filter">${[
+          ['全部成员', members.length],
+          ['已签到', 0],
+          ['已取消', 1],
+        ]
+          .map(
+            ([label, n]) =>
+              `<button class="${label === '全部成员' ? 'is-active' : ''}" data-action="choice">${label}<small>${n}</small></button>`,
+          )
+          .join(
+            '',
+          )}</div><div class="list-count"><span>参与成员</span><b>共 ${members.length} 人</b></div>${members.map((m) => `<article class="review-item open-member-item"><div class="review-item-head"><span class="avatar">${m.name.slice(0, 1)}</span><div class="review-person"><h3>${m.name === rider.nickname ? rider.realName : m.name}</h3><p class="meta-line">加入时间 · ${m.joinedAt}</p></div>${tag('solid', '已加入')}</div><dl class="review-facts"><div><dt>集合方式</dt><dd>${m.way}</dd></div><div><dt>加入方式</dt><dd>公开报名 · 直接生效</dd></div></dl><div class="btn-row"><button class="btn-secondary btn-sm" data-action="toast" data-text="已记为签到">记为签到</button><button class="btn-secondary btn-sm" data-action="toast" data-text="已移出该成员">移出</button></div></article>`).join('')}<div class="card reminder-card">${cardHead('', '活动提醒', '', '仅向当前已加入的骑友发送；重复操作不会重复发送。')}${btn('发送活动提醒', toast(`提醒已发送给 ${members.length} 位骑友`), 'btn-secondary')}</div></div>`;
       }
       const head = `${cinemaSlate('报名审核', '13')}<header class="pageheading"><div class="eyebrow">此里 · 审核工作台</div><h1 class="editorial">每一位同行者，<br />都认真确认。</h1></header><section class="info-bar" style="margin-top:0"><div class="info-head"><h2 class="info-title">${primary.title}</h2><span class="info-tag ${is('empty') ? '' : 'is-pending'}">${is('empty') ? '0' : '2'} 待审核</span></div><p class="status-explain">仅审批报名进入审核；公开报名进入参与成员管理。</p><div style="margin-top:12px">${btn('切换活动', toast('已打开活动选择'), 'btn-inverse is-ghost')}</div></section>
-        <div class="review-filter">${[['候补', 0], ['待审核', is('empty') ? 0 : 2], ['已通过', 18], ['已签到', 0], ['已驳回', 1], ['全部', is('empty') ? 19 : 21]].map(([label, n]) => `<button class="${label === '待审核' ? 'is-active' : ''}" data-action="choice">${label}<small>${n}</small></button>`).join('')}</div>`;
-      if (is('loading')) return `<div class="pg admin-reviews-cinema" data-registration-mode="approval">${head}${skeletons(2)}</div>`;
-      if (is('empty')) return `<div class="pg admin-reviews-cinema" data-registration-mode="approval">${head}${stateView('0', '当前筛选暂无报名', '新的报名提交后会出现在这里。', btn('查看已通过', toast('已切换至已通过'), 'btn-secondary'))}</div>`;
-      if (is('error')) return `<div class="pg admin-reviews-cinema" data-registration-mode="approval">${head}${stateView('!', '报名列表加载失败', '网络不稳定，请稍后重试。', btn('重新加载', toast('正在重新加载')), true)}</div>`;
+        <div class="review-filter">${[
+          ['候补', 0],
+          ['待审核', is('empty') ? 0 : 2],
+          ['已通过', 18],
+          ['已签到', 0],
+          ['已驳回', 1],
+          ['全部', is('empty') ? 19 : 21],
+        ]
+          .map(
+            ([label, n]) =>
+              `<button class="${label === '待审核' ? 'is-active' : ''}" data-action="choice">${label}<small>${n}</small></button>`,
+          )
+          .join('')}</div>`;
+      if (is('loading')) {
+        return `<div class="pg admin-reviews-cinema" data-registration-mode="approval">${head}${skeletons(2)}</div>`;
+      }
+      if (is('empty')) {
+        return `<div class="pg admin-reviews-cinema" data-registration-mode="approval">${head}${stateView('0', '当前筛选暂无报名', '新的报名提交后会出现在这里。', btn('查看已通过', toast('已切换至已通过'), 'btn-secondary'))}</div>`;
+      }
+      if (is('error')) {
+        return `<div class="pg admin-reviews-cinema" data-registration-mode="approval">${head}${stateView('!', '报名列表加载失败', '网络不稳定，请稍后重试。', btn('重新加载', toast('正在重新加载')), true)}</div>`;
+      }
       const people = [
-        { name: rider.nickname, img: IMG.avatar, way: '自行前往', exp: '有经验', time: '10月14日 09:12' },
+        {
+          name: rider.nickname,
+          img: IMG.avatar,
+          way: '自行前往',
+          exp: '有经验',
+          time: '10月14日 09:12',
+        },
         { name: '小北', img: '', way: '需要后援车', exp: '新手', time: '10月14日 08:47' },
       ];
       return `<div class="pg admin-reviews-cinema" data-registration-mode="approval">${head}<div class="list-count"><span>报名列表</span><b>共 2 人</b></div>
@@ -1077,7 +1295,9 @@
     },
 
     'admin-review-detail': () => {
-      if (is('loading')) return `<div class="pg">${skeletons(3)}</div>`;
+      if (is('loading')) {
+        return `<div class="pg">${skeletons(3)}</div>`;
+      }
       const checkedIn = is('checked-in');
       const approved = is('approved', 'checked-in');
       const rejectError = is('reject-error');
@@ -1085,8 +1305,19 @@
       return `<div class="pg">
         <section class="info-bar" style="margin-top:0"><div class="info-head"><span class="info-kicker">报名编号 REG-1017-018</span><span class="info-tag ${approved ? '' : 'is-pending'}">${checkedIn ? '已签到' : approved ? '已通过' : '待审核'}</span></div><h2 class="info-title">${rider.nickname} · ${primary.title}</h2><p class="status-explain">${checkedIn ? '已完成现场签到，报名记录已更新。' : approved ? '已于 10月14日 10:02 通过，骑友已收到出发凭证。' : capacityFull ? '名额已被其他报名占满，本次未通过；申请仍保持待审核状态。' : '通过后骑友会收到出发凭证；驳回需填写理由，骑友会看到。'}</p></section>
         ${capacityFull ? '<p class="pending-note">名额已满 · 请释放名额或调整容量后重新校验，系统不会误生成凭证。</p>' : ''}
-        <div class="card">${cardHead('01', '报名人', tag('neutral', '管理员可见完整信息'))}${rows([['昵称', rider.nickname], ['真实姓名', rider.realName], ['性别', rider.gender], ['手机号', rider.phone], ['验证来源', '微信身份']])}</div>
-        <div class="card">${cardHead('02', '报名信息')}${rows([['骑行经验', '有经验'], ['集合方式', '自行前往'], ['队伍', '风向小队'], ['报名备注', '无']])}</div>
+        <div class="card">${cardHead('01', '报名人', tag('neutral', '管理员可见完整信息'))}${rows([
+          ['昵称', rider.nickname],
+          ['真实姓名', rider.realName],
+          ['性别', rider.gender],
+          ['手机号', rider.phone],
+          ['验证来源', '微信身份'],
+        ])}</div>
+        <div class="card">${cardHead('02', '报名信息')}${rows([
+          ['骑行经验', '有经验'],
+          ['集合方式', '自行前往'],
+          ['队伍', '风向小队'],
+          ['报名备注', '无'],
+        ])}</div>
         <div class="card">${cardHead('03', '照片', '', '资料仅用于本次活动审核，不包含第三方账号数据。')}<div class="photo-strip"><div><img src="${IMG.rider}" alt="骑行照片" /></div><div><img src="${IMG.avatar}" alt="公开头像" /></div></div></div>
         <div class="card">${cardHead('04', '审核意见', approved ? '' : tag('neutral', '驳回时必填'))}${approved ? input('资料完整，欢迎参加', { cls: 'textarea is-disabled' }) : `<textarea id="registration-reject-reason" class="input textarea ${rejectError ? 'is-error' : ''}" maxlength="200" placeholder="驳回时必填，骑友会看到这段说明"></textarea><div class="field-foot"><span>${rejectError ? '<b>驳回时请填写理由；重复点击不会绕过校验</b>' : '示例：骑行经验说明不足，请补充后重提。'}</span><span>0/200</span></div>`}</div>
       </div>${checkedIn ? fixedBar('现场签到已完成', [btn('已签到', 'disabled', 'btn is-disabled')], true) : approved ? fixedBar('骑友到达集合点后确认签到', [btn('确认签到', 'data-action="request-checkin"')], true) : fixedBar(capacityFull ? '名额已满，申请仍保持待审核' : rejectError ? '请先填写驳回理由' : '', [btn('驳回报名', 'data-action="reject-review"', 'btn-secondary'), btn(capacityFull ? '重新校验名额' : '通过报名', `data-action="approve-review" data-capacity-available="${capacityFull ? 'false' : 'true'}"`)])}`;
@@ -1166,11 +1397,7 @@
       }
       const noProfile = is('no-profile');
       const selectedSegment = is('segment-climb') ? 'climb' : '';
-      const selectedPointId = is('segment-climb')
-        ? 'rest-1'
-        : is('climb')
-          ? 'climb'
-          : 'start';
+      const selectedPointId = is('segment-climb') ? 'rest-1' : is('climb') ? 'climb' : 'start';
 
       // 11 个海拔采样点：覆盖 42–1684 m 真实区间，形成双峰起伏。
       const samples = [
@@ -1194,23 +1421,150 @@
       // 关键点：仅在存在“已验证真实地名 + 地图点位”时才会入列；经纬度只参与地图计算，不进入普通用户文案。
       // 字段：label(地名) / lat / lng(内部地图坐标) / role(用途) / caution(注意事项，可选)
       const keyPoints = [
-        { id: 'start', km: 0, m: 42, label: '望京西地铁站', lat: 40.0022, lng: 116.4733, role: '起点集合', caution: '7:00 集合，7:30 出发；地铁 15 号线 B 口外侧' },
-        { id: 'warm-end', km: 24, m: 198, label: '怀柔水库补给点', lat: 40.3611, lng: 116.6304, role: '热身段终点 · 补水', caution: '桥下阴凉，队形重整' },
-        { id: 'climb', km: 48, m: 486, label: '汤河口岔路', lat: 40.6238, lng: 116.6082, role: '主爬坡起点', caution: '右转进 X006；左转切勿误入 G111 快速车道' },
-        { id: 'rest-1', km: 68, m: 912, label: '黑山寺垭口', lat: 40.6911, lng: 116.5721, role: '中段补给 · 山泉水源', caution: '山泉需煮沸；路边无洗手间' },
-        { id: 'highest', km: 102, m: 1684, label: '云蒙山顶', lat: 40.6322, lng: 116.4201, role: '全线最高点', caution: '气温较山下低 8–10 °C，请加防风层' },
-        { id: 'descent', km: 118, m: 1446, label: '盘山公路入口', lat: 40.5888, lng: 116.3914, role: '长下坡起点', caution: '连续 48 km 下降，刹车片易过热' },
-        { id: 'rest-2', km: 150, m: 684, label: '琉璃庙镇', lat: 40.5021, lng: 116.4712, role: '补给 · 简餐', caution: '镇中心有便利店与小餐馆' },
-        { id: 'end', km: 168, m: 240, label: '喇叭沟门原始森林公园', lat: 40.9876, lng: 116.5088, role: '终点', caution: '停车场集合拉伸，等候收尾队员' },
+        {
+          id: 'start',
+          km: 0,
+          m: 42,
+          label: '望京西地铁站',
+          lat: 40.0022,
+          lng: 116.4733,
+          role: '起点集合',
+          caution: '7:00 集合，7:30 出发；地铁 15 号线 B 口外侧',
+        },
+        {
+          id: 'warm-end',
+          km: 24,
+          m: 198,
+          label: '怀柔水库补给点',
+          lat: 40.3611,
+          lng: 116.6304,
+          role: '热身段终点 · 补水',
+          caution: '桥下阴凉，队形重整',
+        },
+        {
+          id: 'climb',
+          km: 48,
+          m: 486,
+          label: '汤河口岔路',
+          lat: 40.6238,
+          lng: 116.6082,
+          role: '主爬坡起点',
+          caution: '右转进 X006；左转切勿误入 G111 快速车道',
+        },
+        {
+          id: 'rest-1',
+          km: 68,
+          m: 912,
+          label: '黑山寺垭口',
+          lat: 40.6911,
+          lng: 116.5721,
+          role: '中段补给 · 山泉水源',
+          caution: '山泉需煮沸；路边无洗手间',
+        },
+        {
+          id: 'highest',
+          km: 102,
+          m: 1684,
+          label: '云蒙山顶',
+          lat: 40.6322,
+          lng: 116.4201,
+          role: '全线最高点',
+          caution: '气温较山下低 8–10 °C，请加防风层',
+        },
+        {
+          id: 'descent',
+          km: 118,
+          m: 1446,
+          label: '盘山公路入口',
+          lat: 40.5888,
+          lng: 116.3914,
+          role: '长下坡起点',
+          caution: '连续 48 km 下降，刹车片易过热',
+        },
+        {
+          id: 'rest-2',
+          km: 150,
+          m: 684,
+          label: '琉璃庙镇',
+          lat: 40.5021,
+          lng: 116.4712,
+          role: '补给 · 简餐',
+          caution: '镇中心有便利店与小餐馆',
+        },
+        {
+          id: 'end',
+          km: 168,
+          m: 240,
+          label: '喇叭沟门原始森林公园',
+          lat: 40.9876,
+          lng: 116.5088,
+          role: '终点',
+          caution: '停车场集合拉伸，等候收尾队员',
+        },
       ];
 
       // 坡段：轨道可视化 + 行数据（排序按出发到达顺序）
       const segments = [
-        { id: 'warmup', name: '起步 · 热身', startKm: 0, endKm: 24, ascent: 206, descent: 20, grade: 0.8, difficulty: '轻松', color: '#8fb9a8', strategy: '前 24 公里保持轻档高踏频，不与同伴冲速。' },
-        { id: 'rolling', name: '过渡 · 山脊起伏', startKm: 24, endKm: 48, ascent: 250, descent: 0, grade: 1.0, difficulty: '适中', color: '#d4a017', strategy: '中强度连续坡，保持稳定呼吸节奏。' },
-        { id: 'climb', name: '主爬坡 · 云蒙段', startKm: 48, endKm: 102, ascent: 1198, descent: 0, grade: 2.2, difficulty: '挑战', color: '#d64520', strategy: '长坡前先补水与电解质，踏频 70–80，必要时坐站交替。' },
-        { id: 'descent', name: '长下坡 · 盘山段', startKm: 102, endKm: 150, ascent: 0, descent: 1000, grade: -2.1, difficulty: '挑战', color: '#0f766e', strategy: '控制车速，手指常在刹车把；注意盲弯和碎石。' },
-        { id: 'return', name: '返程 · 平原巡航', startKm: 150, endKm: 168, ascent: 0, descent: 444, grade: -2.5, difficulty: '适中', color: '#8fb9a8', strategy: '保持小组队形，前车报坑；补充糖分。' },
+        {
+          id: 'warmup',
+          name: '起步 · 热身',
+          startKm: 0,
+          endKm: 24,
+          ascent: 206,
+          descent: 20,
+          grade: 0.8,
+          difficulty: '轻松',
+          color: '#8fb9a8',
+          strategy: '前 24 公里保持轻档高踏频，不与同伴冲速。',
+        },
+        {
+          id: 'rolling',
+          name: '过渡 · 山脊起伏',
+          startKm: 24,
+          endKm: 48,
+          ascent: 250,
+          descent: 0,
+          grade: 1.0,
+          difficulty: '适中',
+          color: '#d4a017',
+          strategy: '中强度连续坡，保持稳定呼吸节奏。',
+        },
+        {
+          id: 'climb',
+          name: '主爬坡 · 云蒙段',
+          startKm: 48,
+          endKm: 102,
+          ascent: 1198,
+          descent: 0,
+          grade: 2.2,
+          difficulty: '挑战',
+          color: '#d64520',
+          strategy: '长坡前先补水与电解质，踏频 70–80，必要时坐站交替。',
+        },
+        {
+          id: 'descent',
+          name: '长下坡 · 盘山段',
+          startKm: 102,
+          endKm: 150,
+          ascent: 0,
+          descent: 1000,
+          grade: -2.1,
+          difficulty: '挑战',
+          color: '#0f766e',
+          strategy: '控制车速，手指常在刹车把；注意盲弯和碎石。',
+        },
+        {
+          id: 'return',
+          name: '返程 · 平原巡航',
+          startKm: 150,
+          endKm: 168,
+          ascent: 0,
+          descent: 444,
+          grade: -2.5,
+          difficulty: '适中',
+          color: '#8fb9a8',
+          strategy: '保持小组队形，前车报坑；补充糖分。',
+        },
       ];
       const activeSegment = segments.find((s) => s.id === selectedSegment);
       const selectedPoint = keyPoints.find((p) => p.id === selectedPointId) || keyPoints[4];
@@ -1219,11 +1573,51 @@
       // 骑行走向：按公里分段的"方位 / 道路 / 关键转向 / 注意"
       // 每条 direction 关联一个关键转弯点（lat/lng 复用关键点，不单独伪造）
       const directions = [
-        { from: 0, to: 24, bearing: '北偏东 18°', road: '京承高速辅路 · G101 + 怀柔郊县道', terrain: '平原 → 浅丘，视野开阔', turn: '望京西 → 怀柔水库', note: '前 10 km 城市并线路段，注意公交车道' },
-        { from: 24, to: 48, bearing: '正北 → 北偏西 10°', road: '怀柔 X006 郊县公路', terrain: '连续起伏 150–240 m，弯道增多', turn: '怀柔水库 → 汤河口岔路', note: '通过 3 处小桥，桥面有横缝，减速' },
-        { from: 48, to: 102, bearing: '北偏西 25° → 正西', road: '汤河口 → 云蒙山 Y 村道', terrain: '连续爬升，坡度 2–7%，密林遮荫', turn: '汤河口右转进 X006 山区段', note: '对向会车窄，持续靠右，鸣铃过盲弯' },
-        { from: 102, to: 150, bearing: '西偏南 → 东南', road: '云蒙山顶 → 盘山公路 → 琉璃庙镇', terrain: '长距离下坡，弯道 40+、短桥 5 座', turn: '翻越垭口后右转进盘山公路', note: '下坡前点刹降温；碎石带与苔藓弯最危险' },
-        { from: 150, to: 168, bearing: '东偏北 15°', road: '琉璃庙 → 喇叭沟门县道', terrain: '平原巡航 + 轻微起伏', turn: '琉璃庙镇中心左转过桥', note: '尾段 2 km 有正在修路，白天通行' },
+        {
+          from: 0,
+          to: 24,
+          bearing: '北偏东 18°',
+          road: '京承高速辅路 · G101 + 怀柔郊县道',
+          terrain: '平原 → 浅丘，视野开阔',
+          turn: '望京西 → 怀柔水库',
+          note: '前 10 km 城市并线路段，注意公交车道',
+        },
+        {
+          from: 24,
+          to: 48,
+          bearing: '正北 → 北偏西 10°',
+          road: '怀柔 X006 郊县公路',
+          terrain: '连续起伏 150–240 m，弯道增多',
+          turn: '怀柔水库 → 汤河口岔路',
+          note: '通过 3 处小桥，桥面有横缝，减速',
+        },
+        {
+          from: 48,
+          to: 102,
+          bearing: '北偏西 25° → 正西',
+          road: '汤河口 → 云蒙山 Y 村道',
+          terrain: '连续爬升，坡度 2–7%，密林遮荫',
+          turn: '汤河口右转进 X006 山区段',
+          note: '对向会车窄，持续靠右，鸣铃过盲弯',
+        },
+        {
+          from: 102,
+          to: 150,
+          bearing: '西偏南 → 东南',
+          road: '云蒙山顶 → 盘山公路 → 琉璃庙镇',
+          terrain: '长距离下坡，弯道 40+、短桥 5 座',
+          turn: '翻越垭口后右转进盘山公路',
+          note: '下坡前点刹降温；碎石带与苔藓弯最危险',
+        },
+        {
+          from: 150,
+          to: 168,
+          bearing: '东偏北 15°',
+          road: '琉璃庙 → 喇叭沟门县道',
+          terrain: '平原巡航 + 轻微起伏',
+          turn: '琉璃庙镇中心左转过桥',
+          note: '尾段 2 km 有正在修路，白天通行',
+        },
       ];
       const dangerPoint = {
         km: 118,
@@ -1233,11 +1627,61 @@
 
       // 爬升变化：按剖面派生的爬升段/下降段清单（样本：至少 3 段 ascent + 2 段 descent + 1 个 highest）
       const climbs = [
-        { id: 'c1', type: 'climb', startKm: 0, endKm: 24, length: 24, delta: 206, avg: 0.9, max: 3.2, trend: '平缓热身，温和爬升' },
-        { id: 'c2', type: 'climb', startKm: 24, endKm: 48, length: 24, delta: 250, avg: 1.0, max: 4.1, trend: '山脊起伏，坡度小而连续' },
-        { id: 'c3', type: 'climb', startKm: 48, endKm: 102, length: 54, delta: 1198, avg: 2.2, max: 7.4, trend: '主爬坡，前陡后缓 · 68 km 处为阶梯平台' },
-        { id: 'd1', type: 'descent', startKm: 102, endKm: 150, length: 48, delta: -1000, avg: -2.1, max: -8.3, trend: '长距离技术下坡，上段最陡' },
-        { id: 'd2', type: 'descent', startKm: 150, endKm: 168, length: 18, delta: -444, avg: -2.5, max: -4.6, trend: '返程平原，缓降收尾' },
+        {
+          id: 'c1',
+          type: 'climb',
+          startKm: 0,
+          endKm: 24,
+          length: 24,
+          delta: 206,
+          avg: 0.9,
+          max: 3.2,
+          trend: '平缓热身，温和爬升',
+        },
+        {
+          id: 'c2',
+          type: 'climb',
+          startKm: 24,
+          endKm: 48,
+          length: 24,
+          delta: 250,
+          avg: 1.0,
+          max: 4.1,
+          trend: '山脊起伏，坡度小而连续',
+        },
+        {
+          id: 'c3',
+          type: 'climb',
+          startKm: 48,
+          endKm: 102,
+          length: 54,
+          delta: 1198,
+          avg: 2.2,
+          max: 7.4,
+          trend: '主爬坡，前陡后缓 · 68 km 处为阶梯平台',
+        },
+        {
+          id: 'd1',
+          type: 'descent',
+          startKm: 102,
+          endKm: 150,
+          length: 48,
+          delta: -1000,
+          avg: -2.1,
+          max: -8.3,
+          trend: '长距离技术下坡，上段最陡',
+        },
+        {
+          id: 'd2',
+          type: 'descent',
+          startKm: 150,
+          endKm: 168,
+          length: 18,
+          delta: -444,
+          avg: -2.5,
+          max: -4.6,
+          trend: '返程平原，缓降收尾',
+        },
       ];
       const highestPoint = keyPoints.find((p) => p.id === 'highest');
 
@@ -1249,10 +1693,22 @@
         { k: '正餐', v: 'km 150 琉璃庙镇一次简餐（15–20 min）' },
       ];
       const supplyPoints = [
-        { km: 24, name: '怀柔水库补给点', type: '便利店 · 水 · 冰饮', eta: '08:20', pointId: 'warm-end' },
+        {
+          km: 24,
+          name: '怀柔水库补给点',
+          type: '便利店 · 水 · 冰饮',
+          eta: '08:20',
+          pointId: 'warm-end',
+        },
         { km: 68, name: '黑山寺垭口', type: '山泉 · 荫凉', eta: '10:50', pointId: 'rest-1' },
         { km: 102, name: '云蒙山顶', type: '无补给 · 风口', eta: '12:40', pointId: 'highest' },
-        { km: 150, name: '琉璃庙镇', type: '便利店 · 餐馆 · 简餐', eta: '15:20', pointId: 'rest-2' },
+        {
+          km: 150,
+          name: '琉璃庙镇',
+          type: '便利店 · 餐馆 · 简餐',
+          eta: '15:20',
+          pointId: 'rest-2',
+        },
       ];
       const carryMin = [
         '2 瓶水壶（1.5 L）· 盐丸 ×6',
@@ -1262,9 +1718,30 @@
 
       // 卫生间 POI 设计样本：用于评审名称、坐标、偏离距离与开放备注的信息形态；生产只渲染已验证点位。
       const restrooms = [
-        { km: 24, name: '怀柔水库公共卫生间', lat: 40.3614, lng: 116.6315, offsetM: 30, open: '全天开放' },
-        { km: 102, name: '云蒙山顶瞭望台旁', lat: 40.6318, lng: 116.4210, offsetM: 80, open: '09:00 – 17:00' },
-        { km: 150, name: '琉璃庙镇中心加油站', lat: 40.5019, lng: 116.4718, offsetM: 50, open: '24h · 需向店员索取钥匙' },
+        {
+          km: 24,
+          name: '怀柔水库公共卫生间',
+          lat: 40.3614,
+          lng: 116.6315,
+          offsetM: 30,
+          open: '全天开放',
+        },
+        {
+          km: 102,
+          name: '云蒙山顶瞭望台旁',
+          lat: 40.6318,
+          lng: 116.421,
+          offsetM: 80,
+          open: '09:00 – 17:00',
+        },
+        {
+          km: 150,
+          name: '琉璃庙镇中心加油站',
+          lat: 40.5019,
+          lng: 116.4718,
+          offsetM: 50,
+          open: '24h · 需向店员索取钥匙',
+        },
       ];
 
       // ---------- 海拔剖面 SVG ----------
@@ -1301,14 +1778,16 @@
         })
         .join('');
       const cursorLine = (() => {
-        if (!selectedPoint) return '';
+        if (!selectedPoint) {
+          return '';
+        }
         const cx = toX(selectedPoint.km).toFixed(1);
         return `<line x1="${cx}" y1="${padT}" x2="${cx}" y2="${padT + plotH}" stroke="#d64520" stroke-width="1.2" stroke-dasharray="3 3"/>`;
       })();
       const xTicks = `<text x="${padL}" y="${chartH - 4}" font-size="10" fill="#8a7f72">0.0 km</text><text x="${chartW - padR}" y="${chartH - 4}" font-size="10" fill="#8a7f72" text-anchor="end">${totalKm}.0 km</text>`;
 
       const profileChart = noProfile
-        ? `<div class="ra-empty">暂无有效海拔剖面，坡段与关键点仅按距离派生，详情请以活动页面提供的 GPX 为准。</div>`
+        ? '<div class="ra-empty">暂无有效海拔剖面，坡段与关键点仅按距离派生，详情请以活动页面提供的 GPX 为准。</div>'
         : `<svg class="ra-chart" viewBox="0 0 ${chartW} ${chartH}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="海拔联动剖面图">
             <defs><linearGradient id="elevFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#d64520" stop-opacity="0.3"/><stop offset="100%" stop-color="#d64520" stop-opacity="0"/></linearGradient></defs>
             ${gridLines}
@@ -1324,32 +1803,42 @@
       // 地图坐标锚点：按真实骑行顺序铺一条自然北上—翻越—南下的环线；每个关键点有可控的 x/y
       // 采用 100×100 viewBox 对齐参考页，便于按比例写坐标与标签
       const mapCoords = {
-        start:      { x: 68, y: 90 },
+        start: { x: 68, y: 90 },
         'warm-end': { x: 82, y: 71 },
-        climb:      { x: 76, y: 54 },
-        'rest-1':   { x: 60, y: 40 },
-        highest:    { x: 44, y: 22 },
-        descent:    { x: 34, y: 32 },
-        'rest-2':   { x: 30, y: 60 },
-        end:        { x: 36, y: 85 },
+        climb: { x: 76, y: 54 },
+        'rest-1': { x: 60, y: 40 },
+        highest: { x: 44, y: 22 },
+        descent: { x: 34, y: 32 },
+        'rest-2': { x: 30, y: 60 },
+        end: { x: 36, y: 85 },
       };
       // 路径顺序 + 对应 km 范围（用于分段上色、画条纹等）
       const routeSteps = [
-        { from: 'start',    to: 'warm-end', color: '#5f8e59', kmA: 0,   kmB: 24,  stripe: '' },
-        { from: 'warm-end', to: 'climb',    color: '#d9a93a', kmA: 24,  kmB: 48,  stripe: '' },
-        { from: 'climb',    to: 'rest-1',   color: '#c1662f', kmA: 48,  kmB: 68,  stripe: 'construction' },
-        { from: 'rest-1',   to: 'highest',  color: '#a1372c', kmA: 68,  kmB: 102, stripe: 'construction' },
-        { from: 'highest',  to: 'descent',  color: '#a1372c', kmA: 102, kmB: 118, stripe: 'closure' },
-        { from: 'descent',  to: 'rest-2',   color: '#8aa15c', kmA: 118, kmB: 150, stripe: 'unknown' },
-        { from: 'rest-2',   to: 'end',      color: '#5f8e59', kmA: 150, kmB: 168, stripe: '' },
+        { from: 'start', to: 'warm-end', color: '#5f8e59', kmA: 0, kmB: 24, stripe: '' },
+        { from: 'warm-end', to: 'climb', color: '#d9a93a', kmA: 24, kmB: 48, stripe: '' },
+        { from: 'climb', to: 'rest-1', color: '#c1662f', kmA: 48, kmB: 68, stripe: 'construction' },
+        {
+          from: 'rest-1',
+          to: 'highest',
+          color: '#a1372c',
+          kmA: 68,
+          kmB: 102,
+          stripe: 'construction',
+        },
+        { from: 'highest', to: 'descent', color: '#a1372c', kmA: 102, kmB: 118, stripe: 'closure' },
+        { from: 'descent', to: 'rest-2', color: '#8aa15c', kmA: 118, kmB: 150, stripe: 'unknown' },
+        { from: 'rest-2', to: 'end', color: '#5f8e59', kmA: 150, kmB: 168, stripe: '' },
       ];
 
       // 层级筛选：根据状态推断聚焦；默认 all
       const focused = is('segment-climb', 'climb');
-      const highlightSeg = activeSegment ||
-        (selectedPointId === 'climb' ? segments.find((s) => s.id === 'climb')
-          : selectedPointId === 'descent' ? segments.find((s) => s.id === 'descent')
-          : null);
+      const highlightSeg =
+        activeSegment ||
+        (selectedPointId === 'climb'
+          ? segments.find((s) => s.id === 'climb')
+          : selectedPointId === 'descent'
+            ? segments.find((s) => s.id === 'descent')
+            : null);
 
       // 画出被高亮的坡段子路径：根据起止点锚点
       const highlightSubPath = highlightSeg
@@ -1358,14 +1847,18 @@
             const covered = routeSteps.filter(
               (step) => step.kmB > highlightSeg.startKm && step.kmA < highlightSeg.endKm,
             );
-            if (!covered.length) return '';
+            if (!covered.length) {
+              return '';
+            }
             const first = mapCoords[covered[0].from];
-            const d = [`M${first.x} ${first.y}`].concat(
-              covered.map((step) => {
-                const to = mapCoords[step.to];
-                return `L${to.x} ${to.y}`;
-              }),
-            ).join(' ');
+            const d = [`M${first.x} ${first.y}`]
+              .concat(
+                covered.map((step) => {
+                  const to = mapCoords[step.to];
+                  return `L${to.x} ${to.y}`;
+                }),
+              )
+              .join(' ');
             return `<path d="${d}" stroke="${highlightSeg.color}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.5"/>`;
           })()
         : '';
@@ -1391,9 +1884,12 @@
         .map((step) => {
           const a = mapCoords[step.from];
           const b = mapCoords[step.to];
-          const fill = step.stripe === 'construction' ? 'url(#stripe-construction)'
-            : step.stripe === 'closure' ? 'url(#stripe-closure)'
-            : 'url(#stripe-unknown)';
+          const fill =
+            step.stripe === 'construction'
+              ? 'url(#stripe-construction)'
+              : step.stripe === 'closure'
+                ? 'url(#stripe-closure)'
+                : 'url(#stripe-unknown)';
           return `<path d="M${a.x} ${a.y} L${b.x} ${b.y}" stroke="${fill}" stroke-width="3.6" stroke-linecap="round" opacity="0.72"/>`;
         })
         .join('');
@@ -1405,14 +1901,14 @@
 
       // 关键点图标渲染（对齐参考页图例语义）
       const roleGlyph = {
-        start:      { kind: 'start',    color: '#211f1c' },
-        'warm-end': { kind: 'supply',   color: '#c1392b' },
-        climb:      { kind: 'risk',     color: '#c1392b' },
-        'rest-1':   { kind: 'supply',   color: '#c1392b' },
-        highest:    { kind: 'peak',     color: '#211f1c' },
-        descent:    { kind: 'descent',  color: '#c1392b' },
-        'rest-2':   { kind: 'supply',   color: '#c1392b' },
-        end:        { kind: 'start',    color: '#211f1c' },
+        start: { kind: 'start', color: '#211f1c' },
+        'warm-end': { kind: 'supply', color: '#c1392b' },
+        climb: { kind: 'risk', color: '#c1392b' },
+        'rest-1': { kind: 'supply', color: '#c1392b' },
+        highest: { kind: 'peak', color: '#211f1c' },
+        descent: { kind: 'descent', color: '#c1392b' },
+        'rest-2': { kind: 'supply', color: '#c1392b' },
+        end: { kind: 'start', color: '#211f1c' },
       };
       // SVG 图标工厂：圆形红底+白符号 / 黑三角 / 黑圆环 / 蓝色桥等
       // 内圆半径使用 Math.max 兜底，避免小半径 marker 产生负值触发 "<circle r='-x'>" 警告。
@@ -1447,14 +1943,14 @@
       // 关键点 Marker + 名称标签
       const importantIds = new Set(['start', 'climb', 'highest', 'descent', 'end']);
       const labelAnchors = {
-        start:      { dx:  4,  dy:  0.4, align: 'start' },
-        'warm-end': { dx:  3.6, dy: -0.4, align: 'start' },
-        climb:      { dx: -3.6, dy:  0.6, align: 'end' },
-        'rest-1':   { dx:  3.6, dy: -0.6, align: 'start' },
-        highest:    { dx:  3.6, dy: -0.6, align: 'start' },
-        descent:    { dx: -3.6, dy:  0.4, align: 'end' },
-        'rest-2':   { dx: -3.6, dy:  0.4, align: 'end' },
-        end:        { dx:  3.6, dy:  1,   align: 'start' },
+        start: { dx: 4, dy: 0.4, align: 'start' },
+        'warm-end': { dx: 3.6, dy: -0.4, align: 'start' },
+        climb: { dx: -3.6, dy: 0.6, align: 'end' },
+        'rest-1': { dx: 3.6, dy: -0.6, align: 'start' },
+        highest: { dx: 3.6, dy: -0.6, align: 'start' },
+        descent: { dx: -3.6, dy: 0.4, align: 'end' },
+        'rest-2': { dx: -3.6, dy: 0.4, align: 'end' },
+        end: { dx: 3.6, dy: 1, align: 'start' },
       };
       const mapMarkers = keyPoints
         .map((p) => {
@@ -1463,32 +1959,46 @@
           const isMajor = importantIds.has(p.id);
           const g = roleGlyph[p.id];
           const r = isSel ? 2.6 : isMajor ? 2.2 : 1.9;
-          const stateName = p.id === 'climb' ? 'climb'
-            : p.id === 'rest-1' ? 'segment-climb'
-            : p.id === 'highest' ? 'default'
-            : '';
+          const stateName =
+            p.id === 'climb'
+              ? 'climb'
+              : p.id === 'rest-1'
+                ? 'segment-climb'
+                : p.id === 'highest'
+                  ? 'default'
+                  : '';
           const haloRing = isSel
             ? `<circle cx="${c.x}" cy="${c.y}" r="${r + 1.4}" fill="none" stroke="#d64520" stroke-width="0.4" stroke-dasharray="0.6 0.6"/>
                <circle cx="${c.x}" cy="${c.y}" r="${r + 2.6}" fill="none" stroke="#d64520" stroke-width="0.25" opacity="0.6"/>`
             : '';
-          const dim = focused && !['climb', 'highest', 'descent', 'rest-1', 'rest-2'].includes(p.id) ? 'opacity="0.4"' : '';
+          const dim =
+            focused && !['climb', 'highest', 'descent', 'rest-1', 'rest-2'].includes(p.id)
+              ? 'opacity="0.4"'
+              : '';
           const anchor = labelAnchors[p.id];
           const labelX = c.x + anchor.dx;
           const labelY = c.y + anchor.dy;
-          const nameLabel = p.label.length > 7 ? p.label.slice(0, 7) + '…' : p.label;
-          const showLabel = (isMajor && (p.id === 'start' || p.id === 'end' || p.id === 'highest')) || isSel;
+          const nameLabel = p.label.length > 7 ? `${p.label.slice(0, 7)}…` : p.label;
+          const showLabel =
+            (isMajor && (p.id === 'start' || p.id === 'end' || p.id === 'highest')) || isSel;
           return `<g class="ra-mk ${isSel ? 'is-active' : ''}" ${dim} data-route="route-analysis" data-state="${stateName}" aria-label="${p.label} km ${p.km}">
             ${haloRing}
             ${renderGlyph(g.kind, c.x, c.y, r, isSel)}
-            ${showLabel ? `
-              <text x="${labelX}" y="${labelY}" font-size="2.6" font-weight="800" fill="#211f1c" text-anchor="${anchor.align}" font-variant-numeric="tabular-nums">${nameLabel} · km ${p.km}</text>` : ''}
+            ${
+              showLabel
+                ? `
+              <text x="${labelX}" y="${labelY}" font-size="2.6" font-weight="800" fill="#211f1c" text-anchor="${anchor.align}" font-variant-numeric="tabular-nums">${nameLabel} · km ${p.km}</text>`
+                : ''
+            }
           </g>`;
         })
         .join('');
 
       // 卫生间地图标记：方形 + "WC" 字样
       const nearestCoord = (km) => {
-        const nearest = keyPoints.reduce((a, b) => (Math.abs(b.km - km) < Math.abs(a.km - km) ? b : a));
+        const nearest = keyPoints.reduce((a, b) =>
+          Math.abs(b.km - km) < Math.abs(a.km - km) ? b : a,
+        );
         return mapCoords[nearest.id];
       };
       const restroomMarkers = restrooms
@@ -1517,19 +2027,19 @@
       </g>`;
 
       // ---------- 筛选芯片 ----------
-      const totalPoints = keyPoints.length + restrooms.length + 1 /* 风险 */;
+      const totalPoints = keyPoints.length + restrooms.length + 1; /* 风险 */
       const supplyCount = keyPoints.filter((p) => p.role.includes('补给')).length;
       const landmarkCount = keyPoints.length;
       const riskCount = 1; // dangerPoint 当前只有一个（设计样本）
       const wcCount = restrooms.length;
       const segmentCount = segments.length;
       const filters = [
-        { key: 'all',      label: '全部',      count: totalPoints, state: '' },
-        { key: 'landmark', label: '地名',      count: landmarkCount, state: 'default' },
-        { key: 'supply',   label: '补给',      count: supplyCount, state: 'segment-climb' },
-        { key: 'risk',     label: '风险',      count: riskCount, state: 'climb' },
-        { key: 'wc',       label: '卫生间',    count: wcCount, state: '' },
-        { key: 'segment',  label: '坡段',      count: segmentCount, state: 'segment-climb' },
+        { key: 'all', label: '全部', count: totalPoints, state: '' },
+        { key: 'landmark', label: '地名', count: landmarkCount, state: 'default' },
+        { key: 'supply', label: '补给', count: supplyCount, state: 'segment-climb' },
+        { key: 'risk', label: '风险', count: riskCount, state: 'climb' },
+        { key: 'wc', label: '卫生间', count: wcCount, state: '' },
+        { key: 'segment', label: '坡段', count: segmentCount, state: 'segment-climb' },
       ];
       const activeFilterKey = focused ? 'segment' : 'all';
       const filterChips = filters
@@ -1566,19 +2076,25 @@
         const p = selectedPoint;
         const isSupply = p.role.includes('补给');
         const isPeak = p.id === 'highest';
-        const typeChip = p.id === 'start' ? '起终点'
-          : p.id === 'end' ? '起终点'
-          : isPeak ? '坡顶'
-          : p.id === 'descent' ? '长下坡'
-          : p.id === 'climb' ? '风险'
-          : isSupply ? '补给'
-          : '地名';
+        const typeChip =
+          p.id === 'start'
+            ? '起终点'
+            : p.id === 'end'
+              ? '起终点'
+              : isPeak
+                ? '坡顶'
+                : p.id === 'descent'
+                  ? '长下坡'
+                  : p.id === 'climb'
+                    ? '风险'
+                    : isSupply
+                      ? '补给'
+                      : '地名';
         return {
           kind: 'point',
           typeChip,
-          typeChipColor: p.id === 'start' || p.id === 'end' ? '#211f1c'
-            : isPeak ? '#211f1c'
-            : '#c1392b',
+          typeChipColor:
+            p.id === 'start' || p.id === 'end' ? '#211f1c' : isPeak ? '#211f1c' : '#c1392b',
           title: p.label,
           subMeta: `km ${p.km} · ${p.m} m · ${p.role}`,
           caption: p.caution || '',
@@ -1589,7 +2105,8 @@
           metrics: [],
         };
       })();
-      const confidenceColor = { high: '#5f8e59', mid: '#d9a93a', low: '#c1392b' }[detail.confidence] || '#5f8e59';
+      const confidenceColor =
+        { high: '#5f8e59', mid: '#d9a93a', low: '#c1392b' }[detail.confidence] || '#5f8e59';
       const detailBlock = detail.isStart
         ? `<div class="ra-map-detail ra-map-detail-start" role="status">
             <h3>${detail.title}</h3>
@@ -1598,7 +2115,7 @@
           </div>`
         : `<div class="ra-map-detail" role="status">
         <div class="ra-detail-head">
-          <span class="ra-detail-icon" style="background:${detail.typeChipColor}">${detail.kind === 'segment' ? '◆' : (detail.typeChip === '坡顶' ? '▲' : detail.typeChip === '风险' ? '!' : detail.typeChip === '长下坡' ? '▽' : detail.typeChip === '补给' ? '✚' : '●')}</span>
+          <span class="ra-detail-icon" style="background:${detail.typeChipColor}">${detail.kind === 'segment' ? '◆' : detail.typeChip === '坡顶' ? '▲' : detail.typeChip === '风险' ? '!' : detail.typeChip === '长下坡' ? '▽' : detail.typeChip === '补给' ? '✚' : '●'}</span>
           <div class="ra-detail-ident">
             <div class="ra-detail-title-row">
               <h3>${detail.title}</h3>
@@ -1609,9 +2126,13 @@
           <button class="ra-detail-close" data-route="route-analysis" data-state="default" aria-label="关闭详情">×</button>
         </div>
         ${detail.caption ? `<p class="ra-detail-caption">${detail.caption}</p>` : ''}
-        ${detail.metrics.length ? `<dl class="ra-detail-metrics">
+        ${
+          detail.metrics.length
+            ? `<dl class="ra-detail-metrics">
           ${detail.metrics.map((m) => `<div><dt>${m.k}</dt><dd>${m.v}</dd></div>`).join('')}
-        </dl>` : ''}
+        </dl>`
+            : ''
+        }
         <div class="ra-detail-provenance">
           <div class="ra-detail-prov-row">
             <span class="ra-detail-prov-k">数据来源</span>
@@ -1722,7 +2243,8 @@
         .map((s) => {
           const isActive = s.id === selectedSegment;
           const stateName = s.id === 'climb' ? 'segment-climb' : '';
-          const diffCls = s.difficulty === '挑战' ? 'is-hard' : s.difficulty === '适中' ? 'is-med' : 'is-easy';
+          const diffCls =
+            s.difficulty === '挑战' ? 'is-hard' : s.difficulty === '适中' ? 'is-med' : 'is-easy';
           const gradeSign = s.grade > 0 ? '+' : '';
           return `<button class="ra-seg-row ${isActive ? 'is-active' : ''}" data-route="route-analysis" data-state="${stateName}">
             <span class="ra-seg-color" style="background:${s.color}"></span>
@@ -1787,9 +2309,34 @@
       const timelineRows = keyPoints
         .map((p) => {
           const isActive = p.id === selectedPointId;
-          const stateName = p.id === 'climb' ? 'climb' : p.id === 'rest-1' ? 'segment-climb' : p.id === 'highest' ? 'default' : '';
-          const marker = p.id === 'start' ? '起' : p.id === 'end' ? '终' : p.id === 'highest' ? '峰' : p.id === 'climb' ? '↑' : p.id === 'descent' ? '↓' : '•';
-          const markerCls = p.id === 'highest' ? 'is-peak' : p.id === 'start' ? 'is-start' : p.id === 'end' ? 'is-end' : '';
+          const stateName =
+            p.id === 'climb'
+              ? 'climb'
+              : p.id === 'rest-1'
+                ? 'segment-climb'
+                : p.id === 'highest'
+                  ? 'default'
+                  : '';
+          const marker =
+            p.id === 'start'
+              ? '起'
+              : p.id === 'end'
+                ? '终'
+                : p.id === 'highest'
+                  ? '峰'
+                  : p.id === 'climb'
+                    ? '↑'
+                    : p.id === 'descent'
+                      ? '↓'
+                      : '•';
+          const markerCls =
+            p.id === 'highest'
+              ? 'is-peak'
+              : p.id === 'start'
+                ? 'is-start'
+                : p.id === 'end'
+                  ? 'is-end'
+                  : '';
           return `<button class="ra-tl-row ${isActive ? 'is-active' : ''}" data-route="route-analysis" data-state="${stateName}">
             <span class="ra-tl-col"><em class="ra-tl-marker ${markerCls}">${marker}</em></span>
             <span class="ra-tl-km">${p.km.toFixed(1)}<i>km</i></span>
@@ -1816,7 +2363,14 @@
         .join('');
       const supplyRows = supplyPoints
         .map((s) => {
-          const stateName = s.pointId === 'highest' ? 'default' : s.pointId === 'rest-1' ? 'segment-climb' : s.pointId === 'climb' ? 'climb' : '';
+          const stateName =
+            s.pointId === 'highest'
+              ? 'default'
+              : s.pointId === 'rest-1'
+                ? 'segment-climb'
+                : s.pointId === 'climb'
+                  ? 'climb'
+                  : '';
           return `<button class="ra-sp-row" data-route="route-analysis" data-state="${stateName}">
             <span class="ra-sp-km">km ${s.km}</span>
             <span class="ra-sp-body">
@@ -1858,11 +2412,13 @@
             <span class="ra-elev-range">${noProfile ? '剖面不可用' : `${minM} m → ${maxM} m · 落差 ${span} m`}</span>
           </header>
           ${profileChart}
-          ${activeSegment
-            ? `<div class="ra-elev-caption"><span class="ra-swatch" style="background:${activeSegment.color}"></span>当前查看：${activeSegment.name} · ${activeSegment.startKm}–${activeSegment.endKm} km</div>`
-            : selectedPoint
-              ? `<div class="ra-elev-caption"><span class="ra-dot"></span>当前关键点：${selectedPoint.label} · km ${selectedPoint.km.toFixed(1)} · ${selectedPoint.m} m</div>`
-              : ''}
+          ${
+            activeSegment
+              ? `<div class="ra-elev-caption"><span class="ra-swatch" style="background:${activeSegment.color}"></span>当前查看：${activeSegment.name} · ${activeSegment.startKm}–${activeSegment.endKm} km</div>`
+              : selectedPoint
+                ? `<div class="ra-elev-caption"><span class="ra-dot"></span>当前关键点：${selectedPoint.label} · km ${selectedPoint.km.toFixed(1)} · ${selectedPoint.m} m</div>`
+                : ''
+          }
         </section>
 
         <section class="ra-panel ra-direction">
@@ -1880,9 +2436,11 @@
             <span class="ra-count">${climbs.filter((c) => c.type === 'climb').length} 段爬升 · ${climbs.filter((c) => c.type === 'descent').length} 段下降</span>
           </header>
           <ul class="ra-climb-list">${climbRows}</ul>
-          ${highestPoint
-            ? `<p class="ra-climb-highest"><em>最高点</em>${highestPoint.label} · km ${highestPoint.km} · <b>${highestPoint.m} m</b></p>`
-            : ''}
+          ${
+            highestPoint
+              ? `<p class="ra-climb-highest"><em>最高点</em>${highestPoint.label} · km ${highestPoint.km} · <b>${highestPoint.m} m</b></p>`
+              : ''
+          }
         </section>
 
         <section class="ra-panel ra-segments">
@@ -1951,17 +2509,39 @@
      * 不进入 miniprogram；手机 UI 由 Pages SPA 渲染，仅做评审原型。
      * 2026-10-19 单俱乐部收口：原 11 页 planned-club-* 已随多俱乐部语义一同下线。
      * ================================================================ */
-    'planned-privacy': () => {
-      return `<div class="pg planned-page planned-privacy">
+    'planned-privacy': () => `<div class="pg planned-page planned-privacy">
         <header class="pageheading planned-head"><div class="eyebrow">PRIVACY · 最小必要</div><h1 class="editorial">每一项授权，<br>都说清楚。</h1><p>只采集与骑行活动直接相关的信息；每一项授权都可以单独撤销。</p><span class="planned-badge">P0 · DESIGN ONLY</span></header>
         <div class="planned-privacy-summary"><b>04</b><span>项权限说明</span><i>默认关闭 · 按需请求</i></div>
-        <div class="card planned-privacy-card">${cardHead('01', '定位', tag('neutral', '仅使用中'), '仅用于显示附近俱乐部与活动集合点距离，不做持续位置追踪。')}${rows([['采集范围', '当前粗略位置'], ['保存期限', '不保存'], ['当前状态', '已授权']])}<button class="btn-text" data-action="toast" data-message="已跳转到微信位置权限设置">查看权限设置 →</button></div>
-        <div class="card planned-privacy-card">${cardHead('02', '相册', tag('neutral', '按需'), '仅在你主动上传头像、骑行名片背景、活动封面、GPX 文件时使用。')}${rows([['采集范围', '你主动选择的图片'], ['保存期限', '长期（随账户）'], ['当前状态', '未授权']])}<button class="btn-text" data-action="toast" data-message="已跳转到微信相册权限设置">查看权限设置 →</button></div>
-        <div class="card planned-privacy-card">${cardHead('03', '通讯录', tag('neutral', '不启用'), '当前此里暂不读取通讯录。')}${rows([['采集范围', '不采集'], ['保存期限', '不保存'], ['当前状态', '未请求']])}</div>
-        <div class="card planned-privacy-card">${cardHead('04', '手机号', tag('pending', '报名时'), '仅在报名活动时用于紧急联络；由微信一键授权，不保存明文。')}${rows([['采集范围', '报名活动时'], ['保存期限', '活动结束后 30 天'], ['当前状态', '按需请求']])}</div>
+        <div class="card planned-privacy-card">${cardHead('01', '定位', tag('neutral', '仅使用中'), '仅用于显示附近俱乐部与活动集合点距离，不做持续位置追踪。')}${rows(
+          [
+            ['采集范围', '当前粗略位置'],
+            ['保存期限', '不保存'],
+            ['当前状态', '已授权'],
+          ],
+        )}<button class="btn-text" data-action="toast" data-message="已跳转到微信位置权限设置">查看权限设置 →</button></div>
+        <div class="card planned-privacy-card">${cardHead('02', '相册', tag('neutral', '按需'), '仅在你主动上传头像、骑行名片背景、活动封面、GPX 文件时使用。')}${rows(
+          [
+            ['采集范围', '你主动选择的图片'],
+            ['保存期限', '长期（随账户）'],
+            ['当前状态', '未授权'],
+          ],
+        )}<button class="btn-text" data-action="toast" data-message="已跳转到微信相册权限设置">查看权限设置 →</button></div>
+        <div class="card planned-privacy-card">${cardHead('03', '通讯录', tag('neutral', '不启用'), '当前此里暂不读取通讯录。')}${rows(
+          [
+            ['采集范围', '不采集'],
+            ['保存期限', '不保存'],
+            ['当前状态', '未请求'],
+          ],
+        )}</div>
+        <div class="card planned-privacy-card">${cardHead('04', '手机号', tag('pending', '报名时'), '仅在报名活动时用于紧急联络；由微信一键授权，不保存明文。')}${rows(
+          [
+            ['采集范围', '报名活动时'],
+            ['保存期限', '活动结束后 30 天'],
+            ['当前状态', '按需请求'],
+          ],
+        )}</div>
         <p class="neutral-note">任何时候都可以在"个人中心 → 隐私授权"回到这里，撤销单项授权。</p>
-      </div>${fixedBar('同意即视为允许上述范围内的最小必要采集', [btn('仅使用必要项', toast('已选择最小必要项'), 'btn-secondary'), btn('我已阅读并授权', toast('授权完成，欢迎加入此里'))])}`;
-    },
+      </div>${fixedBar('同意即视为允许上述范围内的最小必要采集', [btn('仅使用必要项', toast('已选择最小必要项'), 'btn-secondary'), btn('我已阅读并授权', toast('授权完成，欢迎加入此里'))])}`,
 
     'planned-notifications': () => {
       const segs = [
@@ -1976,14 +2556,22 @@
         ['审批', '北京胡同骑行局 加入申请', '张岩提交了加入申请，等待你审批', '12 分钟前', true],
         ['俱乐部', '俱乐部管理员角色生效', '你已被设为"北京胡同骑行局"管理员', '2 小时前', true],
         ['报名', '奉贤海湾拉练', '活动已取消，报名费将原路返回（本次免费）', '昨天 18:40', false],
-        ['俱乐部', '俱乐部已创建', '平台管理员已创建"周日纯化骑行"，当前状态 active', '昨天 10:12', false],
+        [
+          '俱乐部',
+          '俱乐部已创建',
+          '平台管理员已创建"周日纯化骑行"，当前状态 active',
+          '昨天 10:12',
+          false,
+        ],
         ['系统', '隐私协议更新', '我们更新了隐私授权说明，请抽空查看', '前天', false],
       ];
       return `<div class="pg planned-page planned-notifications">
         <header class="pageheading planned-head"><div class="eyebrow">NOTICES · 只在重要时响起</div><h1 class="editorial">通知中心</h1><p>报名、审批与俱乐部变更，按发生时间归档。</p><span class="planned-badge">P0 · DESIGN ONLY</span></header>
         <div class="seg planned-seg">${segs.map(([t, n, active]) => `<button class="${active ? 'is-active' : ''}" data-action="choice">${t}<i class="planned-seg-count">${n}</i></button>`).join('')}</div>
         <div class="planned-noti-list">
-          ${items.map(([kind, title, desc, time, unread]) => `
+          ${items
+            .map(
+              ([kind, title, desc, time, unread]) => `
             <article class="planned-noti-card ${unread ? 'is-unread' : ''}">
               <span class="planned-noti-dot" aria-hidden="true"></span>
               <div class="planned-noti-body">
@@ -1991,7 +2579,9 @@
                 <h3>${title}</h3>
                 <p class="meta-line">${desc}</p>
               </div>
-            </article>`).join('')}
+            </article>`,
+            )
+            .join('')}
         </div>
         <p class="neutral-note">同一事件只提示一次；长按单条可标记为已读。</p>
       </div>${fixedBar('共 3 条未读', [btn('全部标记已读', toast('已全部标记为已读'), 'btn-secondary'), btn('设置通知偏好', go('settings'))])}`;
@@ -2024,8 +2614,7 @@
       </div>`;
     },
 
-    'planned-activity-share-poster': () => {
-      return `<div class="pg planned-page planned-poster">
+    'planned-activity-share-poster': () => `<div class="pg planned-page planned-poster">
         <header class="pageheading planned-head"><div class="eyebrow">SHARE POSTER · 9:16</div><h1 class="editorial">把这一程，<br>留在画面里。</h1><p>基于活动封面与现有数据生成品牌海报。</p><span class="planned-badge">P1 · DESIGN ONLY</span></header>
         <div class="planned-poster-stage">
           <div class="planned-poster-canvas" role="img" aria-label="活动海报预览">
@@ -2051,10 +2640,97 @@
           <label class="planned-switch"><span>包含路线轮廓</span><input type="checkbox" checked/><i aria-hidden="true"></i></label>
           <label class="planned-switch"><span>隐去已报名人数</span><input type="checkbox"/><i aria-hidden="true"></i></label>
         </div>
-      </div>${fixedBar('海报仅本次生成不保留', [btn('保存到相册', toast('海报已保存到相册'), 'btn-secondary'), btn('分享到微信', toast('已拉起微信分享面板'))])}`;
-    },
-
+      </div>${fixedBar('海报仅本次生成不保留', [btn('保存到相册', toast('海报已保存到相册'), 'btn-secondary'), btn('分享到微信', toast('已拉起微信分享面板'))])}`,
   };
 
+  // Layout-only mirror of the approved production blocks. Preserve every data-action/route
+  // and state branch; this layer neither calls cloud APIs nor claims WeChat evidence.
+  const approvedLayouts = {
+    activities: [],
+    'activity-detail': [], // Conditional production sections use natural labels, not fixed ordinals.
+    'route-analysis': [
+      '路线走向 · 关键地名',
+      '先读懂这段爬升',
+      '主要坡段',
+      '路上的几个停顿',
+      '坡段风险',
+      '路线策略',
+      '带上这些',
+    ],
+    'registration-form': [
+      '确认你的资料',
+      '怎么去集合点',
+      '你的骑行经验',
+      '还有什么想说',
+      '审核结果提醒',
+    ],
+    registrations: [],
+    credential: [],
+    profile: [],
+    'capability-card': [],
+    'profile-edit': ['头像与背景', '基础资料', '紧急联系人'],
+    settings: ['通知', '隐私', '应用', 'Strava 线路同步'],
+    'club/center': ['我们为什么出发', '俱乐部近期活动'],
+    'admin-activity-list': [],
+    'admin-activity-edit': ['影像与标题', '何时，在哪里', '报名方式', '路线与说明', '活动群'],
+    'admin-reviews': [],
+    'admin-review-detail': [
+      '报名与联络资料',
+      '骑行经验',
+      '骑友备注',
+      '照片',
+      '审核意见',
+      '现场签到',
+    ],
+    'admin-club-applications': ['资料维护'],
+    'admin-club-application-detail': ['头像与背景', '基本资料'],
+  };
+  const approvedHeadings = {
+    registrations: '每次出发，<br>都有一张记忆。',
+    'registration-form': '下一站，<br>山顶。',
+    'admin-club-applications': '让我们的故事，<br>有一个共同的名字。',
+    'admin-club-application-detail': '把俱乐部的样子，<br>留在这里。',
+  };
+  for (const [route, sections] of Object.entries(approvedLayouts)) {
+    const render = templates[route];
+    if (!render) {
+      continue;
+    }
+    templates[route] = () => {
+      let html = render().replace(/(<div class="pg[^\"]*"?)/, '$1 data-aihero-layout');
+      // Keep the route identity and mode-specific copy when replacing decorative headlines.
+      if (
+        approvedHeadings[route] &&
+        !st().startsWith('bootstrap') &&
+        !is('loading') &&
+        !is('error')
+      ) {
+        html = html.replace(
+          '<h1 class="editorial">',
+          `<h1 class="editorial" aria-label="${route === 'admin-club-applications' ? '俱乐部管理' : route === 'admin-club-application-detail' ? '编辑俱乐部资料' : route === 'registrations' ? '我的行程' : '报名'}">`,
+        );
+      }
+      // Keep state-dependent titles on credential / review-detail and all media captions.
+      if (
+        approvedHeadings[route] &&
+        !st().startsWith('bootstrap') &&
+        !is('loading') &&
+        !is('error')
+      ) {
+        html = html.replace(
+          /(<h1 class="editorial"(?: aria-label="[^"]*")?>)[\s\S]*?(<\/h1>)/,
+          `$1${approvedHeadings[route]}$2`,
+        );
+      }
+      for (const [index, title] of sections.entries()) {
+        const number = String(index + 1).padStart(2, '0');
+        html = html.replace(
+          `<div class="chapterhead"><h2>${title}</h2>`,
+          `<div class="chapterhead"><span class="chapterhead-index">${number}</span><h2>${title}</h2>`,
+        );
+      }
+      return html;
+    };
+  }
   window.pageTemplates = templates;
 })();

@@ -584,3 +584,5 @@
 .consent-later {
   width: 100%;
 }
+
+@import '../../styles/aihero-layout.wxss';

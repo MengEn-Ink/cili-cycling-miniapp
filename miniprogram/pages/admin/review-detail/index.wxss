@@ -521,3 +521,5 @@
   border-radius: var(--radius-xs);
   font-size: var(--font-size-body);
 }
+
+@import '../../../styles/aihero-layout.wxss';

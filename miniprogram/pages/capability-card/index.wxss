@@ -2,3 +2,5 @@
   padding: 48rpx var(--page-gutter);
   background: var(--color-bg);
 }
+
+@import '../../styles/aihero-layout.wxss';

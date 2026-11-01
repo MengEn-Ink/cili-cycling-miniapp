@@ -1,8 +1,17 @@
 // @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
 import { readFileSync } from 'node:fs';
+// @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
+import { dirname, resolve } from 'node:path';
 import { expect } from 'vitest';
 
 export const read = (file: string) => readFileSync(file, 'utf8');
+
+/** Resolve WXSS imports in source order, including the final layout layer. */
+export function readStyles(file: string): string {
+  return read(file).replace(/@import\s+['"]([^'"]+)['"]\s*;/g, (_: string, relative: string) =>
+    readStyles(resolve(dirname(file), relative)),
+  );
+}
 
 export function cssBlocks(source: string, selector: string): string[] {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -31,7 +40,9 @@ export function effectiveBlock(source: string, selector: string): string {
 }
 
 export function declaration(block: string, property: string): string {
-  const matches = [...block.matchAll(new RegExp(`(?:^|\\n)\\s*${property}\\s*:\\s*([^;]+);`, 'g'))];
+  const matches = [
+    ...block.matchAll(new RegExp(`(?:^|[;\n])\\s*${property}\\s*:\\s*([^;]+);`, 'g')),
+  ];
   const match = matches[matches.length - 1];
   expect(match, `missing CSS declaration ${property}`).toBeDefined();
   return match?.[1].trim() || '';

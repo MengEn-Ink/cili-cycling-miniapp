@@ -6,7 +6,8 @@
   - 真实业务保留：mode = loading / error / bootstrap / default；首次 bootstrap 分支显示“创建唯一俱乐部”入口；
     错误 retry；头像 fallback；data-club-admin-overview 保留供单元测试绑定。
 -->
-<view class="page club-admin-page cinema-page cinema-page--dark" data-v1-layout="admin">
+<page-meta page-style="{{appearanceStyle}}" background-text-style="{{appearanceMode === 'light' ? 'dark' : 'light'}}" />
+<view class="page aihero-page club-admin-page cinema-page cinema-page--dark" data-v1-layout="admin">
   <block wx:if="{{mode === 'loading'}}">
     <view class="pageheading">
       <view class="pageheading-title editorial">
@@ -101,6 +102,7 @@
 
       <view class="section">
         <view class="chapterhead">
+          <text class="chapterhead-index">01</text>
           <view class="chapterhead-title">资料维护</view>
           <view class="chapterhead-aside">平台管理员</view>
         </view>

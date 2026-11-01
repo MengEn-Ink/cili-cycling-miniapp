@@ -15,10 +15,15 @@ function pageFiles(extension: string, dir = 'miniprogram/pages'): string[] {
 }
 
 describe('v2 设计稿精简', () => {
-  it('页面标题区不再重复「此里 · xxx」品牌眉标', () => {
+  it('AI Hero 页面恢复单个编辑式品牌眉标，不重复堆叠', () => {
     for (const file of pageFiles('wxml')) {
-      expect(read(file), file).not.toMatch(/<view class="eyebrow">此里 · /);
+      const source = read(file);
+      expect(
+        (source.match(/<view class="eyebrow">此里 · /g) ?? []).length,
+        file,
+      ).toBeLessThanOrEqual(1);
     }
+    expect(read('miniprogram/pages/activities/index.wxml')).toContain('此里 · 一起出发');
   });
 
   it('页面字号不低于 24rpx 可读下限', () => {
@@ -37,18 +42,20 @@ describe('v2 设计稿精简', () => {
     }
   });
 
-  it('活动列表：标题直出，场次并入切换行，筛选条两端渐隐', () => {
+  it('AI Hero 活动列表：双行标题、工具栏和场次保留，筛选不再渐隐', () => {
     const wxml = read('miniprogram/pages/activities/index.wxml');
-    const wxss = read('miniprogram/pages/activities/index.wxss');
     expect(wxml).toContain('周末，交给山路。');
-    expect(wxml).not.toContain('pageheading-sub');
+    expect(wxml).toContain('pageheading-sub');
+    expect(wxml).toContain('class="activity-toolbar"');
     expect(wxml).not.toContain('list-toolbar');
     expect(wxml).not.toContain('查看活动 →');
     expect(wxml).toMatch(/<view class="segment"[\s\S]*class="segment-count"[\s\S]*segment-end/);
     expect(wxml).toContain(
       '<text>{{item.displayDateLabel}}</text><text>{{item.displayTimeLabel}}</text>',
     );
-    expect(wxss).toMatch(/\.day-chip-shell\s*\{[^}]*mask-image:\s*linear-gradient/s);
+    expect(read('miniprogram/styles/aihero-layout.wxss')).toMatch(
+      /\.activities-page\.aihero-page \.day-chip-shell\s*\{[^}]*mask-image:\s*none/s,
+    );
   });
 
   it('活动详情：导航贴在集合地点旁且保留 44px 触控，删去重复状态眉标', () => {

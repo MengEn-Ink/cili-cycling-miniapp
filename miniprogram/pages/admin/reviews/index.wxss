@@ -471,3 +471,5 @@
   background: var(--color-surface);
   color: var(--color-text);
 }
+
+@import '../../../styles/aihero-layout.wxss';

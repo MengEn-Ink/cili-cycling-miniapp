@@ -12,7 +12,9 @@ const statusText: Record<string, string> = {
 let loadGeneration = 0;
 const failedAvatarIds = new Set<string>();
 
-Page({
+import { themedPage } from '../../../services/theme-service';
+
+themedPage({
   data: {
     tab: 'pending',
     items: [] as any[],

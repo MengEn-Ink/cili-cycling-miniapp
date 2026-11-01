@@ -370,7 +370,9 @@ const formatRouteDuration = (seconds?: number) => {
   return hours ? `${hours} 小时${minutes ? ` ${minutes} 分` : ''}` : `${minutes} 分钟`;
 };
 
-Page({
+import { themedPage } from '../../../services/theme-service';
+
+themedPage({
   unloaded: false,
   loadRevision: 0,
   loadOptions: {} as Record<string, string>,

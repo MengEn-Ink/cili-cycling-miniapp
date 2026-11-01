@@ -22,7 +22,9 @@ const statusCounts = (items: any[]) =>
     { review: 0, ready: 0, expired: 0 },
   );
 
-Page({
+import { themedPage } from '../../services/theme-service';
+
+themedPage({
   loadRequestId: 0,
   touchStartX: 0,
   touchStartY: 0,

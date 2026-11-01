@@ -156,7 +156,9 @@ function markerFor(point: ReturnType<typeof viewPoint>, selectedId: string) {
   };
 }
 
-Page({
+import { themedPage } from '../../services/theme-service';
+
+themedPage({
   activityId: '',
   analysis: null as RouteAnalysis | null,
   unloaded: false,

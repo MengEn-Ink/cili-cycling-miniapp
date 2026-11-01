@@ -2,7 +2,10 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const read = (path: string) => readFileSync(path, 'utf8');
+import { readStyles } from './theme-contract-helpers';
+
+const read = (path: string): string =>
+  path.endsWith('.wxss') ? readStyles(path) : readFileSync(path, 'utf8');
 
 const pages = {
   profile: 'miniprogram/pages/profile-edit',

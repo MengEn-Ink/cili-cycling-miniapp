@@ -335,7 +335,7 @@ describe('Pages 全套 App 原型契约（单俱乐部收敛 · design-only 不�
     if (!template) throw new Error('settings template missing');
     runtime.prototypeState = 'default';
     const output = template();
-    for (const term of ['活动通知', '隐私管理', '清理缓存', '不会退出登录或删除业务数据']) {
+    for (const term of ['活动通知', '隐私管理', '清理可重建缓存', '不会退出登录或删除业务数据']) {
       expect(output).toContain(term);
     }
     expect(output).toContain('data-action="settings-notifications"');

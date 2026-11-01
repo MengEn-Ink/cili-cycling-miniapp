@@ -325,3 +325,5 @@
     width: 144rpx;
   }
 }
+
+@import '../../../styles/aihero-layout.wxss';

@@ -461,3 +461,5 @@
 .settings-page .settings-footer {
   margin-top: 44rpx;
 }
+
+@import '../../styles/aihero-layout.wxss';

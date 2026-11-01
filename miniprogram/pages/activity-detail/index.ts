@@ -159,7 +159,9 @@ function attachedGpx(route: any): boolean {
   return route.gpxSha256 === undefined || /^[a-f0-9]{64}$/.test(route.gpxSha256);
 }
 
-Page({
+import { themedPage } from '../../services/theme-service';
+
+themedPage({
   navigation: createNavigationSingleFlight((options) => wx.navigateTo(options)),
   loadRequestId: 0,
   initialShowPending: false,
