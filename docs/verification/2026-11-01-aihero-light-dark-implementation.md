@@ -431,3 +431,39 @@ coverage / audit:all 沿用同轮前次真实 PASS（Vitest 1425/1425、bootstra
 | `npm run audit:all` | PASS：根包+13云包0 vulnerabilities；现有上传工具5个无上游修复例外仍受门禁约束，到期2027-01-15 |
 
 成功后仅恢复 `docs/evidence/phase3-three-width` 已跟踪历史生成物，确认目录无 diff；未重签旧截图、未改UI-sync摘要。本轮 `CILI_SKIP_UI_SYNC=1` 豁免继续使用，strict/体验版与独立P0不变。此前网络、报告污染、文件模式 FAIL 与此次 RED 均作为真实历史保留，不能覆盖为 PASS。未 commit / push / 部署；下一步获授权后提交新差异并重跑 PR #420 affected-pr、CodeQL 等远端 checks。
+
+## 最终合并与发布验收（2026-11-01）
+
+本节覆盖此前阶段状态。产品最终候选 `bbdead45cb2693e03bda5d6ca059eaa78b2603b7` 经独立只读复审通过，两项 P2 已消除，未发现新增 P0/P1/P2；在 11:40:02、11:41:11、11:42:21 UTC 完成三次独立评论/checks快照，目标未漂移、open thread=0、检查收敛，闭环校验脚本退出0。自有GitHub项目按用户明确授权自行评审合并，不宣称取得非作者GitHub Approve。
+
+[PR #420](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/420) 已于 2026-11-01 11:42:38 UTC squash 合入 `main@62376d3a95c681d64380c4ce8d7dca5d6181f6a8`。90文件，+5054/-2014；合并内容与最终候选树相同。最终本地validate为2644/2644，coverage/audit实际通过；该数据不扩张为真机或实际写链路E2E。
+
+| 环节 | 不可变产品版本 / 结果 | 原始证据 |
+| --- | --- | --- |
+| 最终PR CI | `bbdead45`，affected-pr、validate、pr-submission成功 | [CI](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/41302296161) |
+| 最终PR CodeQL | `bbdead45`，分析及CodeQL成功，原high线程自动resolved/outdated | [CodeQL](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/41302296285) |
+| main CI | `62376d3a`，success | [main CI](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/41303086878) |
+| 微信开发版 | `62376d3a`，success；`MINIPROGRAM_VERSION: 0.0.413.1`；“微信开发版 0.0.413.1 上传成功” | [自动上传](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/41303321879) |
+| CloudBase | `62376d3a`，workflow success；无资源变更，实际skip | [部署决定](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/41303321520) |
+| Pages | `62376d3a`，built/success；线上三个核心文件逐字节哈希匹配 | [Pages发布](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/41303086815) |
+| 微信体验版 | `62376d3a` / 目标 `0.0.413.1`，failure；首个阻断为严格Pages零漂移 | [晋级门禁](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/41303385402) |
+
+### Pages实际命中
+
+[线上入口](https://mengen-ink.github.io/cili-cycling-miniapp/) 可访问。Pages API `builds/latest` 返回 `status=built`、`commit=62376d3a95c681d64380c4ce8d7dca5d6181f6a8`。从公开地址读取并与该产品版本本地文件计算SHA-256：
+
+| 文件 | 线上与本地一致的SHA-256 |
+| --- | --- |
+| styles.css | `d2f15a624524f4ea438708403529a6f6aedcefd1112bd992876e117e25bc4090` |
+| templates.js | `93f5a7ff538c03467cacc66a40cbcefa31baba538b1cf2bdbf8fcf06993d10fd` |
+| app.js | `2b1bdd991e778e83d06202d48473ee1d8eabe528246acc80a774e52e352d5ceb` |
+
+### 体验版阻断与唯一下一步
+
+`Require zero GitHub Pages UI drift` 调用 `check:ui-sync -- --strict`，清单摘要 `sha256:3eb3af30e64ed0527f0c15e8c684cda1e0be62c4f7df4f3455f4a43752df269c` 与当前 `sha256:e67d2ab526ee518e99d64aa3846eaad0f14b76d18fc24ed52407751fb15d3d0c` 不一致，退出1。后续来源校验、体验版manifest和证据存储均跳过，**本轮没有成功candidate，更没有verified体验版**。
+
+用户本次授权只豁免IDE截图补采；普通CI受控豁免不传播为strict或平台选版豁免。不得只改摘要掩盖差异、复用旧截图、把开发版上传或candidate称为体验版发布。
+
+下一步须经授权重采对应版本的小程序/Pages双端证据并对齐实际内容；严格同步及来源校验通过后生成candidate，再由具有真实开发权限的一方完成微信平台选版，回读版本、SHA及入口并verified。历史第三方托管权限须现场重新核验；本轮未操作公众平台，不能断言当前权限已恢复。普通成员写链路、目标云权威回读与iOS/Android双物理真机仍按独立P0验收。
+
+**终态：开发版与Pages已发布；体验版交付BLOCKED。** 本次仅前端/测试/CI/文档变更，无云函数更新。后续仅文档状态回写不改变此产品版本或已上传开发版。
