@@ -42,3 +42,17 @@
 原始Pages截图、运行截图、账号资料和结果只保留在私有`/tmp`。Pages包含合成fixture资料，不代表实际注册资料；公开文档只记录有界结论，不发布含联系方式的原图。
 
 下一步：为同内容版本准备受控活动/行程样本，完成17路由双端截图并脱敏、标明差异后再通过strict；随后发布回读及独立双物理真机/普通成员验收。当前状态为代码与本地自动化完成、正式交付验收受阻。
+
+## 提交与交付推进（2026-11-04）
+
+用户授权“提交合并部署”。主题实现提交为 `c4cd27a4dd7a98335dd50e45721fb6ce7d50049b`，已推送至 `feat/theme-readability-refinement`；[PR #424](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/424) 为草稿。基准仍为 `origin/main@67244eec`，没有同需求开放PR冲突。
+
+在隔离工作树 `/tmp/cili-theme-delivery-c4cd27a4` 复用已安装依赖，避免用户已有研究文件影响格式检查；完整 `npm run validate` 重跑退出1：格式、lint、typecheck、应用测试、Node契约、设计、发布说明和包体门禁均通过，随后在普通UI同步处因Pages摘要不匹配失败，后续云包和build阶段未由该命令执行（实现阶段已独立通过）。`npm run coverage` 退出0，cloud.ts覆盖率为lines 91.02%、branches 89.02%、functions 96.60%、statements 90.06%。`npm run audit:all` 退出0，遵循已有high阈值，上传工具保留5项已评估且无上游修复的既有例外，例外到期2027-01-15；无高危阻断。治理与diff空白检查通过。
+
+最终产品内容重新运行官方 `npm run test:devtools:e2e`，结果10通过、10失败、0异常，14/17路由，15张私有运行截图（含活动编辑重复截图与历史名片转跳）。当前活动首页和行程均无样本，缺可访问审核记录，路线分析缺活动ID；未生成业务数据补造证据。该结果绑定当前UI摘要 `sha256:7986f272669af5ccc7deff2a00fea19b5138b5c002c6535091a50ef306c33478`，不能视为17路由双端验收通过。运行原图和结果保留于 `/tmp/cili-theme-readability-devtools-final`。
+
+隔离工作树 `npm run check:ui-sync -- --strict` 再次退出1：历史Pages清单摘要为 `sha256:3eb3af30e64ed0527f0c15e8c684cda1e0be62c4f7df4f3455f4a43752df269c`，当前为 `sha256:1cabbc6057573afbe6471885b4b41164f8d531fdc468f99a5bf1d66737ccc316`。未写回旧清单或复用旧截图证明新内容。
+
+`npm run pr:preflight` 实际退出1：最终提交与描述统计、更新说明、设置页12项测试通过，然后被严格UI同步失败阻断。验证产生的历史三宽度report.json已恢复原提交字节，未计作新双端证据。
+
+远端main ruleset保持active，要求 `validate` 成功及审阅线程解决，审批数量为0；未添加 `sandbox-skip-ui-sync` 标签或修改规则。首次产品head `c4cd27a4` 的CI `41734420380` 描述校验通过、affected与required validate失败，日志确认同一Pages摘要不匹配；CodeQL `41734420896` 成功，两次平台读取均无review或行级评论。草稿尚未合并，未执行本轮微信、Pages或CloudBase部署。后续须补齐受控活动、行程和审核样本，重采同内容摘要的17路由双端证据，通过门禁后继续发布；双物理真机、普通成员完整写链路与目标云权威回读保持独立阻塞。
