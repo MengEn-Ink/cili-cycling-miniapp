@@ -19,6 +19,75 @@ const compiled = ts.transpileModule(read('miniprogram/config/appearance.ts'), {
 new Function('exports', compiled.outputText)(tokenModule.exports);
 const { APPEARANCE_TOKENS } = tokenModule.exports;
 
+test('两主题阅读层级与必要控件边界', async () => {
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage({ viewport: { width: 375, height: 900 } });
+    for (const mode of ['light', 'dark']) {
+      const tokens = Object.entries(APPEARANCE_TOKENS[mode])
+        .map(([key, value]) => `${key}:${value}`)
+        .join(';');
+      await page.setContent(`<page style="${tokens}"><view class="aihero-page">
+        <view class="section"><view class="metrics">
+          <view><text class="em">88</text><text class="meta">距离</text></view>
+          <view><text class="em">1200</text><text class="meta">爬升</text></view>
+          <view><text class="em">4</text><text class="meta">预计用时</text></view>
+        </view></view><input class="input"><text class="detailrow-desc">集合说明</text>
+      </view></page>`);
+      await page.addStyleTag({
+        content:
+          `${readStyles('miniprogram/app.wxss')}\n${readStyles('miniprogram/styles/aihero-layout.wxss')}`.replace(
+            /([\d.]+)rpx/g,
+            (_, value) => `${Number(value) / 2}px`,
+          ),
+      });
+      const result = await page.evaluate(() => {
+        const style = (selector) => getComputedStyle(document.querySelector(selector));
+        const luminance = (channels) =>
+          channels
+            .map((channel) => {
+              const v = channel / 255;
+              return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+            })
+            .reduce((sum, v, i) => sum + v * [0.2126, 0.7152, 0.0722][i], 0);
+        const input = style('.input');
+        const bg = input.backgroundColor.match(/[\d.]+/g).map(Number);
+        const border = input.borderTopColor.match(/[\d.]+/g).map(Number);
+        const alpha = border[3] ?? 1;
+        const blended = border.slice(0, 3).map((v, i) => v * alpha + bg[i] * (1 - alpha));
+        const a = luminance(blended),
+          b = luminance(bg.slice(0, 3));
+        return {
+          ratio: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05),
+          frame: style('.metrics').borderTopWidth,
+          divider: style('.metrics > view:nth-child(2)').borderLeftWidth,
+          section: style('.section').borderTopWidth,
+          label: parseFloat(style('.meta').fontSize),
+          prose: style('.detailrow-desc').fontFamily,
+          body: (() => {
+            const probe = document.createElement('span');
+            probe.style.fontFamily = 'var(--font-family-body)';
+            document.querySelector('.aihero-page').append(probe);
+            return getComputedStyle(probe).fontFamily;
+          })(),
+        };
+      });
+      assert.ok(result.ratio >= 3, `${mode}: input border ${result.ratio.toFixed(2)}:1`);
+      assert.equal(result.frame, '0px', mode);
+      assert.equal(result.divider, '0px', mode);
+      assert.equal(result.section, '0px', mode);
+      assert.ok(result.label >= 14, `${mode}: metric label`);
+      assert.equal(
+        result.prose.replace(/["']/g, '').trim(),
+        result.body.replace(/["']/g, '').trim(),
+        mode,
+      );
+    }
+  } finally {
+    await browser.close();
+  }
+});
+
 // Explicit browser regression: npx playwright install chromium, then node --test this file.
 // Keep browser installation out of default Vitest/coverage and their clean-CI startup path.
 // Real WXML classes + app/page WXSS cascade; NOT WeChatIDE or screenshot evidence.
@@ -152,7 +221,8 @@ test(
               probe.style.color = 'var(--color-bg)';
               root.append(probe);
               const title = root.querySelector('.pageheading-title');
-              const bodyFont = getComputedStyle(root).getPropertyValue('--font-family-body').trim();
+              probe.style.fontFamily = 'var(--font-family-body)';
+              const bodyFont = getComputedStyle(probe).fontFamily;
               const computed = {
                 background: getComputedStyle(root).backgroundColor,
                 expected: getComputedStyle(probe).color,
@@ -186,6 +256,12 @@ test(
                 computed.factsColumns =
                   getComputedStyle(facts).gridTemplateColumns.split(' ').length;
               }
+              computed.metricStyles = [
+                ...root.querySelectorAll('.metrics, .storyfacts, .trip-stats'),
+              ].map((group) => ({
+                frame: getComputedStyle(group).borderTopWidth,
+                dividers: [...group.children].map((node) => getComputedStyle(node).borderLeftWidth),
+              }));
               const preview = root.querySelector(
                 '.upload-media-background > .background-image, .club-cover-preview > .upload-image',
               );
@@ -195,6 +271,13 @@ test(
               return computed;
             });
             const context = `${width}/${mode}/${route}`;
+            for (const metric of result.metricStyles) {
+              assert.equal(metric.frame, '0px', `${context}: no metric frame`);
+              assert.ok(
+                metric.dividers.every((value) => value === '0px'),
+                `${context}: no metric separators`,
+              );
+            }
             assert.equal(result.background, result.expected, `${context}: root surface`);
             if (result.headingInset !== null) {
               assert.ok(

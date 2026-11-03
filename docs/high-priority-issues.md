@@ -1,5 +1,9 @@
 # 高优问题清单
 
+> **2026-11-04 交付推进：`COMMIT_PR_DEPLOY_AUTHORIZED / DELIVERY_IN_PROGRESS`。** 用户已授权本轮主题优化提交、合并和部署，远端`main@67244eec`未前进，暂无同需求开放PR。严格UI同步、DevTools样本与物理真机状态保留，后续以最终PR检查及不可变发布回执判定结果。下一步提交本轮文件、创建PR并闭合真实发布门禁。
+
+> **2026-11-03 浅暗可读性优化：`IMPLEMENTED / LOCAL_AUTOMATED_CHECKS_PASS / VALIDATE_FORMAT_BLOCKED / STRICT_UI_SYNC_BLOCKED / DEVTOOLS_PARTIAL_FAIL / NOT_DEPLOYED`。** 已在 `origin/main@67244eec` 的独立分支执行用户批准的暖白/近黑、无衬线、指标去框线与辅助文字优化，沿用既有主题切换。应用1425项、Node/消费者648项、13云包572项通过；17页两主题四宽度Pages检查通过，68张私有截图绑定当前内容摘要。设计、治理、更新说明和构建通过，主包456974B。完整validate在格式阶段被7份已有未跟踪研究产物阻断，其余阶段另行执行通过；中途发现的更新说明门禁失败已修复并复验。strict仍因历史Pages证据摘要漂移失败，未改旧清单；本轮DevTools只读为7通过/9失败/1超时，缺活动与行程样本且17路由补采未完成，不能视为当前双端验收。下一步准备受控样本并重采同内容摘要双端证据，通过strict后进行发布与独立真机/成员写链路验收。见[本轮记录](verification/2026-11-03-theme-readability.md)。
+
 > **2026-11-01 最终状态：`MERGED / MAIN_CI_PASS / DEVELOPMENT_UPLOADED / PAGES_DEPLOYED / EXPERIENCE_BLOCKED`。** [PR #420](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/420) 已合入 `main@62376d3a95c681d64380c4ce8d7dca5d6181f6a8`；最终候选 `bbdead45` 独立复审及三轮评论/checks闭环通过，本地validate2644/2644、coverage/audit通过。main CI `41303086878` 成功，微信 `41303321879` 实际上传开发版 `0.0.413.1`，Pages `41303086815` 发布成功且三个核心JS/CSS线上哈希与产品版本一致；CloudBase `41303321520` 明确无资源变更、安全跳过。体验版 `41303385402` 首先被严格Pages摘要漂移阻断，尚未生成本轮candidate或verified。用户本次豁免IDE截图补采，不等于严格晋级、平台选版或真机豁免。下一步：经授权重采同版本双端证据并消除真实UI同步差异，再通过来源校验、微信实际选版与平台回读；普通成员写链路、目标云与双物理真机继续独立阻塞。见[最终发布验收](verification/2026-11-01-aihero-light-dark-implementation.md#最终合并与发布验收2026-11-01)。
 >
 > 以下旧阶段记录仅作历史索引，不代表当前发布版本；最终事实以以上状态和对应Actions为准。

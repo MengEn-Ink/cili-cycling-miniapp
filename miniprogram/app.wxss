@@ -1190,15 +1190,17 @@ picker[disabled] {
 .aihero-page .eyebrow,
 .aihero-page .number,
 .aihero-page .metrics .em,
-.aihero-page .metric-value,
-.aihero-page .tag,
-.aihero-page .detailrow-desc {
+.aihero-page .metric-value {
   font-family: var(--font-family-mono);
   font-variant-numeric: tabular-nums;
 }
+.aihero-page .tag,
+.aihero-page .detailrow-desc {
+  font-family: var(--font-family-body);
+}
 .aihero-page .section {
   padding-top: 40rpx;
-  border-top: 1px solid var(--color-border);
+  border-top: 0;
 }
 .aihero-page .card,
 .aihero-page .paper,

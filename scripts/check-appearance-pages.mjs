@@ -124,14 +124,27 @@ try {
             foreground: styles.getPropertyValue('--color-text').trim(),
             overflow: canvas.scrollWidth > canvas.clientWidth + 1,
             smallButtons,
+            metricStyles: [...root.querySelectorAll('.metrics, .storyfacts, .ra-map-stats')].map(
+              (group) => ({
+                frame: getComputedStyle(group).borderTopWidth,
+                dividers: [...group.children].map((node) => getComputedStyle(node).borderLeftWidth),
+              }),
+            ),
           };
         });
         assert.equal(result.mode, mode);
-        assert.equal(result.background, mode === 'light' ? '#fbfbfc' : '#0b0a0c');
-        assert.equal(result.foreground, mode === 'light' ? '#14161a' : '#f4f3f1');
+        assert.equal(result.background, mode === 'light' ? '#f7f6f2' : '#0b0a0c');
+        assert.equal(result.foreground, mode === 'light' ? '#1f2324' : '#f4f3f1');
         assert.equal(result.overflow, false, `${width}/${mode}/${route}: horizontal overflow`);
         assert.deepEqual(result.smallButtons, [], `${width}/${mode}/${route}: small touch targets`);
         const context = `${width}/${mode}/${route}`;
+        for (const metric of result.metricStyles) {
+          assert.equal(metric.frame, '0px', `${context}: no metric frame`);
+          assert.ok(
+            metric.dividers.every((value) => value === '0px'),
+            `${context}: no metric separators`,
+          );
+        }
         if (result.headingInset !== null)
           assert.equal(result.headingInset, 20, `${context}: heading gutter`);
         if (result.contentInset !== null) {
