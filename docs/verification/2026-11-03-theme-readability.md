@@ -62,3 +62,27 @@
 用户明确追加“本次跳过，直接合并发布”。本轮使用仓库已有 `sandbox-skip-ui-sync` 标签与本地 `CILI_SKIP_UI_SYNC=1`，豁免普通UI截图同步和本轮DevTools补采；历史失败结果保留，未重签旧证据、降低其他测试或修改主线保护规则。严格体验版门禁不接受该标签，仍需独立同版本证据与平台回读；双物理真机、普通成员写链路与目标云权威回读继续标注未执行。
 
 发布目标为PR #424合并后的main不可变SHA，由既有GitHub Actions执行微信开发版上传、Pages发布及CloudBase累计变更判定。后续以同SHA CI、真实上传receipt、发布outcome与线上静态资源回读确认结果，CloudBase无资源变更的安全跳过不能写成实际部署成功。
+
+本轮 `CILI_SKIP_UI_SYNC=1 npm run validate` 在干净工作树实际退出0，完整执行至13云包测试、部署包一致性和build。仅普通UI同步按授权跳过；应用1425项、Node/消费者648项、云包572项均通过，合计2645项。覆盖率和high阈值安全审计沿用同产品内容的已通过结果。历史三宽度生成报告恢复原始字节，未作为本轮双端同步证据。
+
+最终候选 `6a75a4edba011d98ccffca61f405d29c066f57dc` 的CI `41749179108` 与CodeQL `41749146379` 成功，三轮独立平台检查确认最新main基准一致、最新必需检查成功、无开放审阅线程。PR #424于2026-11-04合并为 `d617ed27117ddf1f69db225ef62b329da3f13368`，小程序和Pages产品文件与最终候选完全一致。main CI `41749663645` 的全量验证、覆盖率和安全审计全部成功，CodeQL `41749663917` 成功。
+
+Pages `41749662971` 发布成功，平台构建commit回读为同一 `d617ed27`。线上 `styles.css`、`schema.js`、`app.js` SHA-256与合入源码全部一致；其中前两项在发布前与候选不同，发布后收敛，排除仍消费旧主题静态资源的情况。
+
+CloudBase `41750083525` 成功结束，下载的outcome artifact ZIP摘要为 `sha256:e89ed0d90c3ad3197c1a7e416ec4c5731c163a897c1fe64b13732d4b43f8ca66`，已逐字节校验。outcome的target/tooling SHA均为 `d617ed27117ddf1f69db225ef62b329da3f13368`，状态 `SKIPPED`、`sideEffectsStarted=false`，本轮无云资源变更；不能表述为实际执行云函数部署或目标云写链路验收。
+
+微信 `41750083564` 实际上传开发版 `0.0.415.1`，release receipt为 `SUCCEEDED`，target/tooling SHA均为同一 `d617ed27`、ciRunId为 `41749663645`，deployment/readback/cleanup三项均为true。artifact ZIP摘要 `sha256:6dd1ffc43308c9ba6c68ca8397f59e9a3ed6bf605add81d90ca3220a3510d600` 已复算匹配，sourceTree `ecbb4ee6a3b0cc20d6dab1d73b336737f18850ec` 与Git树一致，基础设施摘要及来源workflow/attempt也通过现有release-baseline校验。回执与原始平台数据仅私有保存，公开记录有界摘要。
+
+本地独立回执校验首次因未设置 `CLOUDBASE_REGION`，本机期望区域为空而失败；随后只读回查GitHub `cloudbase-production` 环境变量为 `ap-shanghai`，按平台配置重新校验两端来源、内容和摘要全部通过。这是本地证据校验参数缺项，不是云部署失败或修改云环境。
+
+体验版自动晋级 `41750205487` 实际失败于 `check:ui-sync -- --strict`，仍是历史Pages证据摘要不匹配，未生成本轮candidate或verified。用户的本次豁免使开发版与Pages可以发布，不改变严格晋级流程；未执行物理真机、普通成员完整写链路、目标云权威写后回读或体验版平台选版验收。
+
+| 发布对象 | 不可变版本 / 运行 | 结果 |
+| --- | --- | --- |
+| 主题代码 | PR #424 / `d617ed27117ddf1f69db225ef62b329da3f13368` | 已合并，PR与main检查通过 |
+| 微信开发版 | `0.0.415.1` / `41750083564` | 实际上传，receipt来源、内容与ZIP摘要通过 |
+| Pages | `41749662971` | 同SHA发布，三项线上JS/CSS摘要一致 |
+| CloudBase | `41750083525` | 无资源变更，SKIPPED且无副作用 |
+| 体验版 | `41750205487` | strict受阻；无当前candidate/verified |
+
+本轮已完成用户授权的主题合并与开发版/Pages发布；尚未完成的严格双端证据、体验版与独立P0留在高优问题清单。下一步由受控样本与验收人员补齐后继续验收。
