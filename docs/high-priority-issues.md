@@ -1,5 +1,7 @@
 # 高优问题清单
 
+> **2026-11-04 本轮豁免与发布：`UI_SYNC_WAIVED_THIS_RUN / MERGE_RELEASE_AUTHORIZED / DELIVERY_IN_PROGRESS`。** 用户明确要求“本次跳过，直接合并发布”，本轮允许使用既有 `sandbox-skip-ui-sync` 标签与 `CILI_SKIP_UI_SYNC=1` 跳过普通截图同步；严格体验版门禁和未执行验收仍如实保留。下一步重跑其余完整校验与PR门禁，合并后验证微信开发版、Pages及CloudBase发布回执，不能把豁免称作双端或真机验收通过。
+
 > **2026-11-04 交付推进：`COMMITTED / PUSHED / PR424_DRAFT / VALIDATE_UI_SYNC_BLOCKED / STRICT_UI_SYNC_BLOCKED / NOT_MERGED / NOT_DEPLOYED`。** 用户已授权提交、合并和部署；主题代码已提交为 `c4cd27a4` 并推送，[PR #424](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/424) 已创建草稿。干净工作树覆盖率、high 阈值安全审计、治理通过，完整validate在UI同步阶段退出1，最终提交预检也被strict阻断；首次产品head的PR描述与CodeQL通过，远端CI `41734420380` 的affected与required validate因同一Pages摘要漂移失败。最终产品摘要绑定的官方DevTools只读为10通过/10失败/0异常、14/17路由，缺活动、行程和审核样本；strict再次因历史Pages截图摘要不匹配失败。main保护要求validate成功，未添加豁免标签、重签旧截图或触发部署。下一步补齐可用样本与当前双端证据，通过真实PR门禁后继续合并发布；双物理真机、普通成员写链路与目标云独立P0保留。见[交付记录](verification/2026-11-03-theme-readability.md#提交与交付推进2026-11-04)。
 
 > **2026-11-03 浅暗可读性优化：`IMPLEMENTED / LOCAL_AUTOMATED_CHECKS_PASS / VALIDATE_FORMAT_BLOCKED / STRICT_UI_SYNC_BLOCKED / DEVTOOLS_PARTIAL_FAIL / NOT_DEPLOYED`。** 已在 `origin/main@67244eec` 的独立分支执行用户批准的暖白/近黑、无衬线、指标去框线与辅助文字优化，沿用既有主题切换。应用1425项、Node/消费者648项、13云包572项通过；17页两主题四宽度Pages检查通过，68张私有截图绑定当前内容摘要。设计、治理、更新说明和构建通过，主包456974B。完整validate在格式阶段被7份已有未跟踪研究产物阻断，其余阶段另行执行通过；中途发现的更新说明门禁失败已修复并复验。strict仍因历史Pages证据摘要漂移失败，未改旧清单；本轮DevTools只读为7通过/9失败/1超时，缺活动与行程样本且17路由补采未完成，不能视为当前双端验收。下一步准备受控样本并重采同内容摘要双端证据，通过strict后进行发布与独立真机/成员写链路验收。见[本轮记录](verification/2026-11-03-theme-readability.md)。
