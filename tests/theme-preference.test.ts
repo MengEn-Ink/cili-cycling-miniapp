@@ -34,10 +34,10 @@ describe('全局浅暗主题偏好与页面邻接', () => {
     service.setAppearance('light');
     expect(page.data.business).toBe(7);
     expect(page.data.appearanceMode).toBe('light');
-    expect(page.data.appearanceStyle).toContain('--color-bg:#fbfbfc');
+    expect(page.data.appearanceStyle).toContain('--color-bg:#f7f6f2');
     expect(wxApi.setStorageSync).toHaveBeenCalledWith('cili-appearance', 'light');
     expect(wxApi.setNavigationBarColor).toHaveBeenLastCalledWith(
-      expect.objectContaining({ frontColor: '#000000', backgroundColor: '#fbfbfc' }),
+      expect.objectContaining({ frontColor: '#000000', backgroundColor: '#f7f6f2' }),
     );
     expect(wxApi.setTabBarItem).toHaveBeenCalledWith(
       expect.objectContaining({ iconPath: 'assets/tabbar/activities.png' }),

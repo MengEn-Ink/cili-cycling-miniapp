@@ -129,7 +129,7 @@ describe('FORMAL GitHub Pages 骑行影像志', () => {
     expect(data.prototypeData?.releaseNotes[0]).toEqual([
       '2026.11.01.1',
       '浅色与暗色，按你的习惯阅读',
-      '17 个页面统一清晰排版，可在设置中选择浅色或暗色，退出后保留选择。',
+      '暖白与近黑两套阅读界面，减少装饰框线，放大骑行指标与辅助文字，退出后保留主题选择。',
     ]);
     runtime.prototypeState = 'default';
     const settings = runtime.pageTemplates?.settings?.() ?? '';
