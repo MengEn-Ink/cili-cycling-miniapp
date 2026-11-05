@@ -44,7 +44,24 @@ WXML 结构未改，所有既有交互、数据绑定、aria 标签和触控尺�
 
 截图证据：`C:\Users\89786\AppData\Local\Temp\no-border-light-fixed2.png`（浅色）、`no-border-dark-fixed.png`（暗色）。改前用户截图见会话内 `tmp_444d49b773ba51dcac3df3fbffb30d18.png`。
 
+## 合并、main CI 与部署回读
+
+| 项目 | 结果 |
+| --- | --- |
+| 合并 | [PR #430](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/430) 于 2026-11-05T23:34:55Z 以 squash 合入 `main@4ae96e7e512a510031194aec4cf7600edd9ffac0`，源分支 `design/no-border-fact-list` 的远程引用已随合并删除 |
+| PR 门禁 | 最终一轮 CI `42129581029` 的 `affected-pr` / `pr-submission` / `validate` 全绿，CodeQL `42128490688` 通过；首个 `synchronize` 运行 `42128490704` 的 `pr-submission` 抓到旧 PR 描述而失败，由后续干净 `edited` 运行覆盖，不视为当前代码失败 |
+| main CI | push 运行 `42130474342` 的 `main-validate` / `main-coverage` / `main-audit` / `upload-decision` 全部通过，CodeQL `42130474517` 通过，Pages `42130473737` 发布成功 |
+| 自动部署 | main CI 成功后按 `workflow_run` 触发 `微信开发版自动上传 42130944431` 与 `CloudBase 自动部署 42130944404`，两者 head SHA 均为 `4ae96e7e` |
+
+### 部署结果
+
+- 开发版：`微信开发版自动上传 42130944431` 成功。上传回执记录 `version=0.0.419.1`、`robot=1`、`mainSha=4ae96e7e…`；发布回执的 `outcome=SUCCEEDED`、`sideEffectsStarted=true`、`checks.deployment/readback/cleanup` 三项均为 true、`sourceTree=90a4878b3305574e88134cd9bbf070b08a94cc90`，上传诊断为 `UPLOADED / sdk-confirmed`。不可变 artifact 为 `miniprogram-release-receipt-…-1`（`13462688636`）与 `miniprogram-upload-receipt-…`（`13462643701`）。
+- CloudBase：`42130944404` 成功结束，但不可变 outcome 明确为 `SKIPPED` / `sideEffectsStarted=false`：本次纯前端样式与文档改动不影响云资源，属于安全跳过，不是实际资源变更。
+- 体验版：`微信体验版晋级证据门禁 42131051248` 在 `Require zero GitHub Pages UI drift` 步骤失败，`npm run check:ui-sync -- --strict` 报清单摘要 `sha256:3eb3af30…` 与当前 `sha256:1036334d…` 不匹配；本轮未生成 candidate 或 verified，也没有微信公众平台选版回读。
+
+分支阶段没有手动上传，最终交付只以 main 自动上传的 `0.0.419.1` 为准。开发版上传不等于体验版 verified。
+
 ## 未关闭项
 
 - 严格 `check:ui-sync -- --strict` 仍因历史 Pages 原型摘要漂移失败（清单 `3eb3af30…` / `main` 基线 `1cabbc60…`），17 路由同版本双端截图未重采；普通模式沿用仓库受控标签 `sandbox-skip-ui-sync`，与 PR #425 / #427 / #428 一致，strict 不豁免。
-- 体验版平台选版与回读、iOS/Android 双真机 UAT、普通成员写链路、目标云权威回继续独立 BLOCKED；代码包上传不等于体验版 verified。
+- 体验版平台选版与回读、iOS/Android 双真机 UAT、普通成员写链路、目标云权威回读仍独立 BLOCKED；代码包上传不等于体验版 verified。
