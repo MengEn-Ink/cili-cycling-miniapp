@@ -54,6 +54,8 @@ CI 契约回归修复：`docs/styles.css` 的 `:root` 与浅暗镜像块同步�
 
 本 PR 因改动 `project.config.json` 命中全局风险规则，`affected-pr` 走 full 模式（完整 `validate` + `coverage` + `audit:all`）。对于历史视觉证据欠账，PR 沿用前序已合并 UI PR #425 的仓库受控标签 `sandbox-skip-ui-sync`，其定义是「经授权的沙箱交付可跳过普通 CI 视觉证据同步；严格发布门禁不跳过」。该标签只跳过普通模式的视觉证据同步，不跳过严格发布门禁；17 路由双端证据、真机 UAT 与体验版平台回读仍独立 BLOCKED。
 
+第二个 CI 运行 `42061801961` 已完整通过 `validate` 与 `coverage`，仅 `audit:all` 失败：`tools/miniprogram-ci/audit-allowlist.json` 中的 `GHSA-G3HV-75WG-M249`（minimatch globparts 放大拒绝服务）在上传工具的实际审计报告中已不再出现，`scripts/audit-miniprogram-ci.mjs` 按「上游修复后旧例外必须删除」判定该例外失效；`docs/github-governance.md` 同样要求清理已消失的例外。本 PR 删除该条目并把 `reviewedAt` 更新为 `2026-11-05`（`expiresAt` 与 120 天上限不变），剩余 4 个已评估告警、无可升级修复、无未评估告警，属于收紧安全例外而非放宽门禁。本机以官方 registry 逐个复核 13 个云函数 `npm audit --audit-level=high` 全部退出 0；本机默认华为 npm 镜像的 audit 接口返回 405、Windows 下 `spawnSync('npx')` 差异使 `npm run audit:all` 无法在本机完整复现，最终以 CI 结果为准。
+
 ## 微信开发者工具实测
 
 - CLI 授权有效、登录账号蒙恩、skill 版本 0.3.11（`versionRelation: equal`）。
