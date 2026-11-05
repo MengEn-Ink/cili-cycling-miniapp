@@ -538,7 +538,7 @@
 .profile-permission-action {
   min-height: 56rpx;
   margin-top: var(--space-1);
-  color: var(--color-action);
+  color: var(--color-brand-text);
   font-size: var(--font-size-label);
   line-height: 56rpx;
 }

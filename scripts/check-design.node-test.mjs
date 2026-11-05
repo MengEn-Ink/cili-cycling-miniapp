@@ -3,11 +3,17 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import {
+  LEGACY_BRAND_TEXT_TOKENS,
+  appearanceContrastPairCount,
+  collectAppearanceContrastIssues,
+  collectBrandTextTokenViolations,
   collectStyleLiteralViolations,
   collectTokenReferenceIssues,
   contrastRatio,
+  parseAppearanceSource,
   parseFontMigrationTable,
   parseMigrationTable,
+  parseThemeAppearance,
   parseWxssTokens,
   resolvedTokenValue,
   runRepositoryCheck,
@@ -369,8 +375,201 @@ test('repository resolves the current theme while retaining the historical migra
   assert.deepEqual(runRepositoryCheck(), {
     colorLiteralCount: 0,
     fontLiteralCount: 0,
+    brandTextViolations: 0,
     migrationRows: 53,
     nativePageConfigs: 17,
     requiredComponentTokens: 25,
+    appearanceContrastPairs: 37,
   });
+});
+
+const repositorySources = {
+  contract: JSON.parse(
+    readFileSync(new URL('../miniprogram/config/theme-contract.json', import.meta.url), 'utf8'),
+  ),
+  appJson: JSON.parse(readFileSync(new URL('../miniprogram/app.json', import.meta.url), 'utf8')),
+  themeSource: readFileSync(new URL('../miniprogram/config/theme.ts', import.meta.url), 'utf8'),
+  appearanceSource: readFileSync(
+    new URL('../miniprogram/config/appearance.ts', import.meta.url),
+    'utf8',
+  ),
+};
+
+const lightAppearanceFixture = `
+const common = { '--page-gutter': '40rpx' };
+export const APPEARANCE_TOKENS = {
+  dark: { ...common, '--color-text': '#f4f3f1' },
+  light: { ...common, '--color-text': '#1f2324' },
+} as const;
+export const LIGHT_APPEARANCE = {
+  navigation: { backgroundColor: '#f7f6f2', frontColor: '#000000' },
+  tabBar: { backgroundColor: '#f7f6f2', borderStyle: 'white', color: '#5c6467', selectedColor: '#b72c2c' },
+  background: { backgroundColor: '#f7f6f2' },
+} as const;
+`;
+
+test('appearance parsers resolve both runtime token sets and native configurations', () => {
+  const appearance = parseAppearanceSource(repositorySources.appearanceSource);
+  assert.equal(appearance.native.tabBar.selectedColor, '#b72c2c');
+  assert.equal(appearance.tokens.light['--color-text'], '#1f2324');
+  assert.equal(appearance.tokens.dark['--color-text'], '#f4f3f1');
+  assert.equal(appearance.tokens.dark['--color-brand-text'], '#f06464');
+  assert.equal(appearance.tokens.light['--color-brand-text'], '#b72c2c');
+  assert.equal(
+    appearance.tokens.light['--page-gutter'],
+    appearance.tokens.dark['--page-gutter'],
+    'shared tokens are merged into both modes',
+  );
+  const theme = parseThemeAppearance(repositorySources.themeSource);
+  assert.equal(theme.native.tabBar.selectedColor, '#e54242');
+  assert.equal(theme.native.navigation.frontColor, '#ffffff');
+  assert.throws(
+    () => parseAppearanceSource('export const APPEARANCE_TOKENS = {} as const;'),
+    /missing/,
+  );
+});
+
+test('light tabBar selected color regression is rejected by the contrast gate', () => {
+  assert.deepEqual(collectAppearanceContrastIssues(repositorySources), []);
+  assert.equal(appearanceContrastPairCount(repositorySources.contract), 37);
+  const regressed = {
+    ...repositorySources,
+    appearanceSource: repositorySources.appearanceSource.replace(
+      "selectedColor: '#b72c2c'",
+      "selectedColor: '#e54242'",
+    ),
+  };
+  const issues = collectAppearanceContrastIssues(regressed);
+  assert.equal(issues.length, 1);
+  assert.match(issues[0], /light\/tabbar-selected/);
+  assert.match(issues[0], /3\.742:1 below 4\.5/);
+});
+
+test('appearance contrast fails closed on missing sources, coverage and minimums', () => {
+  const { contract } = repositorySources;
+  const withContract = (appearanceContrast) => ({ ...contract, appearanceContrast });
+  assert.match(
+    collectAppearanceContrastIssues({
+      ...repositorySources,
+      contract: withContract(undefined),
+    })[0],
+    /contract section missing/,
+  );
+  assert.match(
+    collectAppearanceContrastIssues({ ...repositorySources, appearanceSource: undefined })[0],
+    /appearance\.ts source is required/,
+  );
+  assert.match(
+    collectAppearanceContrastIssues({ ...repositorySources, themeSource: undefined })[0],
+    /theme\.ts source is required/,
+  );
+  assert.ok(
+    collectAppearanceContrastIssues({
+      ...repositorySources,
+      contract: withContract({ ...contract.appearanceContrast, runtimeNativePairs: [] }),
+    }).some((issue) => issue.includes('native.tabBar.selectedColor')),
+    'deleting native pairs cannot hide the TabBar regression',
+  );
+  assert.ok(
+    collectAppearanceContrastIssues({
+      ...repositorySources,
+      contract: withContract({
+        ...contract.appearanceContrast,
+        requiredModes: ['dark', 'startup'],
+      }),
+    }).some((issue) => /requiredModes must declare light/.test(issue)),
+  );
+  const brokenMinimums = {
+    ...contract.appearanceContrast,
+    tokenPairs: contract.appearanceContrast.tokenPairs.map((pair, index) =>
+      index === 0 ? { ...pair, minimum: 'missing' } : pair,
+    ),
+  };
+  assert.ok(
+    collectAppearanceContrastIssues({
+      ...repositorySources,
+      contract: withContract(brokenMinimums),
+    }).some((issue) => /unknown minimum/.test(issue)),
+  );
+});
+
+test('schema v5 pins the light runtime tabBar to the appearance source', () => {
+  const lightRuntimeTabBar = {
+    backgroundColor: '#f7f6f2',
+    borderStyle: 'white',
+    color: '#5c6467',
+    selectedColor: '#b72c2c',
+  };
+  const lightContract = {
+    ...validContract,
+    schemaVersion: 5,
+    native: { ...native, lightRuntimeTabBar },
+  };
+  const snapshot = {
+    ...validSnapshot,
+    contract: lightContract,
+    appearanceSource: lightAppearanceFixture,
+  };
+  assert.doesNotThrow(() => validateContractSnapshot(snapshot));
+  assert.throws(
+    () =>
+      validateContractSnapshot({
+        ...snapshot,
+        appearanceSource: lightAppearanceFixture.replace(
+          "selectedColor: '#b72c2c'",
+          "selectedColor: '#e54242'",
+        ),
+      }),
+    /appearance\.ts light tabBar\.selectedColor/,
+  );
+  assert.throws(
+    () => validateContractSnapshot({ ...snapshot, appearanceSource: undefined }),
+    /appearance\.ts source is required/,
+  );
+  assert.throws(
+    () => validateContractSnapshot({ ...snapshot, contract: { ...lightContract, native } }),
+    /schema v5 requires/,
+  );
+});
+
+test('light brand text regression is rejected on canvas, surface and raised', () => {
+  const regressed = {
+    ...repositorySources,
+    appearanceSource: repositorySources.appearanceSource.replace(
+      "'--color-brand-text': '#b72c2c'",
+      "'--color-brand-text': '#e54242'",
+    ),
+  };
+  const issues = collectAppearanceContrastIssues(regressed);
+  assert.equal(issues.length, 3);
+  for (const surface of ['canvas', 'surface', 'raised']) {
+    assert.ok(
+      issues.some((issue) => issue.includes(`light/brand-text-on-${surface}`)),
+      `${surface} must be checked`,
+    );
+  }
+  assert.ok(issues.every((issue) => /below 4\.5/.test(issue)));
+});
+
+test('brand red used as text must use the dedicated text token', () => {
+  assert.equal(LEGACY_BRAND_TEXT_TOKENS.size, 5);
+  const issues = collectBrandTextTokenViolations([
+    [
+      'miniprogram/pages/a.wxss',
+      [
+        '.a { color: var(--color-brand); }',
+        '.b { color: var(--color-action) !important; }',
+        '.c { border-color: var(--color-brand); background-color: var(--color-action); }',
+        '.d { color: var(--color-brand-text); }',
+        '.e { background: var(--color-action); color: var(--color-danger-text); }',
+      ].join('\n'),
+    ],
+  ]);
+  assert.deepEqual(
+    issues.map(({ token, line }) => ({ token, line })),
+    [
+      { token: '--color-brand', line: 1 },
+      { token: '--color-action', line: 2 },
+    ],
+  );
 });

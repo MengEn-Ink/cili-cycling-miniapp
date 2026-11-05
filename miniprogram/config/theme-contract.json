@@ -1,8 +1,9 @@
 {
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "sources": {
     "wxss": "miniprogram/app.wxss",
     "themeTs": "miniprogram/config/theme.ts",
+    "appearanceTs": "miniprogram/config/appearance.ts",
     "appJson": "miniprogram/app.json",
     "migrationMap": "docs/designs/2026-10-27-ui-revamp-v1/pr-b-literal-token-map.md"
   },
@@ -41,6 +42,12 @@
       "borderStyle": "black",
       "color": "#b8b3ba",
       "selectedColor": "#e54242"
+    },
+    "lightRuntimeTabBar": {
+      "backgroundColor": "#f7f6f2",
+      "borderStyle": "white",
+      "color": "#5c6467",
+      "selectedColor": "#b72c2c"
     }
   },
   "sourceSpecificDifferences": [],
@@ -113,6 +120,7 @@
       "--color-border-strong",
       "--color-action",
       "--color-action-active",
+      "--color-brand-text",
       "--color-on-action",
       "--color-status-success",
       "--color-status-warning",
@@ -172,6 +180,157 @@
       "foreground": "--color-on-action",
       "background": "--color-action",
       "minimum": 4.5
+    },
+    {
+      "name": "brand-text-on-startup-canvas",
+      "foreground": "--color-brand-text",
+      "background": "--color-bg",
+      "minimum": 4.5
     }
-  ]
+  ],
+  "appearanceContrast": {
+    "document": "DESIGN.md",
+    "minimums": {
+      "text": 4.5,
+      "control": 3
+    },
+    "requiredModes": ["dark", "light", "startup"],
+    "requiredForegrounds": [
+      "--color-text",
+      "--color-muted",
+      "--color-brand-text",
+      "--color-border-strong",
+      "native.tabBar.selectedColor",
+      "native.tabBar.color",
+      "native.navigation.frontColor",
+      "appJson.tabBar.selectedColor",
+      "appJson.window.navigationBarTextStyle"
+    ],
+    "tokenPairs": [
+      {
+        "name": "text-on-canvas",
+        "foreground": "--color-text",
+        "background": "--color-bg",
+        "minimum": "text"
+      },
+      {
+        "name": "muted-on-canvas",
+        "foreground": "--color-muted",
+        "background": "--color-bg",
+        "minimum": "text"
+      },
+      {
+        "name": "muted-on-surface",
+        "foreground": "--color-muted",
+        "background": "--color-surface",
+        "minimum": "text"
+      },
+      {
+        "name": "placeholder-on-input",
+        "foreground": "--color-placeholder",
+        "background": "--color-input-bg",
+        "minimum": "text"
+      },
+      {
+        "name": "disabled-on-surface",
+        "foreground": "--color-disabled-text",
+        "background": "--color-surface",
+        "minimum": "text"
+      },
+      {
+        "name": "border-on-canvas",
+        "foreground": "--color-border-strong",
+        "background": "--color-bg",
+        "minimum": "control"
+      },
+      {
+        "name": "border-on-input",
+        "foreground": "--color-border-strong",
+        "background": "--color-input-bg",
+        "minimum": "control"
+      },
+      {
+        "name": "brand-active-on-canvas",
+        "foreground": "--color-brand-active",
+        "background": "--color-bg",
+        "minimum": "text"
+      },
+      {
+        "name": "brand-text-on-canvas",
+        "foreground": "--color-brand-text",
+        "background": "--color-bg",
+        "minimum": "text"
+      },
+      {
+        "name": "brand-text-on-surface",
+        "foreground": "--color-brand-text",
+        "background": "--color-surface",
+        "minimum": "text"
+      },
+      {
+        "name": "brand-text-on-raised",
+        "foreground": "--color-brand-text",
+        "background": "--color-raised",
+        "minimum": "text"
+      },
+      {
+        "name": "success-on-soft",
+        "foreground": "--color-status-success",
+        "background": "--color-status-success-soft",
+        "minimum": "text"
+      },
+      {
+        "name": "warning-on-soft",
+        "foreground": "--color-status-warning",
+        "background": "--color-status-warning-soft",
+        "minimum": "text"
+      },
+      {
+        "name": "danger-on-soft",
+        "foreground": "--color-danger-text",
+        "background": "--color-danger-soft",
+        "minimum": "text"
+      }
+    ],
+    "runtimeNativePairs": [
+      {
+        "name": "tabbar-selected",
+        "foreground": "native.tabBar.selectedColor",
+        "background": "native.tabBar.backgroundColor",
+        "minimum": "text"
+      },
+      {
+        "name": "tabbar-idle",
+        "foreground": "native.tabBar.color",
+        "background": "native.tabBar.backgroundColor",
+        "minimum": "text"
+      },
+      {
+        "name": "navigation-front",
+        "foreground": "native.navigation.frontColor",
+        "background": "native.navigation.backgroundColor",
+        "minimum": "text"
+      }
+    ],
+    "startupNativePairs": [
+      {
+        "name": "tabbar-selected",
+        "foreground": "appJson.tabBar.selectedColor",
+        "background": "appJson.tabBar.backgroundColor",
+        "minimum": "text"
+      },
+      {
+        "name": "tabbar-idle",
+        "foreground": "appJson.tabBar.color",
+        "background": "appJson.tabBar.backgroundColor",
+        "minimum": "text"
+      },
+      {
+        "name": "navigation-front",
+        "foreground": "appJson.window.navigationBarTextStyle",
+        "background": "appJson.window.navigationBarBackgroundColor",
+        "minimum": "text"
+      }
+    ]
+  }
 }

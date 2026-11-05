@@ -49,7 +49,7 @@
 .pill--danger {
   border: 2rpx solid var(--color-brand);
   background: var(--color-surface);
-  color: var(--color-brand-active);
+  color: var(--color-brand-text);
 }
 .pill--ticket.pill--danger {
   border-color: transparent;

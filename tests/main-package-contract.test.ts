@@ -13,6 +13,7 @@ const {
   assessMainPackageBytes,
   assertMainPackageBudget,
   mainPackageFiles,
+  packedExclusions,
 } = packageSize;
 
 const appConfig = JSON.parse(readFileSync('miniprogram/app.json', 'utf8')) as MiniProgramAppConfig;
@@ -76,6 +77,12 @@ describe('按需分包与主包字节契约', () => {
     expect(mainFiles.some((file: string) => file.endsWith('/.DS_Store'))).toBe(false);
     expect(mainFiles).not.toContain('miniprogram/repositories/mock.ts');
     expect(mainFiles.some((file: string) => file.startsWith('miniprogram/mock/'))).toBe(false);
+  });
+
+  it('checker-only 主题契约按 packOptions.ignore 排除上传', () => {
+    const exclusions = packedExclusions();
+    expect([...exclusions.files]).toContain('miniprogram/config/theme-contract.json');
+    expect(mainPackageFiles()).not.toContain('miniprogram/config/theme-contract.json');
   });
 
   it('退役组件和测试替身不回流生产源码或页面注册', () => {

@@ -90,11 +90,10 @@
   color: var(--color-text);
 }
 .conclusion-label {
-  color: var(--color-brand);
+  color: var(--color-brand-text);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-label);
   letter-spacing: 2rpx;
-  opacity: 0.76;
 }
 .conclusion-copy {
   margin-top: var(--space-2);
@@ -260,7 +259,7 @@
   font-weight: 900;
 }
 .selected-km {
-  color: var(--color-brand);
+  color: var(--color-brand-text);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-body);
   font-weight: 800;
@@ -488,7 +487,7 @@
   justify-content: center;
   padding: 8rpx 0;
   border-right: 2rpx dashed var(--color-border);
-  color: var(--color-brand);
+  color: var(--color-brand-text);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-body);
   line-height: 36rpx;
@@ -546,7 +545,7 @@
   line-height: 40rpx;
 }
 .risk-mark {
-  color: var(--color-brand);
+  color: var(--color-brand-text);
   font-weight: 900;
 }
 .strategy-row text:first-child {

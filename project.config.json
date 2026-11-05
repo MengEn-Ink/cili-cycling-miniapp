@@ -4,5 +4,8 @@
   "projectname": "cili-cycling-miniapp",
   "miniprogramRoot": "miniprogram/",
   "cloudfunctionRoot": "cloudfunctions/",
-  "setting": { "es6": true, "postcss": true, "useCompilerPlugins": ["typescript"] }
+  "setting": { "es6": true, "postcss": true, "useCompilerPlugins": ["typescript"] },
+  "packOptions": {
+    "ignore": [{ "type": "file", "value": "config/theme-contract.json" }]
+  }
 }
