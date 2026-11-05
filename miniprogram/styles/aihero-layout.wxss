@@ -87,16 +87,14 @@
   line-height: 1.8;
   color: var(--color-text);
 }
+/* 键值事实流共享基线：层级由留白、字重与页面级节奏点承载，不叠行分隔线。 */
 .aihero-page.aihero-page .detailrow {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 16rpx;
-  padding: 24rpx 0;
-  border-bottom: 1px solid var(--color-border);
-}
-.aihero-page.aihero-page .detailrow:last-child {
-  border-bottom: 0;
+  padding: 8rpx 0 8rpx 20rpx;
 }
 .aihero-page.aihero-page .detailrow-term,
 .aihero-page.aihero-page .dt {
@@ -767,7 +765,7 @@
 .settings-page.aihero-page .detailrows {
   margin-top: 24rpx;
   padding: 0 24rpx;
-  border: 1px solid var(--color-border);
+  border: 0;
   border-radius: 18rpx;
   background: var(--color-surface);
 }

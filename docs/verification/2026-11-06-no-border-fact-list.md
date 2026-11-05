@@ -15,11 +15,12 @@
 - 每行左侧用 `--color-brand-fill` 的 8rpx 方点做节奏锚点，与章节红色竖条对齐成阅读轴；影院模式改用 `--color-cinema-red`。它不是分隔线，不占内容列。
 - 集合地点「导航」去掉描边，改用 `--color-brand-text` 文字色（浅 `#b72c2c` / 暗 `#f06464`，4.5:1 口径），保留 88rpx 触控高度。
 - 次级按钮 `.btn.secondary` 由描边改为 `border-color: transparent` + `--color-raised` 平面填充；主 CTA 红色填充不变。
-- 影院模式移除 `.detail-page .detailrow` 的独立面板底色，避免去框后变成一排色块。
+- 影院模式移除 `.detail-page .detailrow` 的独立面板底色，并同步去掉 `.detail-page .btn.secondary` 的高优先级描边覆盖，避免去框后变成一排色块或又出现描边按钮。
+- 实测发现共享基线 `miniprogram/styles/aihero-layout.wxss` 的 `.aihero-page.aihero-page .detailrow` 仍带 `border-bottom` 且优先级高于各页规则，会在浅色下把三条行线加回来；已删除该声明与对应 `:last-child` 规则，统一改为 `padding: 8rpx 0 8rpx 20rpx` 给节奏点留位，并去掉 `.settings-page.aihero-page .detailrows` 的外框。设置页自身的入口分隔行按其契约保留。
 
 ## 改动文件
 
-- 样式：`miniprogram/pages/activity-detail/index.wxss`、`miniprogram/pages/admin/activity-edit/index.wxss`、`miniprogram/pages/admin/club-applications/index.wxss`、`miniprogram/pages/admin/review-detail/index.wxss`、`miniprogram/pages/club/center/index.wxss`、`miniprogram/pages/registration-form/index.wxss`。
+- 样式：`miniprogram/pages/activity-detail/index.wxss`、`miniprogram/pages/admin/activity-edit/index.wxss`、`miniprogram/pages/admin/club-applications/index.wxss`、`miniprogram/pages/admin/review-detail/index.wxss`、`miniprogram/pages/club/center/index.wxss`、`miniprogram/pages/registration-form/index.wxss`，以及共享基线 `miniprogram/styles/aihero-layout.wxss`。
 - App 更新文案：`miniprogram/pages/settings/index.ts` 仅在当前版本 `2026.11.01.1` 内补充 summary 与功能项，`date` 保持 `2026-11-01`，符合版本-日期契约。
 - 文档：`DESIGN.md`、`docs/high-priority-issues.md`、本验收报告。
 
@@ -27,15 +28,21 @@ WXML 结构未改，所有既有交互、数据绑定、aria 标签和触控尺�
 
 ## 本地门禁结果
 
-通过：`format:check`、`lint`、`typecheck`、`check:design`、`test:design`、`check:governance`、`check:release-notes`、`check:main-package`、`test:wxss-contract`、`test:ui-sync`、`build`、`git diff --check`，以及 `npm test` 全量 Vitest **93 个文件 / 1426 个用例全部通过**。
+通过：`format:check`、`lint`、`typecheck`、`check:design`、`test:design`、`check:governance`、`check:release-notes`、`check:main-package`、`test:wxss-contract`、`test:ui-sync`、`build`、`git diff --check`，以及 `npm test` 全量 Vitest **93 个文件 / 1426 个用例全部通过**。共享基线 `aihero-layout.wxss` 修复后，上述门禁与全量 Vitest 再次复跑，结果一致。
 
 `npm run validate`、`npm run coverage`、`npm run audit:all` 由 PR 的 full 门禁在 CI 侧执行，本轮未改动依赖与脚本链。本机默认 npm 镜像的 `audit` 接口返回 405、缺 `zip` CLI 与 Windows 信号差异只影响本地复现，不影响 CI 结论。
 
 ## 微信开发者工具实测
 
-本轮尝试用开发者工具刷新模拟器并截图复核 `view::before` 节奏点的实际渲染，客户端授权任务 `auth_cb9d239bb43a5331169923a5ee1fdb2e8378d7c792081adc` 仍处于 `pending`，需在开发者工具窗口内确认，因此**尚未取得改后截图**。此项记为 `IDE_EVIDENCE_PENDING`，不把静态样式与单元测试当作像素级视觉证据。
+客户端授权完成后，用开发者工具重新编译并实测，结论为 `IDE_VERIFIED_LIGHT_DARK`：
 
-微信小程序 WXSS 支持 `view::before` / `::after`；节奏点为纯装饰，不承载信息，即使个别渲染内核不显示也不会影响文字可读性与布局。
+- 路径：活动列表 → 往期影像（9 场）→ 首场活动详情 → 滚动到「集合与出发」；浅色与暗色各截图一次，最后恢复默认暗色。
+- 浅色：四行（集合时间 / 集合地点 / 预计结束 / 报名截止）完整，表格外框与三条行分隔线均消失，每行标签前有红色方点，眉标与值的字重层级清楚；「费用说明」为无内部线框的白卡；「查看完整路线分析」与「修改活动」为无描边的浅色填充，主 CTA 仍是红色填充。
+- 暗色 / 影院：同样无外框与行线，节奏点随 `--color-cinema-red` 呈现，次级按钮无白色描边。
+- 首轮实测曾发现两处遗漏并已修复：`.detail-page .btn.secondary` 的高优先级描边覆盖，以及共享 `aihero-layout.wxss` 的 `.aihero-page.aihero-page .detailrow` 行线；修复后重新编译复核，两套主题均达到上述效果。
+- console 仅见开发者工具内部 `inspectee MPPage.getCurrent error: Cannot destructure property 'rawPath' ...`，属 IDE 页面元数据查询错误，不是小程序业务报错；页面切换与滚动过程中无业务 error。
+
+截图证据：`C:\Users\89786\AppData\Local\Temp\no-border-light-fixed2.png`（浅色）、`no-border-dark-fixed.png`（暗色）。改前用户截图见会话内 `tmp_444d49b773ba51dcac3df3fbffb30d18.png`。
 
 ## 未关闭项
 
