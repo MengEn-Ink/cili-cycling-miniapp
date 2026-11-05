@@ -127,30 +127,40 @@
   padding: 0 var(--page-gutter);
 }
 
-/* --- detailrows -------------------------------------------------------- */
+/* --- detailrows: 编辑式事实流 ------------------------------------------- */
 .detailrows {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  border: 2rpx solid var(--color-border);
+  gap: var(--space-3);
+  padding: 12rpx 24rpx;
   border-radius: var(--radius-md);
   background: var(--color-surface);
 }
 .detailrow {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: 18rpx 24rpx;
-  border-top: 2rpx dashed var(--color-border);
+  padding: 4rpx 0 4rpx 20rpx;
 }
-.detailrow:first-child {
-  border-top: none;
+.detailrow::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 8rpx;
+  height: 8rpx;
+  margin-top: -4rpx;
+  border-radius: 2rpx;
+  background: var(--color-brand-fill);
+  content: '';
 }
 .detailrow .dt {
   flex: none;
   min-width: 180rpx;
   color: var(--color-muted);
   font-size: var(--font-size-label);
+  letter-spacing: 2rpx;
+  font-weight: 600;
 }
 .detailrow .dd {
   flex: 1;

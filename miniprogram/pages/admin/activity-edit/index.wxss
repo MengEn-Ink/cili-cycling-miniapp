@@ -192,22 +192,38 @@ page {
 .choice.is-active .choice-title {
   color: var(--color-text);
 }
+/* 编辑式事实流：留白与红色节奏点分组，不叠外框和行线。 */
 .detailrows {
-  border-top: 2rpx solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 .detailrow {
+  position: relative;
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 20rpx;
   min-height: 88rpx;
-  padding: 20rpx 0;
-  border-bottom: 2rpx solid var(--color-border);
+  padding: 12rpx 0 12rpx 20rpx;
   font-size: var(--font-size-body);
   line-height: 40rpx;
 }
+.detailrow::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 8rpx;
+  height: 8rpx;
+  margin-top: -4rpx;
+  border-radius: 2rpx;
+  background: var(--color-brand-fill);
+  content: '';
+}
 .detailrow .dt {
   color: var(--color-muted);
+  letter-spacing: 2rpx;
+  font-weight: 600;
 }
 .detailrow .dd {
   color: var(--color-text);

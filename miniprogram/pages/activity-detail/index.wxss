@@ -336,20 +336,30 @@
   line-height: 38rpx;
 }
 
-/* --- detailrows ----------------------------------------------------------- */
+/* --- detailrows: 编辑式事实流 --------------------------------------------- */
+/* 层级由留白、字重与红色节奏点承载，不再叠外框和行分隔线。 */
 .detailrows {
   display: flex;
   flex-direction: column;
-  border: 2rpx solid var(--color-border);
-  border-radius: 16rpx;
-  overflow: hidden;
+  gap: var(--space-3);
 }
 .detailrow {
+  position: relative;
   display: grid;
   grid-template-columns: 160rpx minmax(0, 1fr);
   gap: 20rpx;
-  padding: 18rpx 20rpx;
-  background: var(--color-surface);
+  align-items: baseline;
+  padding: 4rpx 0 4rpx 20rpx;
+}
+.detailrow::before {
+  position: absolute;
+  top: 18rpx;
+  left: 0;
+  width: 8rpx;
+  height: 8rpx;
+  border-radius: 2rpx;
+  background: var(--color-brand-fill);
+  content: '';
 }
 .detailrow--action {
   grid-template-columns: 160rpx minmax(0, 1fr) auto;
@@ -361,12 +371,12 @@
   justify-content: center;
   min-width: 112rpx;
   min-height: 88rpx;
-  margin: -18rpx -8rpx -18rpx 0;
-  padding: 0 var(--space-4);
-  border: 2rpx solid var(--color-border-strong);
+  margin: -4rpx -8rpx -4rpx 0;
+  padding: 0 var(--space-2);
+  border: 0;
   border-radius: var(--radius-full);
   background: transparent;
-  color: var(--color-text);
+  color: var(--color-brand-text);
   font-size: var(--font-size-label);
   line-height: 36rpx;
   font-weight: 800;
@@ -374,20 +384,19 @@
 .meeting-nav::after {
   display: none;
 }
-.detailrow + .detailrow {
-  border-top: 2rpx solid var(--color-border-subtle);
-}
 .detailrow-term {
   color: var(--color-muted);
   font-size: var(--font-size-label);
-  line-height: 36rpx;
-  letter-spacing: 1rpx;
+  line-height: 40rpx;
+  letter-spacing: 2rpx;
+  font-weight: 600;
   white-space: nowrap;
 }
 .detailrow-desc {
   color: var(--color-text);
   font-size: var(--font-size-body);
-  line-height: 36rpx;
+  line-height: 40rpx;
+  font-weight: 600;
   overflow-wrap: anywhere;
   word-break: normal;
 }
@@ -414,7 +423,8 @@
   opacity: 0.6;
 }
 .btn.secondary {
-  background: var(--color-surface);
+  border-color: transparent;
+  background: var(--color-raised);
   color: var(--color-text);
 }
 .meeting-cta,
@@ -1059,11 +1069,16 @@
 }
 .detail-page .paper,
 .detail-page .row,
-.detail-page .detailrow,
 .detail-page .schedule-list,
 .detail-page .rider {
   border-color: var(--color-cinema-line);
   background: var(--color-cinema-panel);
+}
+.detail-page .detailrow {
+  background: transparent;
+}
+.detail-page .detailrow::before {
+  background: var(--color-cinema-red);
 }
 .detail-page .paper,
 .detail-page .row,
