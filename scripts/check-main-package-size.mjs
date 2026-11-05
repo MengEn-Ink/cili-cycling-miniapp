@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -14,19 +14,48 @@ function walk(directory) {
   });
 }
 
+/**
+ * The upload budget must describe what WeChat actually packs. `project.config.json`
+ * packOptions.ignore excludes checker-only artifacts (theme-contract.json has no
+ * runtime import); unsupported rule types fail closed instead of being skipped.
+ */
+export function packedExclusions(root = process.cwd()) {
+  const configPath = path.join(root, 'project.config.json');
+  if (!existsSync(configPath)) return { files: new Set(), folders: [] };
+  const config = JSON.parse(readFileSync(configPath, 'utf8'));
+  const rules = config.packOptions?.ignore ?? [];
+  const files = new Set();
+  const folders = [];
+  for (const rule of rules) {
+    const value = typeof rule?.value === 'string' ? rule.value.replace(/^\/+/, '') : '';
+    if (!value) throw new Error(`packOptions.ignore: invalid rule ${JSON.stringify(rule)}`);
+    const relative = `miniprogram/${value}`;
+    if (rule.type === 'file') files.add(relative);
+    else if (rule.type === 'folder') folders.push(`${relative}/`);
+    else throw new Error(`packOptions.ignore: unsupported type ${rule?.type}`);
+  }
+  return { files, folders };
+}
+
 export function mainPackageFiles(root = process.cwd()) {
   const miniprogramRoot = path.join(root, 'miniprogram');
   const app = JSON.parse(readFileSync(path.join(miniprogramRoot, 'app.json'), 'utf8'));
   const subpackageRoots = (app.subpackages || app.subPackages || []).map(
     (subpackage) => path.join(miniprogramRoot, String(subpackage.root || '')) + path.sep,
   );
-  // 微信会上传源码、图片、字体等普通文件；仅排除 app.json 明确声明的分包目录，
-  // 避免新增静态资源或其他扩展名时门禁低估真实主包体积。
+  const exclusions = packedExclusions(root);
+  // 微信会上传源码、图片、字体等普通文件；仅排除 app.json 的分包目录与
+  // packOptions.ignore 显式排除的 checker-only 文件，避免门禁低估真实主包体积。
   return walk(miniprogramRoot)
     .filter((file) => !subpackageRoots.some((subpackageRoot) => file.startsWith(subpackageRoot)))
     .filter((file) => path.basename(file) !== '.DS_Store')
-    .sort()
-    .map((file) => path.relative(root, file).split(path.sep).join('/'));
+    .map((file) => path.relative(root, file).split(path.sep).join('/'))
+    .filter(
+      (file) =>
+        !exclusions.files.has(file) &&
+        !exclusions.folders.some((folder) => file.startsWith(folder)),
+    )
+    .sort();
 }
 
 export function mainPackageBytes(root = process.cwd()) {

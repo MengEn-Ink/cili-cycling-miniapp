@@ -114,6 +114,8 @@ page {
   --color-brand: var(--palette-red-500);
   --color-brand-fill: var(--palette-red-600);
   --color-brand-active: var(--palette-red-700);
+  /* Text-only accent: appearance.ts overrides it per mode for >= 4.5:1 on every surface. */
+  --color-brand-text: var(--palette-red-500);
   --color-brand-soft: rgba(229, 66, 66, 0.14);
   --color-brand-glow: rgba(229, 66, 66, 0.28);
   --color-on-brand: var(--palette-white);
@@ -512,7 +514,7 @@ picker[disabled] {
 .form-error,
 .field-msg.is-error {
   margin-top: 8rpx;
-  color: var(--color-brand-active);
+  color: var(--color-brand-text);
   font-size: 24rpx;
   line-height: 36rpx;
   font-weight: 700;
@@ -867,7 +869,7 @@ picker[disabled] {
 }
 .refresh-error,
 .danger {
-  color: var(--color-brand-active);
+  color: var(--color-brand-text);
 }
 
 /* 17 条正式路由共用的一镜到底入场。只播放一次，不拦截滚动与触控。 */

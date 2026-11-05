@@ -44,7 +44,7 @@
   margin: 12rpx 0 0;
   padding: 0;
   background: transparent;
-  color: var(--color-action);
+  color: var(--color-brand-text);
   font-size: var(--font-size-label);
   font-weight: var(--font-weight-strong);
   text-align: left;

@@ -447,7 +447,7 @@
   border-top: 2rpx solid var(--color-border);
 }
 .actionbar-hint {
-  color: var(--color-brand);
+  color: var(--color-brand-text);
   font-size: var(--font-size-label);
   line-height: 32rpx;
   text-align: center;

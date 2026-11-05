@@ -56,7 +56,7 @@
   border: 3rpx solid var(--color-action);
   border-radius: 50%;
   background: var(--color-surface);
-  color: var(--color-action);
+  color: var(--color-brand-text);
   font-size: 32rpx;
   line-height: 40rpx;
 }
@@ -84,7 +84,7 @@
   border: 3rpx solid var(--color-action);
   border-radius: 999rpx;
   background: var(--color-surface);
-  color: var(--color-action);
+  color: var(--color-brand-text);
   font-size: 28rpx;
   font-weight: 800;
 }

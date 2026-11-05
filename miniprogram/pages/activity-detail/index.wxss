@@ -109,7 +109,7 @@
   line-height: 36rpx;
 }
 .refresh-note.refresh-error {
-  color: var(--color-brand);
+  color: var(--color-brand-text);
 }
 
 /* --- ink：metrics + 集合行 ----------------------------------------------- */
@@ -636,7 +636,7 @@
   font-weight: 900;
 }
 .fee-included {
-  color: var(--color-brand);
+  color: var(--color-brand-text);
 }
 .fee-excluded {
   color: var(--color-muted);

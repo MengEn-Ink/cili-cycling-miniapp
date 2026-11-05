@@ -9,6 +9,15 @@ const FONT_DECLARATION_PATTERN = /font-family\s*:\s*([^;]+);/g;
 const TOKEN_PATTERN = /((--[\w-]+)\s*:\s*([^;]+);)/g;
 const TOKEN_REFERENCE_PATTERN = /var\(\s*(--[\w-]+)/g;
 const DEFAULT_ALLOWED_LITERAL_FILES = new Set(['miniprogram/app.wxss']);
+/** Fill/border tokens stay on the brand red; small text must use --color-brand-text. */
+export const LEGACY_BRAND_TEXT_TOKENS = new Set([
+  '--color-brand',
+  '--color-brand-fill',
+  '--color-brand-active',
+  '--color-action',
+  '--color-action-active',
+]);
+const COLOR_DECLARATION_PATTERN = /(?<![-\w])color\s*:\s*var\(\s*(--[\w-]+)\s*\)/g;
 
 function normalizePath(path) {
   return path.replaceAll('\\', '/');
@@ -67,6 +76,98 @@ function assertEqual(errors, label, actual, expected) {
   }
 }
 
+const STRING_MAP_PATTERN = /(?:(['"])([^'"]+)\1|([\w-]+))\s*:\s*(['"])([^'"]*)\4/g;
+const RAW_MAP_PATTERN = /([\w]+)\s*:\s*([^,\n]+),?/g;
+const TEXT_STYLE_COLORS = { white: '#ffffff', black: '#000000' };
+const APPEARANCE_SECTIONS = ['navigation', 'tabBar', 'background'];
+
+function stripLineComments(source) {
+  return source.replace(/\/\/[^\n]*/g, '');
+}
+
+function findMatchingBrace(source, openIndex) {
+  let depth = 0;
+  let quote = '';
+  let lineComment = false;
+  let blockComment = false;
+  for (let index = openIndex; index < source.length; index += 1) {
+    const character = source[index];
+    const next = source[index + 1];
+    if (lineComment) {
+      if (character === '\n') lineComment = false;
+      continue;
+    }
+    if (blockComment) {
+      if (character === '*' && next === '/') {
+        blockComment = false;
+        index += 1;
+      }
+      continue;
+    }
+    if (quote) {
+      if (character === '\\') index += 1;
+      else if (character === quote) quote = '';
+      continue;
+    }
+    if (character === '/' && next === '/') {
+      lineComment = true;
+      index += 1;
+      continue;
+    }
+    if (character === '/' && next === '*') {
+      blockComment = true;
+      index += 1;
+      continue;
+    }
+    if (character === '"' || character === "'" || character === '`') {
+      quote = character;
+      continue;
+    }
+    if (character === '{') depth += 1;
+    else if (character === '}') {
+      depth -= 1;
+      if (depth === 0) return index;
+    }
+  }
+  throw new Error('unterminated object literal');
+}
+
+function objectBody(source, marker) {
+  const markerIndex = source.indexOf(marker);
+  if (markerIndex === -1) throw new Error(`missing ${marker.trim()} object`);
+  const open = source.indexOf('{', markerIndex);
+  if (open === -1) throw new Error(`missing ${marker.trim()} opening brace`);
+  return source.slice(open + 1, findMatchingBrace(source, open));
+}
+
+export function parseStringMap(source) {
+  const entries = {};
+  for (const match of stripLineComments(source).matchAll(STRING_MAP_PATTERN)) {
+    entries[match[2] || match[3]] = normalizeValue(match[5]);
+  }
+  return entries;
+}
+
+function parseThemeMap(source, colors) {
+  const entries = {};
+  for (const match of stripLineComments(source).matchAll(RAW_MAP_PATTERN)) {
+    const [, key, rawValue] = match;
+    const value = rawValue.trim();
+    const reference = value.match(/^THEME_COLORS\.([\w]+)$/);
+    if (reference) {
+      if (colors[reference[1]] === undefined) {
+        throw new Error(`theme.ts: unresolved THEME_COLORS.${reference[1]}`);
+      }
+      entries[key] = colors[reference[1]];
+      continue;
+    }
+    const literal = value.match(/^['"]([^'"]+)['"]$/);
+    if (!literal) throw new Error(`theme.ts: unsupported appearance value ${value}`);
+    entries[key] = normalizeValue(literal[1]);
+  }
+  return entries;
+}
+
 function parseThemeColors(themeSource) {
   const block = themeSource.match(/THEME_COLORS\s*=\s*\{([\s\S]*?)\}\s*as const/);
   if (!block) throw new Error('theme.ts: missing THEME_COLORS');
@@ -77,21 +178,36 @@ function parseThemeColors(themeSource) {
   return colors;
 }
 
-function parseRuntimeTabBar(themeSource, colors) {
-  const block = themeSource.match(/tabBar\s*:\s*\{([\s\S]*?)\n\s*\},/);
-  if (!block) throw new Error('theme.ts: missing APP_APPEARANCE.tabBar');
-  const tabBar = {};
-  for (const match of block[1].matchAll(/([\w]+)\s*:\s*([^,\n]+),?/g)) {
-    const [, key, rawValue] = match;
-    const value = rawValue.trim();
-    const themeReference = value.match(/^THEME_COLORS\.([\w]+)$/);
-    if (themeReference) tabBar[key] = colors[themeReference[1]];
-    else {
-      const literal = value.match(/^['"]([^'"]+)['"]$/);
-      if (literal) tabBar[key] = normalizeValue(literal[1]);
-    }
+export function parseThemeAppearance(themeSource) {
+  const colors = parseThemeColors(themeSource);
+  const body = objectBody(themeSource, 'APP_APPEARANCE =');
+  const native = {};
+  for (const section of APPEARANCE_SECTIONS) {
+    native[section] = parseThemeMap(objectBody(body, `${section}:`), colors);
   }
-  return tabBar;
+  return { colors, native };
+}
+
+/** Runtime appearance tokens and the light-mode native configuration. */
+export function parseAppearanceSource(source) {
+  const common = parseStringMap(objectBody(source, 'const common ='));
+  const tokensBody = objectBody(source, 'APPEARANCE_TOKENS =');
+  const tokens = {
+    dark: { ...common, ...parseStringMap(objectBody(tokensBody, 'dark:')) },
+    light: { ...common, ...parseStringMap(objectBody(tokensBody, 'light:')) },
+  };
+  const lightBody = objectBody(source, 'LIGHT_APPEARANCE =');
+  const native = {};
+  for (const section of APPEARANCE_SECTIONS) {
+    native[section] = parseStringMap(objectBody(lightBody, `${section}:`));
+  }
+  return { tokens, native };
+}
+
+function parseRuntimeTabBar(themeSource) {
+  const colors = parseThemeColors(themeSource);
+  const body = objectBody(themeSource, 'APP_APPEARANCE =');
+  return parseThemeMap(objectBody(body, 'tabBar:'), colors);
 }
 
 function registeredPagePaths(appJson) {
@@ -196,6 +312,23 @@ export function validateTokenArchitecture({ architecture, tokens, styleEntries, 
   }
 
   if (errors.length) throw new Error(errors.join('\n'));
+}
+
+/**
+ * Brand red used as a text color fails 4.5:1 in light mode. Only the dedicated
+ * text token may be used for `color:`; borders, fills and gradients keep the
+ * legacy tokens under the 3:1 non-text rule.
+ */
+export function collectBrandTextTokenViolations(entries) {
+  const issues = [];
+  for (const [rawPath, source] of entries) {
+    const path = normalizePath(rawPath);
+    for (const match of source.matchAll(COLOR_DECLARATION_PATTERN)) {
+      if (!LEGACY_BRAND_TEXT_TOKENS.has(match[1])) continue;
+      issues.push({ path, token: match[1], ...locate(source, match.index) });
+    }
+  }
+  return issues;
 }
 
 export function collectStyleLiteralViolations(
@@ -347,10 +480,20 @@ export function validateFontContract(rows, fonts, tokens) {
   if (errors.length) throw new Error(errors.join('\n'));
 }
 
-export function validateContractSnapshot({ contract, appJson, pageJsons, themeSource, tokens }) {
+export function validateContractSnapshot({
+  contract,
+  appJson,
+  pageJsons,
+  themeSource,
+  appearanceSource,
+  tokens,
+}) {
   const errors = [];
-  if (![2, 3, 4].includes(contract.schemaVersion)) {
-    errors.push('contract: schemaVersion must be 2, 3 or 4');
+  if (![2, 3, 4, 5].includes(contract.schemaVersion)) {
+    errors.push('contract: schemaVersion must be 2, 3, 4 or 5');
+  }
+  if (contract.schemaVersion >= 5 && !contract.native?.lightRuntimeTabBar) {
+    errors.push('contract: schema v5 requires native.lightRuntimeTabBar');
   }
 
   for (const [key, expected] of Object.entries(contract.native.appWindow || {})) {
@@ -369,12 +512,27 @@ export function validateContractSnapshot({ contract, appJson, pageJsons, themeSo
   let runtimeTabBar = {};
   try {
     themeColors = parseThemeColors(themeSource);
-    runtimeTabBar = parseRuntimeTabBar(themeSource, themeColors);
+    runtimeTabBar = parseRuntimeTabBar(themeSource);
   } catch (error) {
     errors.push(error.message);
   }
   for (const [key, expected] of Object.entries(contract.native.runtimeTabBar || {})) {
     assertEqual(errors, `theme.ts runtime tabBar.${key}`, runtimeTabBar[key], expected);
+  }
+  if (contract.native?.lightRuntimeTabBar) {
+    if (typeof appearanceSource !== 'string') {
+      errors.push('contract: appearance.ts source is required for the light tabBar snapshot');
+    } else {
+      let lightTabBar = {};
+      try {
+        lightTabBar = parseAppearanceSource(appearanceSource).native.tabBar;
+      } catch (error) {
+        errors.push(error.message);
+      }
+      for (const [key, expected] of Object.entries(contract.native.lightRuntimeTabBar)) {
+        assertEqual(errors, `appearance.ts light tabBar.${key}`, lightTabBar[key], expected);
+      }
+    }
   }
   for (const binding of contract.equivalentRoles || []) {
     const themeValue = themeColors[binding.themeTs];
@@ -437,6 +595,123 @@ export function contrastRatio(foreground, background) {
   return Number(((lighter + 0.05) / (darker + 0.05)).toFixed(4));
 }
 
+function resolveContrastReference(reference, context) {
+  if (typeof reference !== 'string') {
+    throw new Error(`invalid contrast reference ${reference}`);
+  }
+  if (reference.startsWith('--')) {
+    const value = resolvedTokenValue(context.tokens, reference);
+    if (value === undefined) throw new Error(`undefined appearance token ${reference}`);
+    return normalizeValue(value);
+  }
+  const parts = reference.split('.');
+  if (parts.length !== 3 || !['native', 'appJson'].includes(parts[0])) {
+    throw new Error(`unsupported contrast reference ${reference}`);
+  }
+  const source = parts[0] === 'native' ? context.native : context.appJson;
+  const value = source?.[parts[1]]?.[parts[2]];
+  if (value === undefined) throw new Error(`missing contrast reference ${reference}`);
+  return TEXT_STYLE_COLORS[value] || normalizeValue(value);
+}
+
+export function appearanceContrastPairCount(contract) {
+  const config = contract?.appearanceContrast;
+  if (!config) return 0;
+  return (
+    2 * ((config.tokenPairs || []).length + (config.runtimeNativePairs || []).length) +
+    (config.startupNativePairs || []).length
+  );
+}
+
+/**
+ * Check the runtime appearance overlays and the native navigation/tab bars in
+ * dark, light and startup states. Static root tokens alone cannot catch a
+ * light-mode TabBar selected color that fails the documented 4.5:1 rule.
+ */
+export function collectAppearanceContrastIssues({
+  contract,
+  appJson,
+  themeSource,
+  appearanceSource,
+}) {
+  const config = contract?.appearanceContrast;
+  if (!config) return ['appearance contrast: contract section missing'];
+  const issues = [];
+  for (const mode of ['dark', 'light', 'startup']) {
+    if (!(config.requiredModes || []).includes(mode)) {
+      issues.push(`appearance contrast: requiredModes must declare ${mode}`);
+    }
+  }
+  if (typeof appearanceSource !== 'string') {
+    issues.push('appearance contrast: appearance.ts source is required');
+  }
+  if (typeof themeSource !== 'string') {
+    issues.push('appearance contrast: theme.ts source is required');
+  }
+  if (issues.length) return issues;
+
+  let appearance;
+  let theme;
+  try {
+    appearance = parseAppearanceSource(appearanceSource);
+  } catch (error) {
+    return [`appearance contrast: ${error.message}`];
+  }
+  try {
+    theme = parseThemeAppearance(themeSource);
+  } catch (error) {
+    return [`appearance contrast: ${error.message}`];
+  }
+
+  const contexts = {
+    dark: { tokens: appearance.tokens.dark, native: theme.native, appJson },
+    light: { tokens: appearance.tokens.light, native: appearance.native, appJson },
+    startup: { tokens: {}, native: {}, appJson },
+  };
+  const groups = [
+    ...['dark', 'light'].flatMap((mode) => [
+      ...(config.tokenPairs || []).map((pair) => ({ ...pair, mode })),
+      ...(config.runtimeNativePairs || []).map((pair) => ({ ...pair, mode })),
+    ]),
+    ...(config.startupNativePairs || []).map((pair) => ({ ...pair, mode: 'startup' })),
+  ];
+  if (!groups.length) issues.push('appearance contrast: no pairs declared');
+
+  const seen = new Set();
+  const foregrounds = new Set();
+  for (const pair of groups) {
+    const label = `${pair.mode}/${pair.name}`;
+    if (seen.has(label)) issues.push(`appearance contrast: duplicate pair ${label}`);
+    seen.add(label);
+    foregrounds.add(pair.foreground);
+    const minimum = config.minimums?.[pair.minimum];
+    if (typeof minimum !== 'number') {
+      issues.push(`appearance contrast: ${label} has unknown minimum ${pair.minimum}`);
+      continue;
+    }
+    try {
+      const context = contexts[pair.mode];
+      if (!context) throw new Error(`unknown mode ${pair.mode}`);
+      const foreground = resolveContrastReference(pair.foreground, context);
+      const background = resolveContrastReference(pair.background, context);
+      const ratio = contrastRatio(foreground, background);
+      if (ratio < minimum) {
+        issues.push(
+          `appearance contrast: ${label} ${ratio}:1 below ${minimum} for ${foreground}/${background}`,
+        );
+      }
+    } catch (error) {
+      issues.push(`appearance contrast: ${label} ${error.message}`);
+    }
+  }
+  for (const reference of config.requiredForegrounds || []) {
+    if (!foregrounds.has(reference)) {
+      issues.push(`appearance contrast: required foreground is not checked ${reference}`);
+    }
+  }
+  return issues;
+}
+
 function loadRepositorySnapshot(root, contract) {
   const source = (relativePath) => readFileSync(join(root, relativePath), 'utf8');
   const appJson = readJson(join(root, contract.sources.appJson));
@@ -448,6 +723,7 @@ function loadRepositorySnapshot(root, contract) {
     appJson,
     pageJsons,
     themeSource: source(contract.sources.themeTs),
+    appearanceSource: source(contract.sources.appearanceTs),
     tokens: parseWxssTokens(source(contract.sources.wxss)),
   };
 }
@@ -457,6 +733,9 @@ export function runRepositoryCheck(root = process.cwd()) {
   if (!existsSync(contractPath))
     throw new Error('theme contract missing: miniprogram/config/theme-contract.json');
   const contract = readJson(contractPath);
+  if (contract.schemaVersion >= 5 && !contract.appearanceContrast) {
+    throw new Error('contract: schema v5 requires appearanceContrast');
+  }
   const mappingPath = join(root, contract.sources.migrationMap);
   if (!existsSync(mappingPath))
     throw new Error(`migration map missing: ${contract.sources.migrationMap}`);
@@ -474,6 +753,7 @@ export function runRepositoryCheck(root = process.cwd()) {
     readFileSync(path, 'utf8'),
   ]);
   const tokenReferenceIssues = collectTokenReferenceIssues(styleEntries, snapshot.tokens);
+  const brandTextIssues = collectBrandTextTokenViolations(styleEntries);
   const designDocumentPath = contract.tokenArchitecture?.document;
   if (!designDocumentPath) throw new Error('token architecture document missing from contract');
   const absoluteDesignDocumentPath = join(root, designDocumentPath);
@@ -537,10 +817,12 @@ export function runRepositoryCheck(root = process.cwd()) {
       contrastIssues.push(`${pair.name}: ${error.message}`);
     }
   }
+  contrastIssues.push(...collectAppearanceContrastIssues({ contract, ...snapshot }));
 
   if (
     literalIssues.length ||
     tokenReferenceIssues.length ||
+    brandTextIssues.length ||
     scriptIssues.length ||
     contrastIssues.length
   ) {
@@ -553,11 +835,18 @@ export function runRepositoryCheck(root = process.cwd()) {
     const tokenIssueLines = tokenReferenceIssues
       .map((issue) => `${issue.path}:${issue.line}:${issue.column} undefined token ${issue.token}`)
       .sort();
+    const brandTextIssueLines = brandTextIssues
+      .map(
+        (issue) =>
+          `${issue.path}:${issue.line}:${issue.column} brand text must use --color-brand-text, got ${issue.token}`,
+      )
+      .sort();
     throw new Error(
       [
-        `design contract failed: ${colorIssues.length} color literals, ${fontIssues.length} font-family literals`,
+        `design contract failed: ${colorIssues.length} color literals, ${fontIssues.length} font-family literals, ${brandTextIssues.length} legacy brand text colors`,
         ...issueLines,
         ...tokenIssueLines,
+        ...brandTextIssueLines,
         ...scriptIssues.sort(),
         ...contrastIssues.sort(),
       ].join('\n'),
@@ -567,10 +856,12 @@ export function runRepositoryCheck(root = process.cwd()) {
   return {
     colorLiteralCount: 0,
     fontLiteralCount: 0,
+    brandTextViolations: 0,
     migrationRows: rows.length,
     nativePageConfigs: snapshot.pageJsons.length,
     requiredComponentTokens: architectureComponentTokens(contract.tokenArchitecture.components)
       .length,
+    appearanceContrastPairs: appearanceContrastPairCount(contract),
   };
 }
 
@@ -578,7 +869,7 @@ function runCli() {
   try {
     const result = runRepositoryCheck();
     console.log(
-      `设计契约校验通过：${result.migrationRows} 条历史颜色迁移账本、${result.nativePageConfigs} 个页面原生配置、${result.requiredComponentTokens} 个核心组件 token、0 个未定义 token、0 个页面颜色/字体字面量`,
+      `设计契约校验通过：${result.migrationRows} 条历史颜色迁移账本、${result.nativePageConfigs} 个页面原生配置、${result.requiredComponentTokens} 个核心组件 token、${result.appearanceContrastPairs} 组浅暗/启动态对比度、0 个未定义 token、0 个页面颜色/字体字面量`,
     );
   } catch (error) {
     console.error(error.message);

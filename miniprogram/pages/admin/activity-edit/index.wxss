@@ -109,7 +109,7 @@ page {
   font-weight: 600;
 }
 .field-label .required {
-  color: var(--color-action);
+  color: var(--color-brand-text);
 }
 .input,
 .picker-value,
@@ -142,7 +142,7 @@ page {
   font-variant-numeric: tabular-nums;
 }
 .field-error {
-  color: var(--color-action-active);
+  color: var(--color-brand-text);
   font-size: var(--font-size-label);
   line-height: 36rpx;
   font-weight: 700;

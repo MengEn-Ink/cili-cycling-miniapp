@@ -34,6 +34,8 @@ export const APPEARANCE_TOKENS = {
     '--color-sticky-surface': '#0b0a0c',
     '--color-shadow': 'rgba(0,0,0,0)',
     '--color-brand-active': '#f06464',
+    // 品牌文字专用：暗色画布需亮于填充红，6.31:1（画布）/ 5.48:1（raised）。
+    '--color-brand-text': '#f06464',
     '--color-status-success': '#7bdba1',
     '--color-status-success-soft': '#183424',
     '--color-status-warning': '#f0ce75',
@@ -60,6 +62,8 @@ export const APPEARANCE_TOKENS = {
     '--color-sticky-surface': '#f7f6f2',
     '--color-shadow': 'rgba(0,0,0,0)',
     '--color-brand-active': '#b72c2c',
+    // 品牌文字专用：暖白画布 5.69:1、白卡片 6.16:1、浅 raised 5.25:1。
+    '--color-brand-text': '#b72c2c',
     '--color-status-success': '#007e46',
     '--color-status-success-soft': '#e8f5ed',
     '--color-status-warning': '#806000',
@@ -76,7 +80,8 @@ export const LIGHT_APPEARANCE = {
     backgroundColor: '#f7f6f2',
     borderStyle: 'white',
     color: '#5c6467',
-    selectedColor: '#e54242',
+    // 浅色 TabBar 选中文字沿用 --color-brand-active：#e54242 在暖白底仅 3.74:1，低于 4.5:1。
+    selectedColor: '#b72c2c',
   },
   background: {
     backgroundColor: '#f7f6f2',
