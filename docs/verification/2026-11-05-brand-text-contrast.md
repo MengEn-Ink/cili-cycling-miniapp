@@ -67,6 +67,20 @@ CI 契约回归修复：`docs/styles.css` 的 `:root` 与浅暗镜像块同步�
 
 ## 上传与体验版
 
-- `wechatide upload` 成功，版本 `0.0.427.1`，描述「视觉对齐：浅暗主题品牌红文字对比度修复」，包总大小 1188275 字节，主包 569432 字节。
+- 分支阶段 `wechatide upload` 成功，版本 `0.0.427.1`，描述「视觉对齐：浅暗主题品牌红文字对比度修复」，包总大小 1188275 字节，主包 569432 字节；该包对应合并前的 `fix/brand-text-contrast` 工作树，不是最终 main 代码，最终交付以合并后同 SHA 自动上传的 `0.0.417.1` 为准。
 - 该动作是代码包上传。按 `docs/releases/experience/README.md`，体验版须由发布负责人在微信公众平台选版并回读同版本、SHA 与入口，或由授权第三方通过开放平台 `commit` 生成；本轮没有平台选版回读证据，因此**不标记体验版 verified，不把上传成功称为体验版发布完成**。
 - 历史阻塞未变：开发管理权限托管、严格 UI 同步摘要漂移、17 路由同版本双端证据、普通成员写链路与 iOS/Android 双真机 UAT。
+
+## 合并、main CI 与部署回读
+
+| 阶段 | 运行 / 标识 | 结果 |
+| --- | --- | --- |
+| PR 合并 | [PR #427](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/427)，2026-11-05T16:41:04Z | squash 合入 `main@7a029f7e66006d0334bd62e21a60e3c0a9d1bc37` |
+| PR full 门禁 | CI `42065938444` | `affected-pr`（完整 `validate` + `coverage` + `audit:all`）、`pr-submission`、`validate` 全部 success |
+| PR 安全分析 | CodeQL `42065937117` | pass |
+| main CI | CI `42066967694` | `main-validate` / `main-coverage` / `main-audit` / `upload-decision` 全部 success |
+| Pages / CloudBase | `42066967659` / `42067663856` | 部署成功 |
+| 开发版上传 | `微信开发版自动上传 42067663998` | 同 SHA `0.0.417.1`（robot 1）上传成功，生成不可变 receipt artifact `13435165156` |
+| 体验版晋级 | `微信体验版晋级证据门禁 42067863069` | failure：`check:ui-sync -- --strict` 报 Pages 摘要 `3eb3af30…` / `1036334d…` 漂移，未生成 candidate 或 verified |
+
+说明：`sandbox-skip-ui-sync` 只豁免普通模式 PR 视觉证据同步；`shouldSkipUiSync` 在 `strict` 下直接返回 false，因此体验版晋级门禁不受该标签影响，仍被历史摘要漂移阻断。`verified` 阶段另需 `platform_evidence=CONFIRMED`，本轮没有微信公众平台选版回读证据。开发版上传成功不等于体验版 verified，也不等于真机 UAT 通过。
