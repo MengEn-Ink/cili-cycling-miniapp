@@ -12,7 +12,7 @@ const MAX_SUBSCRIPTION_TEMPLATES = 3;
 const RELEASE_NOTES = [
   {
     version: CLIENT_RELEASE_VERSION,
-    date: '2026-11-05',
+    date: '2026-11-01',
     title: '浅色与暗色，按你的习惯阅读',
     summary:
       '暖白与近黑两套阅读界面，减少装饰框线，放大骑行指标与辅助文字；品牌红小字按浅暗分别校准到可读对比度，退出后保留主题选择。',

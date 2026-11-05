@@ -4,7 +4,7 @@
 
 ## 范围与基线
 
-- 基线 `origin/main@4676626`，工作分支 `fix/brand-text-contrast`，提交 `0c5b5b6`，PR #427。
+- 基线 `origin/main@4676626`，工作分支 `fix/brand-text-contrast`，提交 `0c5b5b6`、`53312d8` 及 CI 契约回归修复提交，PR #427。
 - 范围：浅暗主题品牌红文字可读性、主题对比度机器契约、主包上传口径、设置页 App 更新说明。
 - 不涉及云函数、数据库、权限、业务状态机、新增字段或接口。
 
@@ -15,6 +15,8 @@
 `miniprogram/config/theme-contract.json` 的 `appearanceContrast` 新增画布 / 卡片 / raised 三组浅暗对比度与一组启动首帧静态对，覆盖 31 → 37 组；`requiredForegrounds` 加入 `--color-brand-text`。`scripts/check-design.mjs` 新增 `collectBrandTextTokenViolations`，禁止把填充 / 边界 token 直接用作 `color:`，并接入 `runRepositoryCheck`；`scripts/check-design.node-test.mjs` 从 18 增至 20 个用例，含浅色品牌红文字回归与 legacy 文字色 fail-closed。
 
 `project.config.json` 用 `packOptions.ignore` 把 checker-only、运行时零 import 的 `theme-contract.json` 排除上传；`scripts/check-main-package-size.mjs` 读取该配置，使主包门禁按微信实际打包口径计算，硬限额 459315 字节未放宽。
+
+CI 契约回归修复：`docs/styles.css` 的 `:root` 与浅暗镜像块同步新增 `--color-brand-text`（暗 `#f06464` / 浅 `#b72c2c`，与 `appearance.ts` 同值；基础块回退到 `--color-brand-active`），满足「Pages 浅暗语义覆盖与生产同值」契约，Pages 视觉无变化；设置页 App 更新的 `date` 回退到 `2026-11-01`，与版本 `2026.11.01.1` 的版本-日期契约保持一致，本轮只修订同一版本的说明文案与功能项。
 
 ## 量化结果
 
@@ -31,15 +33,26 @@
 
 ## 本地门禁结果
 
-通过：`format:check`、`lint`、`typecheck`、`check:design`（37 组对比度、0 个未定义 token、0 个页面颜色/字体字面量）、`test:design`（20/20）、`check:governance`、`check:release-notes`、`check:main-package`、`test:wxss-contract`、`test:ui-sync`、`test:release-notes`、`test:journey-evidence`、`test:bootstrap`、`build`、`check:ui-sync`（非 strict）、`test:ci-contract` 与 `test:deploy` 的其余用例。
+通过：`format:check`、`lint`、`typecheck`、`npm test`（Vitest 5.0.5，93 个文件 / 1426 个用例全部通过）、`check:design`（37 组对比度、0 个未定义 token、0 个页面颜色/字体字面量）、`test:design`（20/20）、`check:governance`、`check:release-notes`、`check:main-package`、`test:wxss-contract`、`test:ui-sync`、`test:release-notes`、`test:journey-evidence`、`test:bootstrap`、`build`，以及 `test:ci-contract` / `test:deploy` 中与环境无关的用例。
 
-未通过，均为本机环境或历史欠账，不是本轮代码回归：
+本机干净重装依赖后，先前记录的 Vitest worker 异常（`Cannot read properties of undefined (reading 'config')`）不再复现，因此本轮已能给出全量 Vitest 结论；`git diff --check` 通过。
 
-- `npm test`：Vitest 5.0.5 worker 收集阶段报 `Cannot read properties of undefined (reading 'config')`；最小探针、Node 22.22.2 与 24.22.2、空配置、`--pool=forks`、单 worker 均复现，本机无法给出全量 Vitest 结论。
-- `check:ui-sync -- --strict`：历史 Pages 原型摘要漂移，清单 `3eb3af30…` / 当前 `1cabbc60…`；按 AGENTS.md 未重采同版本 17 路由双端证据，不擅自改摘要。
-- `test:ci-contract` 3 项、`test:deploy` 2 项：缺 `zip` CLI、Windows 下 SIGTERM/SIGKILL 差异、以及依赖 Vitest 的 pr-preflight 前置用例。
+仍未通过，且均不是本轮代码回归：
 
-`npm run validate`、`npm run coverage`、`npm run audit:all` 因上述本机 Vitest 阻塞未完整执行；`git diff --check` 通过。
+- `check:ui-sync`（普通模式）与 `check:ui-sync -- --strict`：历史 Pages 原型摘要漂移。清单 `3eb3af30…`，`origin/main@4676626` 已是 `1cabbc60…`，本轮同步 Pages 镜像后为 `1036334d…`。按 AGENTS.md 未重采同版本 17 路由双端证据，不擅自改摘要，也不把旧截图重标为当前版本。
+- `test:ci-contract` / `test:deploy` 个别用例：本机缺 `zip` CLI、Windows 下 SIGTERM/SIGKILL 语义差异；CI 为 Linux，不受该限制。
+
+## PR CI 失败定位与修复
+
+首个 CI 运行 `42057981405` 的 `affected-pr` 因 `npm test` 的 3 个断言失败而中断，`validate` 聚合任务随之失败：
+
+| 失败用例 | 根因 | 修复 |
+| --- | --- | --- |
+| `tests/settings-page.test.ts:69` | 设置页 `date` 被改为 `2026-11-05`，与版本 `2026.11.01.1` 的版本-日期契约不一致 | 回退为 `2026-11-01`，保留同一版本的说明文案与功能项更新 |
+| `tests/theme-runtime-integration.test.ts:88` | 源码契约要求包含 `date: '2026-11-01'` | 同上 |
+| `tests/theme-runtime-integration.test.ts:78` | 新增 `--color-brand-text` 未同步到 `docs/styles.css` 浅暗镜像，解析结果为 `undefined` | 在 `:root` 与浅暗两个块补齐同值 token，Pages 视觉零变化 |
+
+本 PR 因改动 `project.config.json` 命中全局风险规则，`affected-pr` 走 full 模式（完整 `validate` + `coverage` + `audit:all`）。对于历史视觉证据欠账，PR 沿用前序已合并 UI PR #425 的仓库受控标签 `sandbox-skip-ui-sync`，其定义是「经授权的沙箱交付可跳过普通 CI 视觉证据同步；严格发布门禁不跳过」。该标签只跳过普通模式的视觉证据同步，不跳过严格发布门禁；17 路由双端证据、真机 UAT 与体验版平台回读仍独立 BLOCKED。
 
 ## 微信开发者工具实测
 

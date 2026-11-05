@@ -109,6 +109,7 @@
   --color-brand-fill: var(--palette-red-600);
   --color-brand-strava: #fc4c02;
   --color-brand-active: var(--palette-red-700);
+  --color-brand-text: var(--color-brand-active);
   --color-brand-soft: rgba(229, 66, 66, 0.14);
   --color-brand-glow: rgba(229, 66, 66, 0.28);
   /* Logo asset contract stays independent from the UI theme palette. */
@@ -13478,6 +13479,7 @@ body.capture-viewport .screen-notes {
   --color-fixed-bar: #0b0a0c;
   --color-sticky-surface: #0b0a0c;
   --color-brand-active: #f06464;
+  --color-brand-text: #f06464;
   --color-status-success: #7bdba1;
   --color-status-success-soft: #183424;
   --color-status-warning: #f0ce75;
@@ -13502,6 +13504,7 @@ body.capture-viewport .screen-notes {
   --color-fixed-bar: #f7f6f2;
   --color-sticky-surface: #f7f6f2;
   --color-brand-active: #b72c2c;
+  --color-brand-text: #b72c2c;
   --color-status-success: #007e46;
   --color-status-success-soft: #e8f5ed;
   --color-status-warning: #806000;
