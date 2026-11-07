@@ -1,6 +1,6 @@
 # 2026-11-07 unslop 精修后 UI 同步真实差异与证据缺口
 
-> 状态：`LOCAL_COMMITTED / LOCAL_GATES_PASS / IDE_SIMULATOR_VERIFIED / PAGES_LOCAL_VERIFIED / UI_SYNC_STRICT_BLOCKED / DUAL_DEVICE_EVIDENCE_BLOCKED / P0_REAL_DEVICE_BLOCKED`。
+> 状态：`LOCAL_COMMITTED / LOCAL_GATES_PASS / IDE_SIMULATOR_VERIFIED / PAGES_LOCAL_VERIFIED / PR_433_OPEN_CI_PASS / UI_SYNC_STRICT_BLOCKED / DUAL_DEVICE_EVIDENCE_BLOCKED / P0_REAL_DEVICE_BLOCKED`。
 >
 > 本文只记录**差异定位与证据规格**，不宣称任何验收通过。`docs/ui-sync-manifest.json` 未修改，`check:ui-sync -- --strict` 保持 BLOCKED；本地截图只存系统临时目录，不冒充公开脱敏证据。
 
@@ -64,6 +64,7 @@
 | Pages 外观 | `node scripts/check-appearance-pages.mjs` 136 组 route/mode/width 检查 PASS（脚本自述「Not WeChat/DevTools evidence」） |
 | 门禁 | `check:design`、`test:design`、`test:wxss-contract`、`check:governance`、`check:release-notes`、`check:main-package`、`format:check`、`lint`、`typecheck`、`test:ui-sync` 全 PASS；`check:ui-sync -- --strict` 保持 BLOCKED |
 | 前一轮已跑 | `npm test` 93 文件 / 1426 用例、DOM 契约 133 项、主包 454709 字节（余 4606） |
+| 门禁逐项补跑 | `validate` 链除 `tool:install` 外 27 项：22 PASS / 5 FAIL；4 项测试失败在 `origin/main@88d8356` 干净基线逐条复现，`check:ui-sync` 为本文第 2 节的既有漂移；`coverage` / `audit:all` 分别被批量删除防护与 npm 镜像 405 阻断。详见验收报告第 4 节 |
 
 以上截图与报告均在 `C:\Users\89786\AppData\Local\Temp\`（`cili-final-sha-ide/`、`cili-pages-final-sha/`），**未**写入 `docs/evidence/`，**未**冒充公开脱敏证据。
 
@@ -72,7 +73,7 @@
 - 34 张 750×1624 正式配对截图：真实云管理员只读 + 浅/暗双主题；脱敏处理与 `redaction-record.json`；逐路由差异复核；绑定最终 SHA 后整体写回清单。
 - 体验版平台选版与回读（历史因 strict 漂移被阻断，未生成 candidate / verified）。
 - iOS / Android 双物理真机、普通成员完整写链路、目标云权威回读。
-- 分支推送、PR、部署：本轮**未推送、未开 PR、未部署**。
+- 部署与晋级：分支已推送并开出 [PR #433](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/433)（OPEN / MERGEABLE / PR CI targeted 全绿），但**未合并、未上传、未部署、未选版**；合并与晋级须在 strict 关闭后由授权环境执行。
 
 ## 7. 关闭顺序（供授权环境照做）
 
@@ -81,6 +82,23 @@
 3. 证据齐备并独立复核后，整体更新 `docs/ui-sync-manifest.json` 的 source / prototype / syncedThrough / syncedAt / evidence 全部字段，修正 `threeWidth.limitation`。
 4. 跑 `npm run check:ui-sync -- --strict`、全量 `validate` 与体验版晋级门禁；通过后再做平台选版与回读。
 5. 最后关闭 P0：双真机 UAT、普通成员写链路、目标云权威回读。
+
+**命令参考（仅为可复跑入口；本轮均未执行，且证据未齐时禁止单独执行第 2 条）**：
+
+```bash
+# Pages 端 17 路由，375×812 逻辑视口；正式 PNG 需按 1~3 整数倍输出（历史为 750×1624）
+node scripts/pages-visual-acceptance/capture-routes.mjs --width 375 --height 812 --out <private-dir>/pages
+
+# 仅在新证据目录、README、redaction-record.json 与 evidence 全部字段就位后才回算
+npm run ui:digest -- --write
+
+# 回算不等于通过：strict、完整链与体验版晋级门禁依次验证
+npm run check:ui-sync -- --strict
+npm run validate
+npm run check:experience-releases
+```
+
+注意 `ui:digest -- --write` 只写 `source.digest` / `prototype.digest` / `syncedThrough` / `syncedAt` 四个字段，`evidence.directory` 与 17 条 `evidence.routes` 必须人工整体更新（第 4 节）；在 `schemaVersion = 2` 且缺 `source.valuePreservation` 时，只回算会立刻在下一条校验失败。
 
 ## 8. 文档口径冲突已修正
 

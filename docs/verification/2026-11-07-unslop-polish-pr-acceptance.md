@@ -8,12 +8,12 @@
 
 | 项目 | 内容 |
 | --- | --- |
-| PR | `feat/unslop-polish-latest` → `main`（编号由 PR 创建后记录于项目记忆与高优清单） |
-| Head SHA | 产品代码提交 `f526806`；差异诊断文档 `2ad720e`；验收报告 `1773a5b`；口径更正提交为 PR head，产品代码 SHA 未再变化 |
+| PR | [#433](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/433)：`feat/unslop-polish-latest` → `main`，OPEN / MERGEABLE |
+| Head SHA | 产品代码提交 `f526806`；此后 `2ad720e`（差异诊断）、`1773a5b`（验收报告）、`d5c38f7`（CI 口径更正）及本报告回填提交均为文档改动，产品代码 SHA 未再变化；最终 head SHA 以 PR #433 页面为准 |
 | 客户端版本 | `2026.11.01.1`（未 bump；仅在同一版本内补一条功能说明，符合 `check:release-notes`） |
 | 验收环境 | 本地微信开发者工具模拟器 `s1`、本地 Chromium 托管的 Pages 原型；无微信开发版 / 体验版 / CloudBase 执行 |
 | 验收角色 | 本地已登录开发者工具账号（只读）；真实云管理员只读、普通成员、iOS/Android 真机均未执行 |
-| 执行时间 | 2026-11-07 22:20–22:35 CST |
+| 执行时间 | 2026-11-07 22:20–23:00 CST（含 22:50 后的门禁逐项补跑与基线对照） |
 | 执行人 | WorkBuddy（本地自动化复核），仓库所有者未参与真机与平台操作 |
 
 ## 2. 影响范围
@@ -48,12 +48,12 @@
 
 | 门禁 | 结果 | 关键输出或链接 |
 | --- | --- | --- |
-| `npm run validate` | **未执行完整链** | 本地已逐项跑通等价子项（格式、lint、typecheck、`npm test` 93 文件 / 1426 用例、DOM 契约 133、设计、治理、发布说明、主包、UI 同步策略、外观、Pages 渲染）；CI 的 `affected-pr` 以 `mode: targeted` 运行 `format:check` / `lint` / `typecheck` / `check:release-notes` / `check:main-package` / `check:governance` / `build`，**未触发 full 门禁**；旧工作区全量 `validate` 第一步 `tool:install` 曾被环境 `SAFE_DELETE_BULK_CONFIRM_REQUIRED` 拦截，未绕过 |
-| `npm run coverage` | **未执行** | 本轮未改覆盖率门禁相关代码；CI 的 targeted 模式未包含 coverage |
-| `npm run audit:all` | **未执行** | 本轮未改依赖、锁文件或 audit 例外；CI 的 targeted 模式未包含 audit |
+| `npm run validate` | **未执行完整链**；链内 27 个子项逐项补跑，22 通过 / 5 失败 | 第一步 `tool:install` 被环境 `SAFE_DELETE_BULK_CONFIRM_REQUIRED` 拦截，未绕过；改为在本工作区逐项跑完链内除 `tool:install` 外的全部 27 项（`format:check`、`lint`、`typecheck`、`test` 93 文件 / 1426 用例、各契约与视觉测试、`build`、`verify:cloud-packages` 等 22 项 PASS）。5 项失败：`check:ui-sync` 普通模式仍是 Pages 摘要漂移；`test:ci-contract` 3 例、`test:bootstrap` 1 例、`test:deploy` 3 例、`test:cloud` 1 例因本机缺 `zip` CLI、`fast-xml-parser`、`miniprogram-ci` 与 Windows 权限/fixture 差异，**已在 `origin/main@88d8356` 干净基线 worktree 逐条复现相同失败用例**，与本 PR 改动无关。CI 的 `affected-pr` 仍为 `mode: targeted`，未触发 full 链 |
+| `npm run coverage` | **本地已执行，环境 BLOCKED** | `vitest run --coverage` 在 `V8CoverageProvider.cleanAfterRun` 清理 `coverage/.tmp` 的 95 个文件时触发环境 `SAFE_DELETE_BULK_CONFIRM_REQUIRED`（阈值 50），与 `tool:install` 同源；未绕过、未伪造覆盖率报告。CI targeted 未包含 coverage |
+| `npm run audit:all` | **本地已执行，环境 BLOCKED** | 首条 `npm audit` 即被配置的镜像 `repo.huaweicloud.com` 返回 405（`POST .../security/audits/quick` 不支持），后续子包审计未执行；本轮未改依赖、锁文件或 audit 例外。CI targeted 未包含 audit |
 | `git diff --check` | 通过 | 无空白错误 |
-| PR checks | 首次运行全绿（run `42382720294`） | `affected-pr` targeted PASS 1m8s、`pr-submission` PASS 8s、`validate`（聚合必需门禁）PASS、CodeQL 与 `analyze (javascript-typescript)` PASS；`main-coverage` / `main-validate` / `main-audit` / `upload-decision` / `enable-auto-merge` 因非 main 分支 skipping。追加本次口径更正提交后 CI 需重新运行确认 |
-| `npm run check:ui-sync -- --strict` | **BLOCKED**（独立记录，不因本 PR 关闭） | Pages 原型摘要漂移；`sandbox-skip-ui-sync` 只豁免普通模式 |
+| PR checks | PR 创建以来每次运行全部 success（口径更正 head 的最终 run `42383098840`） | `affected-pr` targeted PASS 1m26s、`pr-submission` PASS 7s、`validate`（聚合必需门禁）PASS 3s、`analyze (javascript-typescript)` PASS 1m9s、CodeQL PASS 2s；`main-coverage` / `main-validate` / `main-audit` / `upload-decision` / `enable-auto-merge` 因非 main 分支 skipping。本次报告回填提交推送后需重新确认，最终 run 以 PR checks 页面为准 |
+| `npm run check:ui-sync -- --strict` | **BLOCKED**（独立记录，不因本 PR 关闭） | 本次在最终工作区复跑仍报清单 `3eb3af30…` / 当前 `1036334d…`；`sandbox-skip-ui-sync` 只豁免普通模式 |
 
 ## 5. 端到端执行记录
 
@@ -61,6 +61,7 @@
 2. 本地执行：17/17 路由 IDE 截图、抽样视觉复核、Pages 端 17/17 渲染检查、136 组外观检查、全量单测与 10 项门禁；这些是**本地模拟器与浏览器证据**。
 3. 未执行：真实云管理员只读账号下的 17 路由浅/暗双端配对采集、脱敏与差异核对、平台选版回读、物理真机与普通成员写链路。按用户路径的端到端验收因此为 `BLOCKED`。
 4. 阻塞原因：本环境没有经授权的真实云只读账号、脱敏留证流程、体验版平台权限和 iOS/Android 物理真机；`check:ui-sync -- --strict` 的关闭条件明确要求先经授权重采 17 路由双端证据并消除真实差异，不能靠 `ui:digest --write` 或普通模式豁免消除。
+5. 门禁补跑与基线对照：在最终工作区逐项跑完 `validate` 链除 `tool:install` 外的 27 个子项（22 PASS / 5 FAIL），另跑 `coverage` 与 `audit:all`；对 4 项测试失败另建 `origin/main@88d8356` 干净 worktree 复跑，失败用例编号与原因逐条一致，判定为本机既有环境缺口。覆盖率与审计分别被批量删除防护与 npm 镜像 405 阻断，均不计入本 PR 回归，也不冒充通过。注意 `test:phase3-visual` 会重写 `docs/evidence/phase3-three-width/` 下 48 张 PNG 与 `report.json`，补跑后已用 `git checkout --` 完整恢复；本 PR 未改 `docs/evidence/` 下任何正式证据文件。
 
 **执行结论**：`BLOCKED`
 
