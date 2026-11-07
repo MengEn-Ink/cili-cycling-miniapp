@@ -9,7 +9,7 @@
 | 项目 | 内容 |
 | --- | --- |
 | PR | `feat/unslop-polish-latest` → `main`（编号由 PR 创建后记录于项目记忆与高优清单） |
-| Head SHA | 产品代码提交 `f526806`；差异诊断文档 `2ad720e`；本报告提交为 PR head，产品代码 SHA 未再变化 |
+| Head SHA | 产品代码提交 `f526806`；差异诊断文档 `2ad720e`；验收报告 `1773a5b`；口径更正提交为 PR head，产品代码 SHA 未再变化 |
 | 客户端版本 | `2026.11.01.1`（未 bump；仅在同一版本内补一条功能说明，符合 `check:release-notes`） |
 | 验收环境 | 本地微信开发者工具模拟器 `s1`、本地 Chromium 托管的 Pages 原型；无微信开发版 / 体验版 / CloudBase 执行 |
 | 验收角色 | 本地已登录开发者工具账号（只读）；真实云管理员只读、普通成员、iOS/Android 真机均未执行 |
@@ -48,11 +48,11 @@
 
 | 门禁 | 结果 | 关键输出或链接 |
 | --- | --- | --- |
-| `npm run validate` | 未本地执行完整链；由 PR full 门禁在 CI 执行 | 本地已逐项跑通其等价子项（格式、lint、typecheck、Vitest、契约、设计、治理、发布说明、主包、UI 同步策略、外观、Pages 渲染）；旧工作区全量 `validate` 第一步 `tool:install` 曾被环境 `SAFE_DELETE_BULK_CONFIRM_REQUIRED` 拦截，未绕过 |
-| `npm run coverage` | 未本地执行；由 PR full 门禁在 CI 执行 | 本轮未改覆盖率门禁相关代码 |
-| `npm run audit:all` | 未本地执行；由 PR full 门禁在 CI 执行 | 本轮未改依赖、锁文件或 audit 例外 |
+| `npm run validate` | **未执行完整链** | 本地已逐项跑通等价子项（格式、lint、typecheck、`npm test` 93 文件 / 1426 用例、DOM 契约 133、设计、治理、发布说明、主包、UI 同步策略、外观、Pages 渲染）；CI 的 `affected-pr` 以 `mode: targeted` 运行 `format:check` / `lint` / `typecheck` / `check:release-notes` / `check:main-package` / `check:governance` / `build`，**未触发 full 门禁**；旧工作区全量 `validate` 第一步 `tool:install` 曾被环境 `SAFE_DELETE_BULK_CONFIRM_REQUIRED` 拦截，未绕过 |
+| `npm run coverage` | **未执行** | 本轮未改覆盖率门禁相关代码；CI 的 targeted 模式未包含 coverage |
+| `npm run audit:all` | **未执行** | 本轮未改依赖、锁文件或 audit 例外；CI 的 targeted 模式未包含 audit |
 | `git diff --check` | 通过 | 无空白错误 |
-| PR checks | 待 CI 运行后回填 | 创建 PR 后由 `gh pr checks` 观察；`check:pr-description` 已在本地用相同脚本预检 |
+| PR checks | 首次运行全绿（run `42382720294`） | `affected-pr` targeted PASS 1m8s、`pr-submission` PASS 8s、`validate`（聚合必需门禁）PASS、CodeQL 与 `analyze (javascript-typescript)` PASS；`main-coverage` / `main-validate` / `main-audit` / `upload-decision` / `enable-auto-merge` 因非 main 分支 skipping。追加本次口径更正提交后 CI 需重新运行确认 |
 | `npm run check:ui-sync -- --strict` | **BLOCKED**（独立记录，不因本 PR 关闭） | Pages 原型摘要漂移；`sandbox-skip-ui-sync` 只豁免普通模式 |
 
 ## 5. 端到端执行记录
