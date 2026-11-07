@@ -25,7 +25,7 @@ page {
   color: var(--color-text);
   font-size: 64rpx;
   line-height: 80rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
   letter-spacing: -2rpx;
 }
 .pageheading-line {
@@ -75,7 +75,7 @@ page {
   font-family: var(--font-family-editorial);
   font-size: var(--font-size-title);
   line-height: 48rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
 }
 .chapterhead-aside {
   flex: none;
@@ -95,18 +95,18 @@ page {
   color: var(--color-text);
   font-size: var(--font-size-body);
   line-height: 44rpx;
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
 }
 .field-label .required,
 .field-label .optional {
-  margin-left: 10rpx;
+  margin-left: 8rpx;
   padding: 0;
   border: 0;
   background: transparent;
   color: var(--color-muted);
   font-size: var(--font-size-label);
   line-height: 36rpx;
-  font-weight: 600;
+  font-weight: var(--font-weight-body);
 }
 .field-label .required {
   color: var(--color-brand-text);
@@ -123,7 +123,7 @@ page {
   color: var(--color-text);
   font-size: var(--font-size-body);
   line-height: 44rpx;
-  font-weight: 600;
+  font-weight: var(--font-weight-body);
 }
 .textarea {
   min-height: 200rpx;
@@ -145,7 +145,7 @@ page {
   color: var(--color-brand-text);
   font-size: var(--font-size-label);
   line-height: 36rpx;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 .small,
 .small.muted {
@@ -185,7 +185,7 @@ page {
   color: var(--color-text);
   font-size: var(--font-size-body);
   line-height: 40rpx;
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
 }
 .choice-sub,
 .choice.is-active .choice-sub,
@@ -222,8 +222,8 @@ page {
 }
 .detailrow .dt {
   color: var(--color-muted);
-  letter-spacing: 2rpx;
-  font-weight: 600;
+  letter-spacing: 0;
+  font-weight: var(--font-weight-body);
 }
 .detailrow .dd {
   color: var(--color-text);
@@ -239,13 +239,13 @@ page {
   gap: 20rpx;
 }
 .upload-copy {
-  gap: 6rpx;
+  gap: 8rpx;
 }
 .upload-title {
   color: var(--color-text);
   font-size: var(--font-size-body);
   line-height: 44rpx;
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
 }
 .image-grid {
   display: grid;
@@ -395,7 +395,7 @@ page {
   color: var(--color-text);
   font-size: 40rpx;
   line-height: 52rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
   font-variant-numeric: tabular-nums;
 }
 .metric .unit,
@@ -405,8 +405,8 @@ page {
   line-height: 36rpx;
 }
 .metric .unit {
-  margin-left: 6rpx;
-  font-weight: 600;
+  margin-left: 8rpx;
+  font-weight: var(--font-weight-body);
 }
 .metric .meta {
   display: block;
@@ -429,7 +429,7 @@ page {
 .notice {
   display: flex;
   align-items: flex-start;
-  gap: 14rpx;
+  gap: 12rpx;
   padding: 16rpx 20rpx;
   border: 0;
   border-radius: var(--radius-sm);
@@ -442,7 +442,7 @@ page {
   flex: none;
   width: 10rpx;
   height: 10rpx;
-  margin-top: 14rpx;
+  margin-top: 12rpx;
   border-radius: 50%;
   background: currentColor;
 }
@@ -501,7 +501,7 @@ page {
   color: var(--color-text);
   font-size: var(--font-size-title);
   line-height: 48rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
 }
 
 .group-qr-field {
@@ -573,7 +573,7 @@ page {
   color: var(--color-on-action) !important;
   font-size: var(--font-size-body);
   line-height: 44rpx;
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
   letter-spacing: 0;
 }
 .btn.secondary,
@@ -607,7 +607,7 @@ page {
   font-family: var(--font-family-editorial);
   font-size: var(--font-size-title);
   line-height: 48rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
 }
 .empty-copy {
   font-size: var(--font-size-body);

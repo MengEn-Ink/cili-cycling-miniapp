@@ -4,13 +4,13 @@
   min-height: 48rpx;
   align-items: center;
   justify-content: center;
-  gap: 6rpx;
+  gap: 8rpx;
   padding: 8rpx 16rpx;
   border-radius: var(--radius-sm);
   background: var(--color-raised);
   color: var(--color-text);
   font-size: 24rpx;
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
   line-height: 32rpx;
   overflow: hidden;
   text-overflow: ellipsis;

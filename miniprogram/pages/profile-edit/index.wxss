@@ -19,7 +19,7 @@
   font-family: var(--font-family-editorial);
   font-size: 64rpx;
   line-height: 80rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
   letter-spacing: -2rpx;
   color: var(--color-text);
 }
@@ -65,7 +65,7 @@
   font-family: var(--font-family-editorial);
   font-size: var(--font-size-title);
   line-height: 48rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
   letter-spacing: -0.5rpx;
 }
 .chapterhead-rule {
@@ -176,7 +176,7 @@
   color: var(--color-text);
   font-size: 30rpx;
   line-height: 42rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
 }
 .upload-sub {
   color: var(--color-muted);
@@ -206,7 +206,7 @@
   color: var(--color-on-action);
   font-size: var(--font-size-body);
   line-height: 40rpx;
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
 }
 .btn::after {
   display: none;
@@ -242,13 +242,13 @@
 .field {
   display: flex;
   flex-direction: column;
-  gap: 10rpx;
+  gap: 8rpx;
 }
 .field-label {
   color: var(--color-text);
   font-size: var(--font-size-body);
   line-height: 44rpx;
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
 }
 .field-input {
   box-sizing: border-box;
@@ -278,7 +278,7 @@
 .gender-option {
   display: inline-flex;
   align-items: center;
-  gap: 10rpx;
+  gap: 8rpx;
   min-height: 88rpx;
   padding: 12rpx 28rpx;
   border: 2rpx solid var(--color-border-strong);
@@ -340,7 +340,7 @@
   font-size: var(--font-size-label);
   line-height: 36rpx;
   text-align: center;
-  letter-spacing: 2rpx;
+  letter-spacing: 0;
 }
 @media (max-width: 340px) {
   .upload {
@@ -384,7 +384,7 @@
   white-space: nowrap;
 }
 .permission-card-title {
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
   line-height: 44rpx;
 }
 .permission-card-status {
@@ -416,11 +416,11 @@
 
 /* Scheme B v6: compact profile editor ----------------------------------- */
 .profile-edit-page .pageheading {
-  padding: 24rpx 0 18rpx;
+  padding: 24rpx 0 16rpx;
 }
 
 .profile-edit-page .pageheading-title {
-  margin-top: 10rpx;
+  margin-top: 8rpx;
   font-size: 52rpx;
   line-height: 60rpx;
   letter-spacing: -1rpx;
@@ -434,12 +434,12 @@
   gap: 28rpx;
 }
 .profile-edit-page .permission-card {
-  padding: 16rpx 18rpx;
+  padding: 16rpx 16rpx;
   border-radius: 10rpx;
 }
 .profile-edit-page .section,
 .profile-edit-page .profile-details {
-  gap: 14rpx;
+  gap: 12rpx;
 }
 .profile-edit-page .chapterhead-title {
   font-family: var(--font-family-body);
@@ -478,7 +478,7 @@
   font-size: var(--font-size-label);
 }
 .profile-edit-page .field {
-  gap: 6rpx;
+  gap: 8rpx;
 }
 .profile-edit-page .field-label {
   font-size: var(--font-size-body);
@@ -496,7 +496,7 @@
 }
 .profile-edit-page .gender-options {
   gap: var(--space-1);
-  padding: 6rpx;
+  padding: 8rpx;
   border-radius: 10rpx;
   background: var(--color-raised);
 }
@@ -506,7 +506,7 @@
   border-radius: var(--radius-xs);
 }
 .profile-edit-page .notice {
-  padding: 16rpx 18rpx;
+  padding: 16rpx 16rpx;
   border-radius: 10rpx;
 }
 .profile-edit-page .save-action {
@@ -574,7 +574,7 @@
   line-height: 40rpx;
 }
 .consent-list > view > text:first-child {
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
   white-space: nowrap;
 }
 .consent-list > view > text:last-child {

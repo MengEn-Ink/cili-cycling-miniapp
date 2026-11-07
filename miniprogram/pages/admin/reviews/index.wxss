@@ -22,7 +22,7 @@
   font-family: var(--font-family-editorial);
   font-size: 64rpx;
   line-height: 80rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
   letter-spacing: -2rpx;
   color: var(--color-text);
 }
@@ -60,14 +60,14 @@
 .info-tag {
   display: inline-flex;
   align-items: center;
-  padding: 6rpx 18rpx;
+  padding: 8rpx 16rpx;
   border: 2rpx solid var(--color-border);
   border-radius: var(--radius-full);
   background: var(--color-raised);
   color: var(--color-muted);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-label);
-  letter-spacing: 1rpx;
+  letter-spacing: 0;
 }
 .info-tag.is-pending {
   background: var(--color-text);
@@ -84,7 +84,7 @@
   color: var(--color-text);
   font-size: var(--font-size-label);
   line-height: 32rpx;
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
 }
 .switch-activity::after {
   display: none;
@@ -98,7 +98,7 @@
 }
 .filter-tab {
   margin: 0;
-  padding: 14rpx 10rpx;
+  padding: 12rpx 8rpx;
   min-height: 72rpx;
   border: 2rpx solid var(--color-border);
   border-radius: 16rpx;
@@ -106,7 +106,7 @@
   color: var(--color-text);
   font-size: var(--font-size-body);
   line-height: 36rpx;
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
 }
 .filter-tab::after {
   display: none;
@@ -124,7 +124,7 @@
   font-size: var(--font-size-label);
   line-height: 32rpx;
   color: var(--color-muted);
-  letter-spacing: 1rpx;
+  letter-spacing: 0;
 }
 .small {
   font-size: var(--font-size-label);
@@ -144,7 +144,7 @@
   height: 128rpx;
   border-radius: var(--radius-md);
   background: var(--color-raised);
-  animation: review-shimmer 1.4s ease-in-out infinite;
+  animation: review-shimmer var(--motion-duration-skeleton) var(--motion-easing-in-out) infinite;
 }
 @keyframes review-shimmer {
   0%,
@@ -167,7 +167,7 @@
 }
 .empty-title {
   font-size: 30rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
   color: var(--color-text);
 }
 .empty-copy {
@@ -219,7 +219,7 @@
   justify-content: center;
   color: var(--color-text);
   font-size: 32rpx;
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
   flex: none;
 }
 .reviewitem-avatar image {
@@ -232,7 +232,7 @@
 }
 .reviewitem-title {
   font-size: 32rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
   color: var(--color-text);
 }
 .reviewitem-sub {
@@ -247,7 +247,7 @@
   background: var(--color-text);
   color: var(--color-on-action);
   font-size: var(--font-size-label);
-  letter-spacing: 1rpx;
+  letter-spacing: 0;
   flex: none;
 }
 .tag--waiting,
@@ -273,7 +273,7 @@
   font-family: var(--font-family-editorial);
   font-size: 34rpx;
   line-height: 48rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
 }
 .meta {
   display: flex;
@@ -285,7 +285,7 @@
 }
 .meta .mono {
   font-family: var(--font-family-mono);
-  letter-spacing: 1rpx;
+  letter-spacing: 0;
   color: var(--color-text);
 }
 .foot {
@@ -299,7 +299,7 @@
 .reviewitem-cta {
   color: var(--color-text);
   font-size: var(--font-size-label);
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
 }
 
 /* --- paper reminder card ------------------------------------------------- */
@@ -331,14 +331,14 @@
   font-family: var(--font-family-editorial);
   font-size: 32rpx;
   line-height: 44rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
   letter-spacing: -0.5rpx;
 }
 .chapterhead-aside {
   color: var(--color-muted);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-label);
-  letter-spacing: 1rpx;
+  letter-spacing: 0;
 }
 
 /* --- notice -------------------------------------------------------------- */
@@ -376,7 +376,7 @@
   color: var(--color-on-action);
   font-size: var(--font-size-body);
   line-height: 40rpx;
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
 }
 .btn::after {
   display: none;

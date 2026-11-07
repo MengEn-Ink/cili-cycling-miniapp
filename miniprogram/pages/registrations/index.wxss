@@ -75,7 +75,7 @@
 }
 .ticket {
   position: relative;
-  transition: transform 0.18s ease;
+  transition: transform var(--motion-duration-fast) var(--motion-easing-standard);
   box-shadow: none;
 }
 .ticket--pressed {

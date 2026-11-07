@@ -23,7 +23,7 @@
   font-family: var(--font-family-editorial);
   font-size: 64rpx;
   line-height: 80rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
   letter-spacing: -2rpx;
   color: var(--color-text);
 }
@@ -59,20 +59,20 @@
 .metrics .em {
   display: inline-flex;
   align-items: baseline;
-  gap: 6rpx;
+  gap: 8rpx;
   color: var(--color-text);
   font-family: var(--font-family-editorial);
   font-size: 56rpx;
   line-height: 64rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
   letter-spacing: -1rpx;
 }
 .metrics .em .unit {
   color: var(--color-muted);
   font-family: var(--font-family-body);
   font-size: var(--font-size-label);
-  font-weight: 600;
-  letter-spacing: 1rpx;
+  font-weight: var(--font-weight-body);
+  letter-spacing: 0;
 }
 .metrics text {
   color: var(--color-muted);
@@ -93,14 +93,14 @@
   color: var(--color-brand-text);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-label);
-  letter-spacing: 2rpx;
+  letter-spacing: 0;
 }
 .conclusion-copy {
   margin-top: var(--space-2);
   font-family: var(--font-family-editorial);
   font-size: 40rpx;
   line-height: 52rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
   color: var(--color-on-action);
 }
 .conclusion-copy--secondary {
@@ -111,17 +111,17 @@
 .strategy-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 10rpx;
+  gap: 8rpx;
   margin-top: 20rpx;
 }
 .strategy-tags text {
-  padding: 6rpx 16rpx;
+  padding: 8rpx 16rpx;
   border: 2rpx solid var(--color-border-strong);
   border-radius: var(--radius-full);
   color: var(--color-text);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-label);
-  letter-spacing: 1rpx;
+  letter-spacing: 0;
 }
 
 /* --- map.large ----------------------------------------------------------- */
@@ -147,7 +147,7 @@
   font-family: var(--font-family-editorial);
   font-size: 32rpx;
   line-height: 44rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
 }
 .map-count {
   color: var(--color-muted);
@@ -165,7 +165,7 @@
 }
 .map-reset {
   flex: none;
-  padding: 6rpx 16rpx;
+  padding: 8rpx 16rpx;
   border: 2rpx solid var(--color-border-strong);
   border-radius: var(--radius-full);
   background: var(--color-surface);
@@ -205,7 +205,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  padding: 6rpx 14rpx;
+  padding: 8rpx 12rpx;
   border: 2rpx solid var(--color-border);
   border-radius: var(--radius-full);
   color: var(--color-text);
@@ -241,7 +241,7 @@
   color: var(--color-muted);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-label);
-  letter-spacing: 1rpx;
+  letter-spacing: 0;
 }
 .point-computed {
   margin-left: var(--space-1);
@@ -256,13 +256,13 @@
   color: var(--color-text);
   font-size: 30rpx;
   line-height: 42rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
 }
 .selected-km {
   color: var(--color-brand-text);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-body);
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
 }
 .map-detail-purpose {
   color: var(--color-text);
@@ -316,7 +316,7 @@
   font-family: var(--font-family-editorial);
   font-size: var(--font-size-title);
   line-height: 48rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
   letter-spacing: -0.5rpx;
 }
 .chapterhead-rule {
@@ -330,7 +330,7 @@
   color: var(--color-muted);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-label);
-  letter-spacing: 1rpx;
+  letter-spacing: 0;
 }
 
 /* --- elevation ----------------------------------------------------------- */
@@ -352,7 +352,7 @@
 }
 .anchor-strip-inner {
   display: inline-flex;
-  gap: 10rpx;
+  gap: 8rpx;
   padding: 0 var(--page-gutter);
 }
 .anchor-item {
@@ -362,7 +362,7 @@
   align-items: flex-start;
   gap: 2rpx;
   min-width: 128rpx;
-  padding: 10rpx 16rpx;
+  padding: 8rpx 16rpx;
   border: 2rpx solid var(--color-border);
   border-radius: 16rpx;
   background: var(--color-surface);
@@ -376,7 +376,7 @@
   border-color: var(--color-brand);
 }
 .anchor-computed {
-  margin-left: 6rpx;
+  margin-left: 8rpx;
   color: var(--color-muted);
   font-size: var(--font-size-label);
 }
@@ -415,12 +415,12 @@
   color: var(--color-muted);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-body);
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
 }
 .segment-content {
   display: flex;
   flex-direction: column;
-  gap: 6rpx;
+  gap: 8rpx;
   min-width: 0;
 }
 .segment-head {
@@ -432,7 +432,7 @@
 .segment-name {
   color: var(--color-text);
   font-size: var(--font-size-body);
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
 }
 .difficulty {
   padding: 4rpx 12rpx;
@@ -491,12 +491,12 @@
   font-family: var(--font-family-mono);
   font-size: var(--font-size-body);
   line-height: 36rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
 }
 .distance text {
   color: var(--color-muted);
   font-size: var(--font-size-label);
-  font-weight: 600;
+  font-weight: var(--font-weight-body);
 }
 .point-main {
   display: flex;
@@ -512,7 +512,7 @@
 .point-name {
   color: var(--color-text);
   font-size: var(--font-size-body);
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
 }
 .point-purpose {
   color: var(--color-muted);
@@ -546,18 +546,18 @@
 }
 .risk-mark {
   color: var(--color-brand-text);
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
 }
 .strategy-row text:first-child {
   color: var(--color-muted);
   font-family: var(--font-family-mono);
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
 }
 .check {
   flex: none;
   width: 10rpx;
   height: 18rpx;
-  margin: 0 6rpx 6rpx 4rpx;
+  margin: 0 8rpx 8rpx 4rpx;
   border-right: 3.5rpx solid var(--color-brand);
   border-bottom: 3.5rpx solid var(--color-brand);
   transform: rotate(45deg);
@@ -604,7 +604,7 @@
   color: var(--color-on-action);
   font-size: var(--font-size-body);
   line-height: 40rpx;
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
 }
 .btn::after {
   display: none;
@@ -646,11 +646,11 @@
 
 /* Scheme B v6: dense analysis notebook ---------------------------------- */
 .route-analysis-page .pageheading {
-  padding: 24rpx 0 18rpx;
+  padding: 24rpx 0 16rpx;
 }
 
 .route-analysis-page .pageheading-title {
-  margin-top: 10rpx;
+  margin-top: 8rpx;
   font-size: 52rpx;
   line-height: 60rpx;
   letter-spacing: -1rpx;
@@ -667,7 +667,7 @@
   font-size: var(--font-size-label);
 }
 .route-analysis-page .ink {
-  padding: 18rpx;
+  padding: 16rpx;
   border-radius: var(--radius-sm);
 }
 .route-analysis-page .metrics {
@@ -705,11 +705,11 @@
   margin-top: var(--space-2);
 }
 .route-analysis-page .strategy-tags text {
-  padding: 4rpx 10rpx;
+  padding: 4rpx 8rpx;
   font-size: var(--font-size-label);
 }
 .route-analysis-page .map.large {
-  gap: 10rpx;
+  gap: 8rpx;
   margin-top: var(--space-3);
   padding: var(--space-3);
   border-radius: var(--radius-sm);
@@ -728,7 +728,7 @@
 }
 .route-analysis-page .map-reset {
   min-height: 56rpx;
-  padding: 0 14rpx;
+  padding: 0 12rpx;
 }
 .route-analysis-page .route-map {
   height: 440rpx;
@@ -736,7 +736,7 @@
 }
 .route-analysis-page .map-detail,
 .route-analysis-page .map-detail--start {
-  padding: 14rpx;
+  padding: 12rpx;
   border-radius: var(--radius-xs);
 }
 .route-analysis-page .content {

@@ -124,7 +124,7 @@
 }
 .compact-item__title {
   font-size: 32rpx;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 .compact-item__route {
   font-size: 26rpx;

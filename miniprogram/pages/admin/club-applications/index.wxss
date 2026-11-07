@@ -23,7 +23,7 @@
   font-family: var(--font-family-editorial);
   font-size: 64rpx;
   line-height: 80rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
   letter-spacing: -2rpx;
   color: var(--color-text);
 }
@@ -36,12 +36,12 @@
 .club-admin-badge {
   display: inline-flex;
   margin-top: var(--space-3);
-  padding: 6rpx 18rpx;
+  padding: 8rpx 16rpx;
   border: 2rpx solid var(--color-border);
   border-radius: var(--radius-full);
   background: var(--color-surface);
   color: var(--color-text);
-  letter-spacing: 1rpx;
+  letter-spacing: 0;
 }
 
 /* --- photo.hero.club ---------------------------------------------------- */
@@ -72,13 +72,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(170deg, var(--color-text) 0%, var(--color-raised) 100%);
+  background: var(--color-media-card-bg);
   color: var(--color-on-action);
 }
 .photo-fallback-mark {
   font-family: var(--font-family-editorial);
   font-size: 96rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
 }
 .shade {
   position: absolute;
@@ -101,20 +101,19 @@
   bottom: 32rpx;
   display: flex;
   flex-direction: column;
-  gap: 10rpx;
+  gap: 8rpx;
 }
 .caption-eyebrow {
   color: var(--color-media-muted);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-label);
-  letter-spacing: 2rpx;
-  text-transform: uppercase;
+  letter-spacing: 0;
 }
 .caption-title {
   font-family: var(--font-family-editorial);
   font-size: 60rpx;
   line-height: 72rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
   letter-spacing: -2rpx;
   color: var(--color-on-media);
 }
@@ -159,8 +158,8 @@
   min-width: 180rpx;
   color: var(--color-muted);
   font-size: var(--font-size-label);
-  letter-spacing: 2rpx;
-  font-weight: 600;
+  letter-spacing: 0;
+  font-weight: var(--font-weight-body);
 }
 .detailrow .dd {
   flex: 1;
@@ -168,7 +167,7 @@
   color: var(--color-text);
   font-size: var(--font-size-body);
   line-height: 40rpx;
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
   text-align: right;
 }
 
@@ -189,13 +188,13 @@
   font-family: var(--font-family-editorial);
   font-size: 34rpx;
   line-height: 48rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
 }
 .chapterhead-aside {
   color: var(--color-muted);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-label);
-  letter-spacing: 1rpx;
+  letter-spacing: 0;
 }
 
 /* --- tag --------------------------------------------------------------- */
@@ -208,7 +207,7 @@
   background: var(--color-text);
   color: var(--color-on-action);
   font-size: var(--font-size-label);
-  letter-spacing: 1rpx;
+  letter-spacing: 0;
 }
 .tag.tag-success {
   background: var(--color-text);
@@ -248,7 +247,7 @@
   height: 160rpx;
   border-radius: var(--radius-md);
   background: var(--color-raised);
-  animation: club-admin-shimmer 1.4s ease-in-out infinite;
+  animation: club-admin-shimmer var(--motion-duration-skeleton) var(--motion-easing-in-out) infinite;
 }
 @keyframes club-admin-shimmer {
   0%,
@@ -271,7 +270,7 @@
 }
 .empty-title {
   font-size: 32rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
   color: var(--color-text);
 }
 .empty-copy {
@@ -317,7 +316,7 @@
   color: var(--color-on-action);
   font-size: var(--font-size-body);
   line-height: 40rpx;
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
 }
 .btn::after {
   display: none;

@@ -40,7 +40,7 @@
   display: block;
 }
 .hero-alpine {
-  background: linear-gradient(170deg, var(--color-text) 0%, var(--color-media-card-bg) 100%);
+  background: var(--color-media-card-bg);
 }
 .profile-background-shade {
   position: absolute;
@@ -60,7 +60,7 @@
   position: absolute;
   top: 28rpx;
   left: 32rpx;
-  padding: 6rpx 12rpx;
+  padding: 8rpx 12rpx;
   border: 2rpx solid var(--color-border-strong);
   border-radius: 6rpx;
   background: var(--color-media-card-bg);
@@ -76,7 +76,7 @@
   bottom: 28rpx;
   display: flex;
   align-items: flex-end;
-  gap: 18rpx;
+  gap: 16rpx;
   color: var(--color-on-media);
 }
 .avatar-trigger {
@@ -111,7 +111,7 @@
   font-family: var(--font-family-body);
   font-size: 34rpx;
   line-height: 44rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
   letter-spacing: 0;
   color: var(--color-on-media);
   text-overflow: ellipsis;
@@ -192,7 +192,7 @@
   color: inherit;
   font-size: var(--font-size-label);
   line-height: 32rpx;
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
 }
 .profile-status-action::after {
   display: none;
@@ -200,8 +200,8 @@
 .profile-progress {
   display: flex;
   flex-direction: column;
-  gap: 10rpx;
-  padding: 16rpx 18rpx;
+  gap: 8rpx;
+  padding: 16rpx 16rpx;
   border: var(--border-width-hairline) solid var(--color-border);
   border-radius: 10rpx;
   background: var(--color-surface);
@@ -212,7 +212,7 @@
   color: var(--color-text);
   font-size: var(--font-size-body);
   line-height: 40rpx;
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
 }
 .profile-progress-track {
   height: 10rpx;
@@ -231,7 +231,7 @@
 }
 .profile-progress-action {
   margin: 4rpx 0 0;
-  padding: 0 18rpx;
+  padding: 0 16rpx;
   min-height: 64rpx;
   border: 2rpx solid var(--color-text);
   border-radius: var(--radius-xs);
@@ -239,7 +239,7 @@
   color: var(--color-on-action);
   font-size: var(--font-size-label);
   line-height: 36rpx;
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
   align-self: flex-start;
 }
 .profile-progress-action::after {
@@ -266,7 +266,7 @@
   font-family: var(--font-family-body);
   font-size: 30rpx;
   line-height: 40rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
   letter-spacing: -0.5rpx;
 }
 .chapterhead-aside {
@@ -277,7 +277,7 @@
   font-family: var(--font-mono);
   font-size: var(--font-size-label);
   line-height: 32rpx;
-  letter-spacing: 1rpx;
+  letter-spacing: 0;
 }
 .row.rowlink.rowbutton {
   display: flex;
@@ -286,7 +286,7 @@
   width: 100%;
   min-height: 88rpx;
   margin: 0;
-  padding: 14rpx 0;
+  padding: 12rpx 0;
   border: 0;
   border-bottom: 2rpx solid var(--color-border);
   border-radius: 0;
@@ -343,7 +343,7 @@
   justify-content: center;
   color: var(--color-text);
   font-size: var(--font-size-label);
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
 }
 .rowtext {
   flex: 1;
@@ -352,7 +352,7 @@
 .rowtext-title {
   font-size: var(--font-size-body);
   line-height: 36rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
   color: var(--color-text);
 }
 .rowtext-sub {
@@ -407,7 +407,7 @@
 .card-title {
   font-size: 30rpx;
   line-height: 42rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
 }
 .card-copy {
   color: var(--color-muted);
@@ -426,7 +426,7 @@
   color: var(--color-on-action);
   font-size: var(--font-size-body);
   line-height: 40rpx;
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
 }
 .btn::after {
   display: none;
@@ -441,7 +441,7 @@
   font-size: var(--font-size-label);
   line-height: 32rpx;
   text-align: center;
-  letter-spacing: 2rpx;
+  letter-spacing: 0;
 }
 @media (max-width: 350px) {
   .content {
@@ -475,7 +475,7 @@
   width: 100%;
   min-height: 88rpx;
   margin: 0;
-  padding: 16rpx 18rpx;
+  padding: 16rpx 16rpx;
   border: 1rpx solid var(--color-border);
   border-radius: 10rpx;
   background: var(--color-surface);

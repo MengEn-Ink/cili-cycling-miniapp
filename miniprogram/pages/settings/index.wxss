@@ -20,7 +20,7 @@
   font-family: var(--font-family-editorial);
   font-size: 64rpx;
   line-height: 80rpx;
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
   letter-spacing: -2rpx;
   color: var(--color-text);
 }
@@ -64,7 +64,7 @@
   font-family: var(--font-family-editorial);
   font-size: var(--font-size-title);
   line-height: 48rpx;
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
   letter-spacing: -0.5rpx;
 }
 .chapterhead-rule {
@@ -76,7 +76,7 @@
   font-family: var(--font-mono);
   font-size: var(--font-size-label);
   line-height: 32rpx;
-  letter-spacing: 1rpx;
+  letter-spacing: 0;
 }
 
 .row.rowlink.rowbutton {
@@ -219,7 +219,7 @@
 .rowtext-title {
   font-size: 30rpx;
   line-height: 42rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
   color: var(--color-text);
 }
 .rowtext-sub {
@@ -293,7 +293,7 @@
   color: var(--color-muted);
   font-size: var(--font-size-label);
   line-height: 36rpx;
-  letter-spacing: 1rpx;
+  letter-spacing: 0;
 }
 .detailrow-desc {
   color: var(--color-text);
@@ -304,7 +304,7 @@
 }
 .section-app .detailrow:nth-child(2) .detailrow-desc {
   font-family: var(--font-family-body);
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
 }
 
 .section-strava .strava-body {
@@ -329,14 +329,14 @@
 .tag {
   display: inline-flex;
   align-items: center;
-  padding: 6rpx 16rpx;
+  padding: 8rpx 16rpx;
   border-radius: var(--radius-full);
   background: var(--color-raised);
   color: var(--color-text);
   font-size: var(--font-size-label);
   line-height: 32rpx;
-  font-weight: 800;
-  letter-spacing: 1rpx;
+  font-weight: var(--font-weight-strong);
+  letter-spacing: 0;
 }
 .tag--connected {
   background: var(--color-text);
@@ -360,7 +360,7 @@
   color: var(--color-on-action);
   font-size: var(--font-size-body);
   line-height: 40rpx;
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
 }
 .btn::after {
   display: none;
@@ -379,7 +379,7 @@
   font-size: var(--font-size-label);
   line-height: 32rpx;
   text-align: center;
-  letter-spacing: 2rpx;
+  letter-spacing: 0;
 }
 
 @media (max-width: 350px) {
@@ -408,7 +408,7 @@
   gap: 0;
 }
 .settings-page .section {
-  gap: 10rpx;
+  gap: 8rpx;
   margin-top: var(--space-4);
 }
 .settings-page .section:first-child {
@@ -424,7 +424,7 @@
 }
 .settings-page .row.rowlink.rowbutton {
   min-height: 88rpx;
-  padding: 14rpx 0;
+  padding: 12rpx 0;
 }
 .settings-page .lead {
   gap: var(--space-3);
@@ -442,15 +442,15 @@
   line-height: 30rpx;
 }
 .settings-page .notice {
-  padding: 14rpx 0;
+  padding: 12rpx 0;
   font-size: var(--font-size-label);
   line-height: 32rpx;
 }
 .settings-page .detailrow {
-  padding: 14rpx 0;
+  padding: 12rpx 0;
 }
 .settings-page .section-strava .strava-body {
-  gap: 14rpx;
+  gap: 12rpx;
   padding: var(--space-3);
   border-radius: 10rpx;
 }

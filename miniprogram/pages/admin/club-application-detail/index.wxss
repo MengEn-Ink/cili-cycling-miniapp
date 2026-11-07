@@ -16,7 +16,7 @@
   font-family: var(--font-family-editorial);
   font-size: 64rpx;
   line-height: 80rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
   letter-spacing: -2rpx;
 }
 .pageheading-sub {
@@ -28,7 +28,7 @@
 .club-profile-badge {
   display: inline-flex;
   margin-top: var(--space-3);
-  padding: 6rpx 16rpx;
+  padding: 8rpx 16rpx;
   border-radius: var(--radius-xs);
   background: var(--color-raised);
   color: var(--color-text);
@@ -67,7 +67,7 @@
   font-family: var(--font-family-editorial);
   font-size: var(--font-size-title);
   line-height: 48rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
 }
 .chapterhead-aside {
   color: var(--color-muted);
@@ -129,13 +129,13 @@
 }
 .club-cover-empty-title {
   color: var(--color-text);
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
 }
 .upload-progress {
   background: var(--color-media-scrim);
   color: var(--color-on-media);
   font-size: var(--font-size-label);
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
 }
 .club-cover-progress-bar {
   width: 70%;
@@ -152,14 +152,14 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 10rpx;
+  gap: 8rpx;
   min-width: 0;
 }
 .upload-title {
   color: var(--color-text);
   font-size: var(--font-size-body);
   line-height: 44rpx;
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
 }
 .upload-sub,
 .upload-status,
@@ -176,13 +176,13 @@
 .field {
   display: flex;
   flex-direction: column;
-  gap: 10rpx;
+  gap: 8rpx;
 }
 .field-label {
   color: var(--color-text);
   font-size: var(--font-size-body);
   line-height: 44rpx;
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
 }
 .field-label .required {
   margin-left: var(--space-1);
@@ -226,7 +226,7 @@
   color: var(--color-brand-text);
   font-size: var(--font-size-label);
   line-height: 36rpx;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 .field-msg.is-error {
   padding: 16rpx 20rpx;
@@ -236,7 +236,7 @@
 .notice {
   display: flex;
   align-items: flex-start;
-  gap: 14rpx;
+  gap: 12rpx;
   padding: 16rpx 20rpx;
   border-radius: var(--radius-sm);
   background: var(--color-raised);
@@ -248,7 +248,7 @@
   flex: none;
   width: 10rpx;
   height: 10rpx;
-  margin-top: 14rpx;
+  margin-top: 12rpx;
   border-radius: 50%;
   background: currentColor;
 }
@@ -261,7 +261,7 @@
   color: var(--color-on-action) !important;
   font-size: var(--font-size-body);
   line-height: 44rpx;
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
 }
 .btn.secondary {
   border-color: var(--color-border-strong);
@@ -292,7 +292,7 @@
   color: var(--color-text);
   font-size: 32rpx;
   line-height: 44rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
 }
 .empty-copy {
   color: var(--color-muted);

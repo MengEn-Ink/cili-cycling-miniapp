@@ -16,7 +16,7 @@
   font-family: var(--font-family-body);
   font-size: 64rpx;
   line-height: 1.12;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: -0.032em;
 }
 .aihero-page.aihero-page .pageheading-line {
@@ -62,7 +62,7 @@
   font-family: var(--font-family-body);
   font-size: 38rpx;
   line-height: 1.3;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: -0.02em;
   color: var(--color-text);
 }
@@ -189,10 +189,10 @@
   margin-top: 28rpx;
 }
 .aihero-page.aihero-page .field-label {
-  margin-bottom: 14rpx;
+  margin-bottom: 12rpx;
   font-size: 28rpx;
   line-height: 1.5;
-  font-weight: 600;
+  font-weight: var(--font-weight-body);
   color: var(--color-text);
 }
 .aihero-page.aihero-page .input,
@@ -202,7 +202,7 @@
   width: 100%;
   height: auto;
   min-height: 96rpx;
-  padding: 22rpx 24rpx;
+  padding: 24rpx 24rpx;
   border: 1px solid var(--color-border-strong);
   border-radius: 18rpx;
   background: var(--color-surface);
@@ -233,7 +233,7 @@
 .aihero-page.aihero-page .btn {
   border-radius: 18rpx;
   font-size: 30rpx;
-  font-weight: 600;
+  font-weight: var(--font-weight-body);
   box-shadow: none;
 }
 .aihero-page.aihero-page .actionbar,
@@ -260,7 +260,7 @@
 }
 .aihero-page.aihero-page .rowtext-title {
   font-size: 30rpx;
-  font-weight: 600;
+  font-weight: var(--font-weight-body);
 }
 .aihero-page.aihero-page .rowtext-sub {
   margin-top: 8rpx;
@@ -368,7 +368,7 @@
   font-family: var(--font-family-body);
   font-size: 44rpx;
   line-height: 1.15;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: -0.025em;
 }
 .activities-page.aihero-page .story-host {
@@ -430,7 +430,7 @@
 }
 .activities-page.aihero-page .storymeta-action {
   flex: 0 0 auto;
-  font-weight: 600;
+  font-weight: var(--font-weight-body);
 }
 
 /* Detail hero + overview + numbered reading sections. */
@@ -632,7 +632,7 @@
   font-family: var(--font-family-body);
   font-size: 40rpx;
   line-height: 1.3;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: -0.02em;
 }
 .registrations-page.aihero-page .ticketfooter {
@@ -661,7 +661,7 @@
   font-family: var(--font-family-body);
   font-size: 44rpx;
   line-height: 1.2;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: -0.025em;
 }
 .credential-page.aihero-page .voucher-perforation {
@@ -782,7 +782,7 @@
   font-family: var(--font-family-body);
   font-size: 44rpx;
   line-height: 1.2;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: -0.025em;
   color: var(--color-on-media);
 }
