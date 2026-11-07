@@ -20,7 +20,7 @@
   font-family: var(--font-family-editorial);
   font-size: 64rpx;
   line-height: 80rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
   letter-spacing: -2rpx;
   color: var(--color-text);
 }
@@ -41,7 +41,7 @@
   color: var(--color-muted);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-label);
-  letter-spacing: 1rpx;
+  letter-spacing: 0;
   white-space: nowrap;
 }
 .info-kicker--pending {
@@ -80,7 +80,7 @@
   justify-content: center;
   color: var(--color-text);
   font-size: 44rpx;
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
   flex: none;
 }
 .person-avatar-img {
@@ -96,7 +96,7 @@
   font-family: var(--font-family-editorial);
   font-size: 40rpx;
   line-height: 56rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
   color: var(--color-text);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -123,14 +123,14 @@
   font-family: var(--font-family-editorial);
   font-size: 34rpx;
   line-height: 48rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
   letter-spacing: -0.5rpx;
 }
 .chapterhead-aside {
   color: var(--color-muted);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-label);
-  letter-spacing: 1rpx;
+  letter-spacing: 0;
 }
 .section-body {
   color: var(--color-text);
@@ -172,8 +172,8 @@
   min-width: 180rpx;
   color: var(--color-muted);
   font-size: var(--font-size-label);
-  letter-spacing: 2rpx;
-  font-weight: 600;
+  letter-spacing: 0;
+  font-weight: var(--font-weight-body);
   white-space: nowrap;
 }
 .detailrow .dd {
@@ -182,7 +182,7 @@
   color: var(--color-text);
   font-size: var(--font-size-body);
   line-height: 40rpx;
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
   text-align: right;
   overflow-wrap: anywhere;
   word-break: normal;
@@ -195,19 +195,19 @@
 }
 .mono {
   font-family: var(--font-family-mono);
-  letter-spacing: 1rpx;
+  letter-spacing: 0;
 }
 
 .tag {
   display: inline-flex;
   align-items: center;
-  padding: 6rpx 18rpx;
+  padding: 8rpx 16rpx;
   border: 2rpx solid var(--color-text);
   border-radius: var(--radius-full);
   background: var(--color-text);
   color: var(--color-on-action);
   font-size: var(--font-size-label);
-  letter-spacing: 1rpx;
+  letter-spacing: 0;
   white-space: nowrap;
 }
 .tag--waiting,
@@ -264,7 +264,7 @@
 .decision-panel .field {
   display: flex;
   flex-direction: column;
-  gap: 10rpx;
+  gap: 8rpx;
 }
 .textarea {
   min-height: 160rpx;
@@ -329,7 +329,8 @@
   height: 128rpx;
   border-radius: var(--radius-md);
   background: var(--color-raised);
-  animation: review-detail-shimmer 1.4s ease-in-out infinite;
+  animation: review-detail-shimmer var(--motion-duration-skeleton) var(--motion-easing-in-out)
+    infinite;
 }
 @keyframes review-detail-shimmer {
   0%,
@@ -350,7 +351,7 @@
 }
 .empty-title {
   font-size: 30rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
   color: var(--color-text);
 }
 .empty-copy {
@@ -400,7 +401,7 @@
   color: var(--color-on-action);
   font-size: var(--font-size-body);
   line-height: 40rpx;
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
 }
 .btn::after {
   display: none;
@@ -434,7 +435,7 @@
   display: none;
 }
 .review-detail-page .pageheading-title {
-  margin-top: 10rpx;
+  margin-top: 8rpx;
   font-family: var(--font-family-body);
   font-size: var(--font-size-title);
   line-height: 46rpx;
@@ -448,22 +449,22 @@
 .review-detail-page .pageheading-meta {
   justify-content: space-between;
   margin: 0 var(--page-gutter);
-  padding: 14rpx 16rpx;
+  padding: 12rpx 16rpx;
   border-radius: var(--radius-xs);
   background: var(--color-raised);
 }
 .review-detail-page .tag {
-  padding: 3rpx 10rpx;
+  padding: 3rpx 8rpx;
   border-radius: 6rpx;
   font-size: var(--font-size-label);
 }
 .review-detail-page .content.tight {
-  gap: 22rpx;
+  gap: 24rpx;
 }
 .review-detail-page .person {
   min-height: 88rpx;
   gap: var(--space-3);
-  padding: 14rpx 16rpx;
+  padding: 12rpx 16rpx;
   border-radius: 10rpx;
   box-sizing: border-box;
 }
@@ -481,7 +482,7 @@
   font-size: var(--font-size-label);
 }
 .review-detail-page .section {
-  gap: 10rpx;
+  gap: 8rpx;
 }
 .review-detail-page .chapterhead-title {
   font-family: var(--font-family-body);
@@ -496,7 +497,7 @@
   border-radius: 10rpx;
 }
 .review-detail-page .detailrow {
-  padding: 14rpx 16rpx;
+  padding: 12rpx 16rpx;
 }
 .review-detail-page .detailrow .dt {
   min-width: 150rpx;
@@ -507,7 +508,7 @@
   line-height: 34rpx;
 }
 .review-detail-page .section-body {
-  padding: 14rpx 16rpx;
+  padding: 12rpx 16rpx;
   border: 2rpx solid var(--color-border);
   border-radius: var(--radius-xs);
   background: var(--color-surface);
@@ -524,7 +525,7 @@
   font-size: var(--font-size-body);
 }
 .review-detail-page .notice {
-  padding: 14rpx 16rpx;
+  padding: 12rpx 16rpx;
   border-radius: var(--radius-xs);
 }
 .review-detail-page .btn {

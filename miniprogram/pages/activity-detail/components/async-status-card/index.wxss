@@ -53,7 +53,7 @@
   border: 0;
 }
 .async-status--pending .async-status__dot {
-  animation: status-pulse 1.4s ease-in-out infinite;
+  animation: status-pulse var(--motion-duration-skeleton) var(--motion-easing-in-out) infinite;
 }
 .async-status--success .async-status__dot {
   background: var(--color-status-success);

@@ -43,12 +43,12 @@
 .generated-cover__stamp {
   font-size: 20rpx;
   line-height: 1.4;
-  font-weight: 800;
-  letter-spacing: 2rpx;
+  font-weight: var(--font-weight-strong);
+  letter-spacing: 0;
 }
 .generated-cover__level,
 .generated-cover__stamp {
-  padding: 6rpx 12rpx;
+  padding: 8rpx 12rpx;
 }
 .generated-cover__level {
   background: var(--color-brand-fill);
@@ -60,7 +60,7 @@
   display: flex;
   max-width: 82%;
   flex-direction: column;
-  gap: 10rpx;
+  gap: 8rpx;
 }
 .generated-cover__eyebrow,
 .generated-cover__route,
@@ -72,7 +72,7 @@
   overflow: hidden;
   font-size: 46rpx;
   line-height: 1.08;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
   letter-spacing: 0;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -91,12 +91,12 @@
 .generated-cover__metric {
   display: flex;
   align-items: baseline;
-  gap: 6rpx;
+  gap: 8rpx;
 }
 .generated-cover__metric-value {
   font-size: 34rpx;
   line-height: 1;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
   font-variant-numeric: tabular-nums;
 }
 .generated-cover__stamp {

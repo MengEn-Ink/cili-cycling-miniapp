@@ -30,10 +30,7 @@
   height: 100%;
 }
 .hero-media--fallback {
-  background:
-    linear-gradient(135deg, var(--color-on-media-surface) 0%, var(--color-scrim-clear) 60%),
-    radial-gradient(circle at 30% 20%, var(--color-brand-glow), transparent 55%),
-    var(--color-media-card-bg);
+  background: var(--color-media-card-bg);
 }
 .shade {
   position: absolute;
@@ -52,14 +49,13 @@
   position: absolute;
   top: 48rpx;
   right: 48rpx;
-  padding: 10rpx 20rpx;
+  padding: 8rpx 20rpx;
   border: 2rpx solid var(--color-on-media-divider);
   border-radius: var(--radius-full);
   color: var(--color-on-media);
   font-family: var(--font-mono);
   font-size: var(--font-size-label);
-  letter-spacing: 2rpx;
-  text-transform: uppercase;
+  letter-spacing: 0;
   background: var(--color-control-scrim);
 }
 .caption {
@@ -78,7 +74,6 @@
   padding: 20rpx 24rpx;
   border-radius: 24rpx;
   background: var(--surface-media-action);
-  backdrop-filter: blur(6rpx);
   color: var(--color-on-media);
 }
 .club-avatar {
@@ -97,7 +92,7 @@
   color: var(--color-text);
   font-family: var(--font-family-editorial);
   font-size: var(--font-size-display);
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
   background: var(--color-raised);
 }
 .club-identity-copy {
@@ -105,13 +100,13 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6rpx;
+  gap: 8rpx;
 }
 .club-name {
   font-family: var(--font-family-editorial);
   font-size: 60rpx;
   line-height: 68rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
   letter-spacing: -1.5rpx;
   color: var(--color-on-media);
 }
@@ -132,14 +127,14 @@
 .tag {
   display: inline-flex;
   align-items: center;
-  padding: 10rpx 22rpx;
+  padding: 8rpx 24rpx;
   border-radius: var(--radius-full);
   background: var(--color-raised);
   color: var(--color-text);
   font-size: var(--font-size-label);
   line-height: 32rpx;
-  font-weight: 800;
-  letter-spacing: 1rpx;
+  font-weight: var(--font-weight-strong);
+  letter-spacing: 0;
   align-self: flex-start;
 }
 .tag--dark {
@@ -163,7 +158,7 @@
   font-family: var(--font-family-editorial);
   font-size: var(--font-size-title);
   line-height: 48rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
   letter-spacing: -0.5rpx;
 }
 .chapterhead-rule {
@@ -178,7 +173,7 @@
   font-family: var(--font-mono);
   font-size: var(--font-size-label);
   line-height: 32rpx;
-  letter-spacing: 1rpx;
+  letter-spacing: 0;
 }
 .chapterhead-action {
   padding: 8rpx 0;
@@ -227,14 +222,14 @@
   color: var(--color-muted);
   font-size: var(--font-size-label);
   line-height: 40rpx;
-  letter-spacing: 2rpx;
-  font-weight: 600;
+  letter-spacing: 0;
+  font-weight: var(--font-weight-body);
 }
 .detailrow-desc {
   color: var(--color-text);
   font-size: var(--font-size-body);
   line-height: 40rpx;
-  font-weight: 600;
+  font-weight: var(--font-weight-body);
   word-break: break-all;
 }
 .activity-list {
@@ -293,8 +288,7 @@
   color: var(--color-muted);
   font-family: var(--font-mono);
   font-size: var(--font-size-label);
-  letter-spacing: 1rpx;
-  text-transform: uppercase;
+  letter-spacing: 0;
 }
 .story-status {
   flex: none;
@@ -303,7 +297,7 @@
   font-family: var(--font-family-editorial);
   font-size: 44rpx;
   line-height: 56rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
   letter-spacing: -1rpx;
 }
 .storyfacts {
@@ -322,7 +316,7 @@
   color: var(--color-text);
   font-size: var(--font-size-body);
   line-height: 36rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
 }
 .storyfacts-label {
   color: var(--color-muted);
@@ -332,7 +326,7 @@
 .storymeta {
   display: flex;
   align-items: center;
-  gap: 10rpx;
+  gap: 8rpx;
   padding-top: var(--space-2);
   border-top: 2rpx solid var(--color-border);
   color: var(--color-muted);
@@ -353,7 +347,7 @@
 }
 .storymeta-link {
   color: var(--color-text);
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
 }
 .btn {
   display: inline-flex;
@@ -367,7 +361,7 @@
   color: var(--color-on-action);
   font-size: var(--font-size-body);
   line-height: 40rpx;
-  font-weight: 800;
+  font-weight: var(--font-weight-strong);
 }
 .btn::after {
   display: none;
@@ -387,7 +381,7 @@
 .skeleton-card {
   background: var(--color-raised);
   border-radius: var(--radius-md);
-  animation: skeleton-pulse 1.2s ease-in-out infinite;
+  animation: skeleton-pulse var(--motion-duration-skeleton) var(--motion-easing-in-out) infinite;
 }
 .skeleton-tag {
   width: 180rpx;
@@ -427,13 +421,13 @@
   color: var(--color-text);
   font-family: var(--font-family-editorial);
   font-size: 44rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
 }
 .state-title {
   font-family: var(--font-family-editorial);
   font-size: 44rpx;
   line-height: 56rpx;
-  font-weight: 900;
+  font-weight: var(--font-weight-display);
 }
 .state-copy {
   color: var(--color-muted);
@@ -446,7 +440,7 @@
   font-size: var(--font-size-label);
   line-height: 32rpx;
   text-align: center;
-  letter-spacing: 2rpx;
+  letter-spacing: 0;
 }
 @media (max-width: 350px) {
   .caption {
@@ -479,7 +473,7 @@
 .club-center-page .club-cover-location {
   top: 28rpx;
   right: 32rpx;
-  padding: 6rpx 12rpx;
+  padding: 8rpx 12rpx;
   border-radius: 6rpx;
   font-size: var(--font-size-label);
 }
@@ -490,7 +484,7 @@
 }
 .club-center-page .club-identity {
   gap: var(--space-3);
-  padding: 14rpx 16rpx;
+  padding: 12rpx 16rpx;
   border-radius: 10rpx;
 }
 .club-center-page .club-avatar {
@@ -513,7 +507,7 @@
   padding-top: var(--space-4);
 }
 .club-center-page .tag {
-  padding: 6rpx 12rpx;
+  padding: 8rpx 12rpx;
   font-size: var(--font-size-label);
 }
 .club-center-page .section {
@@ -532,14 +526,14 @@
   border-radius: 10rpx;
 }
 .club-center-page .detailrow {
-  padding: 14rpx 16rpx;
+  padding: 12rpx 16rpx;
 }
 .club-center-page .activity-list {
   gap: var(--space-2);
 }
 .club-center-page .story.activity-row {
-  gap: 10rpx;
-  padding: 16rpx 18rpx;
+  gap: 8rpx;
+  padding: 16rpx 16rpx;
   border-radius: 10rpx;
 }
 .club-center-page .story-date {

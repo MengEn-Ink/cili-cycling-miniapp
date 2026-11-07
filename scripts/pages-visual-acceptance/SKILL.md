@@ -50,7 +50,8 @@ node scripts/pages-visual-acceptance/sync-ui-digests.mjs --write
 ```
 
 回算口径与 `scripts/check-ui-sync.mjs` 完全一致（`source`=`miniprogram/` UI 文件，
-`prototype`=六个 `docs/` 原型文件）。写回后再跑 `npm run check:ui-sync -- --strict` 应通过。
+`prototype`=六个 `docs/` 原型文件）。**仅在双端证据已随本次改版重采并同步 `evidence` 后**，
+写回后才跑 `npm run check:ui-sync -- --strict`；否则不得写回，见下方「何时禁止回算」。
 
 ## 重要边界
 
@@ -60,7 +61,21 @@ node scripts/pages-visual-acceptance/sync-ui-digests.mjs --write
 - 模拟器/本地浏览器截图只证明对应内容的视觉同步，不能替代物理真机验收。
 - 不改后端能力与 17 条注册路由；视觉改版须保留所有 `data-action` / `data-route` 等交互接线。
 
-## 典型改版验收流程
+## 何时禁止回算
+
+- 当 [`docs/high-priority-issues.md`](../../docs/high-priority-issues.md) 把 `UI_SYNC_STRICT` 标为
+  `BLOCKED`，或 `docs/ui-sync-manifest.json` 的 `threeWidth.limitation` 写明当前双端证据未重采时，
+  **禁止**用 `--write` 消除漂移。`--write` 只改 `source.digest` / `prototype.digest` /
+  `syncedThrough` / `syncedAt` 四个字段，不动 `evidence.directory` 与 17 条 `evidence.routes`，
+  等于把旧截图重签到新 SHA；`schemaVersion = 2` 且无 `source.valuePreservation` 时，strict 还会
+  在 UI 摘要处再次失败。
+- 正确顺序：先在最终 SHA 真实重采 17 路由 × 2 端（含浅/暗主题、脱敏与 `redaction-record.json`）
+  → 整体更新清单的 evidence 与四个摘要/基线字段 → 再跑 strict。
+- 参照 [`2026-11-07-unslop-uisync-evidence-gap.md`](../../docs/verification/2026-11-07-unslop-uisync-evidence-gap.md)
+  中的证据规格与关闭顺序。仅回算摘要、复用旧截图、用 `sandbox-skip-ui-sync` / `CILI_SKIP_UI_SYNC=1`
+  豁免普通模式，都不能当作 strict 或验收通过。
+
+## 典型改版验收流程（仅适用于证据已同步的场景）
 
 ```bash
 # 1) 改完 docs/ 原型，逐页看渲染
