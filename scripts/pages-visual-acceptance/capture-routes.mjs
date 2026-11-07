@@ -10,7 +10,8 @@
 //
 // 用法：
 //   node scripts/pages-visual-acceptance/capture-routes.mjs \
-//     --port 63742 --width 390 --height 844 --out /tmp/cili-pages-shots [--route profile]
+//     --port 63742 --width 390 --height 844 --out /tmp/cili-pages-shots \
+//     [--route profile] [--appearance light|dark]
 //
 // 产出：<out>/<route>.png（隐藏 showcase 外壳后的纯手机屏长图）+ <out>/report.json
 
@@ -58,6 +59,7 @@ function parseArgs(argv) {
     out: '/tmp/cili-pages-shots',
     route: '',
     docs: 'docs',
+    appearance: '',
   };
   for (let index = 0; index < argv.length; index += 1) {
     const key = argv[index].replace(/^--/, '');
@@ -151,6 +153,14 @@ async function run() {
     await page.goto(`http://127.0.0.1:${options.port}/index.html?bust=${Date.now()}#${route}`, {
       waitUntil: 'networkidle',
     });
+    // 原型在 app.js 启动时读取 localStorage['cili-appearance']；设置后重载使其生效。
+    if (options.appearance === 'light' || options.appearance === 'dark') {
+      await page.evaluate(
+        (mode) => localStorage.setItem('cili-appearance', mode),
+        options.appearance,
+      );
+      await page.reload({ waitUntil: 'networkidle' });
+    }
     await page.waitForSelector('#screen-container .pg', { timeout: 15000 }).catch(() => {});
     await page.evaluate(HIDE_CHROME);
     const overflow = await page.evaluate(
@@ -168,6 +178,7 @@ async function run() {
     capturedAt: new Date().toISOString(),
     width: options.width,
     height: options.height,
+    appearance: options.appearance || 'default',
     results,
   };
   writeFileSync(join(options.out, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);

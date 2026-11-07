@@ -1,8 +1,10 @@
 # 2026-11-07 unslop 精修后 UI 同步真实差异与证据缺口
 
-> 状态：`LOCAL_COMMITTED / LOCAL_GATES_PASS / IDE_SIMULATOR_VERIFIED / PAGES_LOCAL_VERIFIED / PR_433_OPEN_CI_PASS / UI_SYNC_STRICT_BLOCKED / DUAL_DEVICE_EVIDENCE_BLOCKED / P0_REAL_DEVICE_BLOCKED`。
+> 状态（2026-11-07 原始记录）：`LOCAL_COMMITTED / LOCAL_GATES_PASS / IDE_SIMULATOR_VERIFIED / PAGES_LOCAL_VERIFIED / PR_433_OPEN_CI_PASS / UI_SYNC_STRICT_BLOCKED / DUAL_DEVICE_EVIDENCE_BLOCKED / P0_REAL_DEVICE_BLOCKED`。
 >
-> 本文只记录**差异定位与证据规格**，不宣称任何验收通过。`docs/ui-sync-manifest.json` 未修改，`check:ui-sync -- --strict` 保持 BLOCKED；本地截图只存系统临时目录，不冒充公开脱敏证据。
+> **2026-11-08 更新：本文定位的摘要漂移与双端证据缺口已按第 4/6 节规格关闭。** 在最终 SHA `adaee32` 上经授权重采 17 路由 × 2 端 × 浅/暗双主题共 68 张证据，并整体更新 `docs/ui-sync-manifest.json`，`check:ui-sync -- --strict` 与普通模式均 PASS；详见 `docs/evidence/ui-sync/2026-11-08-iphone17-light-dark-e2e/README.md`。下文保留原始定位与规格记录供追溯，**不再代表当前阻塞状态**。
+>
+> 本文只记录**差异定位与证据规格**，不宣称任何验收通过（指 2026-11-07 当时）。当时 `docs/ui-sync-manifest.json` 未修改、`check:ui-sync -- --strict` 保持 BLOCKED；本地截图只存系统临时目录，不冒充公开脱敏证据。
 
 ## 1. 基线
 

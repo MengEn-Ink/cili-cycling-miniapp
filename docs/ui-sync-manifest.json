@@ -1,16 +1,16 @@
 {
   "schemaVersion": 2,
-  "syncedThrough": "202b72b5d8be60c9c0a9aa42f91b943d679fe059",
-  "syncedAt": "2026-10-30T06:39:46.000Z",
+  "syncedThrough": "adaee321a7c9564dcceaca17bb845fee5f924028",
+  "syncedAt": "2026-11-07T16:55:15.439Z",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:5fb23ba7f65f7a0457570e368625a054dcbf76f68726eb4f56ebc8699787f416"
+    "digest": "sha256:979bc87b1d150aae65f802602497a24efeb6423ffd0e72693ad2bc63e056a866"
   },
   "prototype": {
-    "digest": "sha256:3eb3af30e64ed0527f0c15e8c684cda1e0be62c4f7df4f3455f4a43752df269c"
+    "digest": "sha256:1036334def74858d29c1d37804ab07ae3630db14690b441113c384dd4b91fc1c"
   },
   "routes": [
     {
@@ -83,164 +83,164 @@
     }
   ],
   "evidence": {
-    "directory": "docs/evidence/ui-sync/2026-10-30-source-hygiene-e2e",
+    "directory": "docs/evidence/ui-sync/2026-11-08-iphone17-light-dark-e2e",
     "viewport": {
-      "width": 375,
-      "height": 812
+      "width": 400,
+      "height": 870
     },
     "routes": [
       {
         "id": "activities",
         "devtools": "activities-devtools.png",
         "pages": "activities-pages.png",
-        "state": "真实云 1 场近期活动 · 报名中",
+        "state": "真实未来 14 天窗口内无活动 · 空态",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "DevTools 为真实管理员只读状态，Pages 为合成资料；活动标题、数量、照片与指标不同。真实照片已按 redaction-record.json 不透明遮挡。"
+        "note": "FUTURE_PREVIEW_DAYS=14，两条 published 活动在 22 天后；空态是真实业务结果，不是权限故障。Pages 为合成活动列表。 浅色主题配对图与逐图 SHA-256 见 redaction-record.json。"
       },
       {
         "id": "activity-detail",
         "devtools": "activity-detail-devtools.png",
         "pages": "activity-detail-pages.png",
-        "state": "管理员公开详情 · 两名骑友头像与背景下载解码通过",
+        "state": "真实「黑分解 ride」87.7km / 961m · 封面合影已遮挡",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "真实活动与合成活动的媒体、指标、状态和管理入口不同；封面已不透明遮挡。公开骑友媒体只读验收通过，不代表普通成员写链路或物理真机通过。"
+        "note": "真实活动封面合影与骑友媒体已不透明遮挡；Pages 为「云蒙山 & 喇叭沟 RIDE」168km 合成详情。只读加载完成，未修改活动。 浅色主题配对图与逐图 SHA-256 见 redaction-record.json。"
       },
       {
         "id": "route-analysis",
         "devtools": "route-analysis-devtools.png",
         "pages": "route-analysis-pages.png",
-        "state": "真实路线只读 · 完整分析就绪",
+        "state": "真实黑分解路线 · 完整分析就绪",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "真实路线的摘要、海拔、地图和合成路线不同；页面只读加载完成，未下载或修改云端数据。"
+        "note": "真实 87.7km / 961m / 643.2m 路线分析与 Pages 合成指标不同；页面只读加载完成，未下载或修改云端数据。 浅色主题配对图与逐图 SHA-256 见 redaction-record.json。"
       },
       {
         "id": "registration-form",
         "devtools": "registration-form-devtools.png",
         "pages": "registration-form-pages.png",
-        "state": "本人资料已回显 · 骑行经验未选 · 提交禁用",
+        "state": "真实活动报名表单 · 本人资料已回显并遮挡 · 提交禁用",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "真实表单当前缺少骑行经验，未触发提交；Pages 为合成完整表单。实名、电话和紧急联系人已整块不透明遮挡。"
+        "note": "真实表单的实名、昵称、手机号与紧急联系人已整块不透明遮挡；骑行经验未选、提交按钮禁用，未触发提交。Pages 为合成完整表单。 浅色主题配对图与逐图 SHA-256 见 redaction-record.json。"
       },
       {
         "id": "registrations",
         "devtools": "registrations-devtools.png",
         "pages": "registrations-pages.png",
-        "state": "真实 1 场已通过行程",
+        "state": "真实 7 场行程 · 0 审核中 / 2 可出发 / 5 已失效",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "真实云只有一场已通过行程，Pages 展示多种合成状态；未触发报名状态变更。"
+        "note": "真实行程数量与状态分布和 Pages 合成多状态不同；行程编号与票券媒体已不透明遮挡，未触发任何报名状态变更。 浅色主题配对图与逐图 SHA-256 见 redaction-record.json。"
       },
       {
         "id": "credential",
         "devtools": "credential-devtools.png",
         "pages": "credential-pages.png",
-        "state": "已通过凭证 · 实名电话与报名编号脱敏",
+        "state": "本人已签到凭证 · 编号与联络资料已遮挡",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "真实凭证与 Pages 合成凭证的活动、编号和个人资料不同；个人卡片、电话、联系人和编号区域已不透明遮挡。"
+        "note": "真实凭证编号、头像、昵称、实名、手机号与紧急联系人已分别不透明遮挡；Pages 为合成凭证。凭证 ID 由「我的行程」真实数据动态读取，未使用他人记录。 浅色主题配对图与逐图 SHA-256 见 redaction-record.json。"
       },
       {
         "id": "profile",
         "devtools": "profile-devtools.png",
         "pages": "profile-pages.png",
-        "state": "本人管理员 · 已授权头像与背景回显",
+        "state": "本人管理员 · 真实头像与背景已遮挡",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "真实媒体、昵称、权限入口和 Pages 合成名片不同；本人头像、背景和昵称所在英雄区已不透明遮挡。"
+        "note": "真实背景照片、头像与昵称所在英雄区已不透明遮挡；Pages 为合成骑行名片。权限状态与入口为真实管理员只读。 浅色主题配对图与逐图 SHA-256 见 redaction-record.json。"
       },
       {
         "id": "settings",
         "devtools": "settings-devtools.png",
         "pages": "settings-pages.png",
-        "state": "管理员 · 客户端 2026.10.30.1 · Strava 已连接",
+        "state": "管理员 · 暗色主题选中 · 通知与隐私入口",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "版本与运行时一致；真实管理员入口及连接状态与 Pages 示例不同，Strava 连接账号已不透明遮挡。"
+        "note": "通过产品设置页真实切换并核验主题；Pages 为合成设置页。版本与运行时信息一致，未改动隐私或通知设置。 浅色主题配对图与逐图 SHA-256 见 redaction-record.json。"
       },
       {
         "id": "capability-card",
         "devtools": "capability-card-devtools.png",
         "pages": "capability-card-pages.png",
-        "state": "历史路由进入我的 · 兼容转跳通过",
+        "state": "历史名片路由 · 按设计重定向进「我的」",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "真实路由进入 profile，Pages 复用合成名片内容；真实头像、背景和昵称所在英雄区已不透明遮挡。"
+        "note": "真实路由进入 profile，Pages 复用合成名片内容；真实英雄区照片、头像与昵称已不透明遮挡。 浅色主题配对图与逐图 SHA-256 见 redaction-record.json。"
       },
       {
         "id": "profile-edit",
         "devtools": "profile-edit-devtools.png",
         "pages": "profile-edit-pages.png",
-        "state": "本人已授权媒体 · 编辑页回显 · 未保存",
+        "state": "首访资料用途引导弹层 · 未确认 · 未保存",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "真实头像、背景和昵称与 Pages 合成编辑表单不同；三个区域已分别不透明遮挡，本轮未确认、删除或保存资料。"
+        "note": "真实首访态展示资料用途说明而非编辑表单，Pages 为合成已填表单；媒体占位区已不透明遮挡，本轮未确认、删除或保存资料。 浅色主题配对图与逐图 SHA-256 见 redaction-record.json。"
       },
       {
         "id": "admin-activity-list",
         "devtools": "admin-activity-list-devtools.png",
         "pages": "admin-activity-list-pages.png",
-        "state": "真实 1 场已上线活动 · 两人报名",
+        "state": "真实 2 条已上线 / 10 场正在筹备",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "真实云活动数量与报名统计和 Pages 合成活动不同；只读加载完成，未下架或创建草稿。"
+        "note": "真实活动数量与报名统计和 Pages 合成活动不同；只读加载完成，未下架、发布或创建草稿。 浅色主题配对图与逐图 SHA-256 见 redaction-record.json。"
       },
       {
         "id": "admin-activity-edit",
         "devtools": "admin-activity-edit-devtools.png",
         "pages": "admin-activity-edit-pages.png",
-        "state": "空白创建表单 · 本地必填校验 · 未创建",
+        "state": "真实空白创建表单 · 未创建",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "DevTools 为真实空白创建表单，Pages 为合成已填编辑态；仅触发标题必填校验，E2E 确认未创建活动。"
+        "note": "DevTools 为真实空白创建表单，Pages 为合成已填编辑态；未触发必填校验，E2E 确认未创建活动。 浅色主题配对图与逐图 SHA-256 见 redaction-record.json。"
       },
       {
         "id": "admin-reviews",
         "devtools": "admin-reviews-devtools.png",
         "pages": "admin-reviews-pages.png",
-        "state": "真实审核列表 · 两条记录 · 待审核筛选为空",
+        "state": "真实待审核 0 人 · 已通过 / 已签到筛选可用",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "真实待审核为空，Pages 含合成待审核人员；未发送提醒、批准、驳回或签到。"
+        "note": "真实待审核为空，Pages 含合成待审核人员；未发送提醒、批准、驳回或签到。 浅色主题配对图与逐图 SHA-256 见 redaction-record.json。"
       },
       {
         "id": "admin-review-detail",
         "devtools": "admin-review-detail-devtools.png",
         "pages": "admin-review-detail-pages.png",
-        "state": "已通过报名 · 可确认签到 · 个人信息脱敏",
+        "state": "真实已通过报名详情 · PII 已遮挡 · 未执行签到",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "真实状态为已通过，Pages 为合成待审核态；凭证号、昵称、实名和电话所在区域已不透明遮挡，未执行签到。"
+        "note": "凭证编号、昵称、实名与手机号所在区域已不透明遮挡；真实状态为已通过，Pages 为合成待审核态，未执行签到。 浅色主题配对图与逐图 SHA-256 见 redaction-record.json。"
       },
       {
         "id": "club/center",
         "devtools": "club-center-devtools.png",
         "pages": "club-center-pages.png",
-        "state": "唯一俱乐部 · 平台管理员 · 近期活动可读",
+        "state": "唯一俱乐部 · 真实背景与近期活动 · 媒体已遮挡",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "真实俱乐部的背景、介绍与近期活动和 Pages 合成内容不同；真实背景和头像区域已不透明遮挡。"
+        "note": "真实俱乐部合影封面、名称与近期活动和 Pages 合成内容不同；封面合影区已不透明遮挡，未编辑俱乐部资料。 浅色主题配对图与逐图 SHA-256 见 redaction-record.json。"
       },
       {
         "id": "admin-club-applications",
         "devtools": "admin-club-applications-devtools.png",
         "pages": "admin-club-applications-pages.png",
-        "state": "唯一俱乐部资料概览 · 平台管理员",
+        "state": "唯一俱乐部资料概览 · 平台管理员 · 合影已遮挡",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "真实俱乐部概览与 Pages 合成紧凑列表结构不同；真实合影已不透明遮挡，未编辑资料。"
+        "note": "真实俱乐部概览与 Pages 合成紧凑列表结构不同；真实合影已不透明遮挡，未编辑资料。 浅色主题配对图与逐图 SHA-256 见 redaction-record.json。"
       },
       {
         "id": "admin-club-application-detail",
         "devtools": "admin-club-application-detail-devtools.png",
         "pages": "admin-club-application-detail-pages.png",
-        "state": "编辑唯一俱乐部 · 现有媒体回显 · 未保存",
+        "state": "俱乐部资料编辑 · 现有媒体回显并遮挡 · 未保存",
         "data": "sanitized-runtime",
         "review": "differences",
-        "note": "真实分段表单与 Pages 编号章节不同；背景和头像卡片已整块不透明遮挡，本轮未保存任何字段。"
+        "note": "真实分段表单与 Pages 编号章节不同；背景合影与头像卡片已整块不透明遮挡，本轮未保存任何字段。 浅色主题配对图与逐图 SHA-256 见 redaction-record.json。"
       }
     ]
   },
@@ -463,6 +463,6 @@
         "note": "原型按 admin-club-profile.html 命名；对应小程序路由 admin-club-application-detail。"
       }
     ],
-    "limitation": "历史三宽度记录只验证 2026-10-22 的 Pages/HTML 设计源，不是微信开发者工具或物理真机证据。2026-11-01 AI Hero 浅暗实现的当前双端证据为 BLOCKED：尚未真实重采 17 路由浅/暗截图；上方 evidence.routes 和 source/prototype digest 均保留原值，不代表当前源码已同步。祖先检查已通过；当前 strict 在 Pages 原型摘要不一致处失败，不能靠仅更新 digest 消除截图证据阻塞。详见 docs/verification/2026-11-01-aihero-light-dark-implementation.md；不得重签旧截图或放宽 checker。"
+    "limitation": "历史三宽度记录只验证 2026-10-22 的 Pages/HTML 设计源，不是微信开发者工具或物理真机证据；340/375/430 矩阵与本次 iPhone 17 证据规格无关，保持不变。2026-11-08 已在最终 SHA adaee32 上以 iPhone 17 浅/暗双主题重采 17 路由 × 2 端共 68 张截图，整体更新 source/prototype digest、evidence.directory 与 viewport（400×870），双端差异逐路由记录在 docs/evidence/ui-sync/2026-11-08-iphone17-light-dark-e2e/README.md。严格模式的摘要漂移由真实重采消除，未使用 ui:digest --write 或豁免标签；普通成员写链路、双真机、目标云写后回读与体验版平台回读仍未执行。"
   }
 }
