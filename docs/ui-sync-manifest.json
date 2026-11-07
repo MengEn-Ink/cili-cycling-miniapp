@@ -1,13 +1,13 @@
 {
   "schemaVersion": 2,
-  "syncedThrough": "adaee321a7c9564dcceaca17bb845fee5f924028",
-  "syncedAt": "2026-11-07T16:55:15.439Z",
+  "syncedThrough": "1cd9e8d31a0e64237e05f4fa21b3c73e580476ac",
+  "syncedAt": "2026-11-07T17:26:14.337Z",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:979bc87b1d150aae65f802602497a24efeb6423ffd0e72693ad2bc63e056a866"
+    "digest": "sha256:55f38d3255085cd0fd63efd1383fc667850ee28b2fe37bab2c523d22aa13237f"
   },
   "prototype": {
     "digest": "sha256:1036334def74858d29c1d37804ab07ae3630db14690b441113c384dd4b91fc1c"
@@ -463,6 +463,6 @@
         "note": "原型按 admin-club-profile.html 命名；对应小程序路由 admin-club-application-detail。"
       }
     ],
-    "limitation": "历史三宽度记录只验证 2026-10-22 的 Pages/HTML 设计源，不是微信开发者工具或物理真机证据；340/375/430 矩阵与本次 iPhone 17 证据规格无关，保持不变。2026-11-08 已在最终 SHA adaee32 上以 iPhone 17 浅/暗双主题重采 17 路由 × 2 端共 68 张截图，整体更新 source/prototype digest、evidence.directory 与 viewport（400×870），双端差异逐路由记录在 docs/evidence/ui-sync/2026-11-08-iphone17-light-dark-e2e/README.md。严格模式的摘要漂移由真实重采消除，未使用 ui:digest --write 或豁免标签；普通成员写链路、双真机、目标云写后回读与体验版平台回读仍未执行。"
+    "limitation": "历史三宽度记录只验证 2026-10-22 的 Pages/HTML 设计源，不是微信开发者工具或物理真机证据；340/375/430 矩阵与本次 iPhone 17 证据规格无关，保持不变。2026-11-08 已在最终 SHA 1cd9e8d 上以 iPhone 17 浅/暗双主题重采 17 路由 × 2 端共 68 张截图，整体更新 source/prototype digest、evidence.directory 与 viewport（400×870），双端差异逐路由记录在 docs/evidence/ui-sync/2026-11-08-iphone17-light-dark-e2e/README.md。严格模式的摘要漂移由真实重采消除，未使用 ui:digest --write 或豁免标签；普通成员写链路、双真机、目标云写后回读与体验版平台回读仍未执行。"
   }
 }

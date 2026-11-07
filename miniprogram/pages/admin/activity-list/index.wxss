@@ -71,6 +71,10 @@
   color: var(--color-muted);
   font-size: var(--font-size-label);
   letter-spacing: 0;
+  /* 三格并排时长标签统一占两行且居中，避免孤字换行与卡片高低不齐 */
+  line-height: 1.45;
+  text-align: center;
+  min-height: 2.9em;
 }
 .metric--pending .em {
   color: var(--color-status-warning);

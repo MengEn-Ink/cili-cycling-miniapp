@@ -1,8 +1,9 @@
 # iPhone 17 浅/暗双主题双端视觉同步证据
 
-- **绑定版本**：`adaee321a7c9564dcceaca17bb845fee5f924028`（`origin/main`，PR #433 合并后的最终交付 SHA；采集时工作树干净，产品代码与 PR head `9223074` 完全一致）。
-- **绑定摘要**：小程序 UI `sha256:979bc87b1d150aae65f802602497a24efeb6423ffd0e72693ad2bc63e056a866`；Pages 原型 `sha256:1036334def74858d29c1d37804ab07ae3630db14690b441113c384dd4b91fc1c`。两者均为**本次采集时重算的当前值**，不再绑定 10-30 的 `5fb23ba7…` / `3eb3af30…`。
+- **绑定版本**：`1cd9e8d31a0e64237e05f4fa21b3c73e580476ac`（`origin/main`，PR #434 合并后的基线；本轮在其上做 unslop 前端细节精修并重新采集，证据绑定精修后的工作树）。
+- **绑定摘要**：小程序 UI `sha256:55f38d3255085cd0fd63efd1383fc667850ee28b2fe37bab2c523d22aa13237f`；Pages 原型 `sha256:1036334def74858d29c1d37804ab07ae3630db14690b441113c384dd4b91fc1c`。两者均为**本次采集时重算的当前值**，不再绑定 10-30 的 `5fb23ba7…` / `3eb3af30…`。注意：IDE 编译期间会把临时产物算进 UI 摘要，正式绑定值取 IDE 退出后的稳定摘要。
 - **证据规模**：17 条注册路由 × 2 端 × 浅/暗双主题 = 68 张 PNG。暗色主题 34 张由 `docs/ui-sync-manifest.json` 的 `evidence.routes` 绑定；浅色主题 34 张以 `-light.png` 后缀同目录配对，逐图 SHA-256 与矩形见 `redaction-record.json`。
+- **本轮重采原因**：按 unslop Polish mode 修了两处命中项（行程票券超长标题两行溢出保护、管理端三格统计标签窄屏对齐）并同步发布说明；改 `miniprogram/` 后原 `source.digest=979bc87b…` 漂移，故在 `1cd9e8d` 基线上按同一规格重采 68 张并整体更新清单，`check:ui-sync -- --strict` 重新通过。未使用摘要回算或豁免标签。`miniprogram/styles/aihero-layout.wxss` 不在 checker 的 UI 路径集合内，但其视觉变化已被本次全量重采覆盖。
 
 ## 规格：iPhone 17 作为后续默认核对标准
 
@@ -39,7 +40,7 @@ CloudBase 账号级只读已授权，环境 `cloudbase-d0gizacy77a1ab017`（国�
 
 DevTools 真实云截图中的照片 / 合影 / 头像 / 背景、真实姓名、微信昵称、手机号、紧急联系人、报名与凭证编号，均使用**不透明暗色矩形**按本次 `400×870` 实际坐标整块遮挡；每张 DevTools 图另遮挡顶部 8px、底部 24px、左右各 8px。没有沿用 10-30 的 `750×1624` 矩形，也没有对像素做缩放或插值。
 
-逐图矩形、源图 SHA-256、脱敏后 DevTools 图 SHA-256、Pages 图 SHA-256 见 `redaction-record.json`。**未脱敏原图与完整运行报告只保留在本机 `%TEMP%/cili-evidence-adaee32/private/`，永不提交**。Pages 为原型合成资料与仓库内静态素材，不含真实云用户数据，按 10-30 口径不脱敏。
+逐图矩形、源图 SHA-256、脱敏后 DevTools 图 SHA-256、Pages 图 SHA-256 见 `redaction-record.json`。**未脱敏原图与完整运行报告只保留在本机 `%TEMP%/cili-evidence-1cd9e8d/private/`，永不提交**。Pages 为原型合成资料与仓库内静态素材，不含真实云用户数据，按 10-30 口径不脱敏。
 
 脱敏后已逐张回看关键页面（凭证、报名表单、审核详情、我的、行程、活动详情、俱乐部中心、俱乐部管理、浅色凭证），确认上述个人信息无可见残留。
 

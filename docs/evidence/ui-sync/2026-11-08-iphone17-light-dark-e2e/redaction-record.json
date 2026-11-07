@@ -1,9 +1,9 @@
 {
   "schemaVersion": 2,
   "kind": "iphone17-light-dark-ui-sync-redaction",
-  "capturedAt": "2026-11-07T16:55:15.439Z",
-  "finishedAt": "2026-11-07T16:59:04.652Z",
-  "headSha": "adaee321a7c9564dcceaca17bb845fee5f924028",
+  "capturedAt": "2026-11-07T17:26:14.337Z",
+  "finishedAt": "2026-11-07T17:31:01.055Z",
+  "headSha": "1cd9e8d31a0e64237e05f4fa21b3c73e580476ac",
   "mode": "real-cloud-admin-readonly",
   "writeProtection": "只读遍历 17 路由；仅通过产品设置页 chooseAppearance 写本地 cili-appearance 主题偏好；未提交报名/审批/签到/保存资料/创建发布活动/编辑俱乐部/删除数据。",
   "device": {
@@ -46,7 +46,7 @@
   "themeDistinctRoutes": 17,
   "restoredAppearance": "dark",
   "policy": "DevTools 真实云截图中的照片/合影/头像/背景、真实姓名、微信昵称、手机号、紧急联系人、报名与凭证编号使用不透明暗色矩形整块遮挡；每张 DevTools 截图另遮挡顶部 8px、底部 24px、左右各 8px。所有矩形按本次 400×870 实际坐标重新绘制，未沿用 10-30 的 750×1624 坐标。Pages 为原型合成资料与仓库静态素材，不含真实云用户数据，不脱敏。",
-  "privateSourceDirectory": "本机 %TEMP%/cili-evidence-adaee32/private/（含未脱敏原图与 devtools-results.json），永不提交",
+  "privateSourceDirectory": "本机 %TEMP%/cili-evidence-1cd9e8d/private/（含未脱敏原图与 devtools-results.json），永不提交",
   "commonOpaqueRectangles": [
     [
       0,
@@ -113,8 +113,8 @@
               846
             ]
           ],
-          "sourceSha256": "76ea943d17c65f264a0adf9f78c9efc2d02afb350c99a8db2a584c65fba243c2",
-          "devtoolsSha256": "67087ef04deabb35ebb1d48b7db7a63b0abfc00abfc23a1b161da7f8a2800c95",
+          "sourceSha256": "cd3c811b5d80a9a52da4edfd53ff327eaea0ff66a8bd8853c44a39658bd14201",
+          "devtoolsSha256": "fa4d0f336bec1566eb7227d4aa193bda9d220b1babe985d767edc941278bc54a",
           "pagesSha256": "75aea292f2b1475392bfef8b5937b5b1a1b5aedf5f697584dceb5c2996c48e19",
           "devtoolsFile": "activities-devtools.png",
           "pagesFile": "activities-pages.png",
@@ -154,9 +154,9 @@
               846
             ]
           ],
-          "sourceSha256": "f5c54e4401f2635a577a9c981af07faf4c0dca8c1cf359868645d85980567034",
-          "devtoolsSha256": "699529af9ff303d6c322489c8df678ad521c8932ccbef670af1d2d69416e4506",
-          "pagesSha256": "6ed4de0114400847679a4a9c02dbd8f3ecc5bbcd4eda1c6b11c33463deb9fa70",
+          "sourceSha256": "05e923aef64de7eb58d2db57bb4fee3e70c5d325d9919b9a8c593b4b06488e61",
+          "devtoolsSha256": "b74927f7b85167f9140ff901e59a56b64de3d0dc29091889d8ab7f7510bf0215",
+          "pagesSha256": "1bb4ce4e05525de4b4b18a292c5e9f4cf0868ddbee920da03d66e88b61641722",
           "devtoolsFile": "activities-devtools-light.png",
           "pagesFile": "activities-pages-light.png",
           "landed": "pages/activities/index",
@@ -206,9 +206,9 @@
               750
             ]
           ],
-          "sourceSha256": "cbb1dad19bef1fafc36387ae4c4a8d7a105c64eac286fe000b9470fc98b66343",
-          "devtoolsSha256": "f29cad9b0978d35de4ef510c768ae2a8660be625b1366dc18bd936a67199b1ef",
-          "pagesSha256": "347dee31c8c11684ed7cac86be80a28cf5d623c2487cc09724a5b0493224b9ae",
+          "sourceSha256": "3482230c1101fcb0c08194422a6a8326e563207028c3e378a0d3a7643cd8700c",
+          "devtoolsSha256": "44eb09e23826d80591a72455d0d28ab2d9e6037c173ca0c0d615e02eb88c39a4",
+          "pagesSha256": "d2753d8df5989b6ffa5b07ef12c5319401ec7c5740d5c4ee8f854b4f6fcf4738",
           "devtoolsFile": "registration-form-devtools.png",
           "pagesFile": "registration-form-pages.png",
           "landed": "pages/registration-form/index",
@@ -253,8 +253,8 @@
               750
             ]
           ],
-          "sourceSha256": "8e58908f05fe86a5d5629379a57595da640054927ef09e06248efb655d3af9f1",
-          "devtoolsSha256": "f97f36e9be05fad8bc59fbc424c9fef9fa622b45e847e2b3a5697bc4a879b62d",
+          "sourceSha256": "629ca4c3acf722298816dcc95f056f0f74bd6fd42e96e0b01638a409efdd1178",
+          "devtoolsSha256": "e8d9065295216787f3aa14685bbb836c0ed6873358930daf0d941ff7dca89070",
           "pagesSha256": "907d11b5e7416647085aa79c895396dc9f7353717a64dc49aea310d04579e736",
           "devtoolsFile": "registration-form-devtools-light.png",
           "pagesFile": "registration-form-pages-light.png",
@@ -305,8 +305,8 @@
               790
             ]
           ],
-          "sourceSha256": "27fd3a2902aa605499e1c7c37eb49d82594b470a739afafd8e237f232202918f",
-          "devtoolsSha256": "2ad00abd2537d897d98cf5e6efa8260951e73f614055d79ad68a5cdb3913c589",
+          "sourceSha256": "be5dac3cd673c28a2fc7a23962cf7b8f6c4b6557630cb30df4e3046f6f9044eb",
+          "devtoolsSha256": "fb52ccba82c03380f73ea661b0588934b93c551dce9a5b7d4b5b2021033028f0",
           "pagesSha256": "606d197794c217d3a01a12a44fa6f57342006f9db620bac50b6b9931c05a9a85",
           "devtoolsFile": "registrations-devtools.png",
           "pagesFile": "registrations-pages.png",
@@ -352,8 +352,8 @@
               790
             ]
           ],
-          "sourceSha256": "507d89c54b6026677ccd7dfe67e92556784a924950c654595302bbfed576f906",
-          "devtoolsSha256": "7e6eecbda8fc7f494ce5cc0e3ae0510ea22fe0a988f928f3213180ff45956bfa",
+          "sourceSha256": "953f7be5331d64a8cb5dc87293dea10638c44aaee5aea3025f69885b836a56cb",
+          "devtoolsSha256": "bff709f5ebaa9ae68949656e86e46416ad5f5b856153e8791fb54e5f2422c4ed",
           "pagesSha256": "86c0165d736bd167ffab9ac54bb154a7f3fdad022294742188ec0c078970b3a8",
           "devtoolsFile": "registrations-devtools-light.png",
           "pagesFile": "registrations-pages-light.png",
@@ -416,8 +416,8 @@
               755
             ]
           ],
-          "sourceSha256": "0e54a879eb7497fb2ef4e0f1cbf93774b125a60201ef6a57270d8e0afb7dd08d",
-          "devtoolsSha256": "2360f70c593be2a8e447a2a7df038d97f1ffd6ef866eb4bf86f11c9df672bdf6",
+          "sourceSha256": "3a2beb5d47b167d5b1c88b6b034f21bc5f5b1fae9cb684f0655a2e6778f79c6f",
+          "devtoolsSha256": "b0833a1f3542571e96a16855c1ad7187cbf9daedef0586ce9d0bdabf4b6f1b9e",
           "pagesSha256": "e28ea81087c14f97ccdae2009bfa9ccb3225cdefdcb512256f64ec6a2a3300a4",
           "devtoolsFile": "credential-devtools.png",
           "pagesFile": "credential-pages.png",
@@ -475,8 +475,8 @@
               755
             ]
           ],
-          "sourceSha256": "47c0c1b1486b87be961364c60ce226097f28ee2c5bc92ab2632b5d302661659d",
-          "devtoolsSha256": "9a10ed800e38fbd4270e96b75ec0bffbf256d3f1638d9975917e3eeaa69cca2f",
+          "sourceSha256": "eeb6fb4bfc72dbd202a67ea4ff8dc3f383075c5b5a61e03cdbca19610e977c21",
+          "devtoolsSha256": "ff0469cc96b52fe05ba18c881904187ed196a16613fa9c04efe9324beb2484c1",
           "pagesSha256": "00374a242ea98512ea05911ba8f9ce38366f4755f7467bbeb32703b0ff3aa72b",
           "devtoolsFile": "credential-devtools-light.png",
           "pagesFile": "credential-pages-light.png",
@@ -527,9 +527,9 @@
               308
             ]
           ],
-          "sourceSha256": "dd34fe1a11c5b1f624c189aaf3b6c693657acda688d06746dcda55c6b728424b",
-          "devtoolsSha256": "f006f1263a0a686377952cdb568c5e6725dfab343d8ecdc73a1aefa976bf09bc",
-          "pagesSha256": "5ab225ac6263ba4936b3750803ec6f2b2e7b2c76e6e6d4fe24af76028ee25c54",
+          "sourceSha256": "5e6a0fe090c49b75e54730a414598c820b69f2ca3c213fdfa2f97f3198ffac37",
+          "devtoolsSha256": "0306c1a0b0c22a42878dee81b1f62d941fd9283ea35addc475c5ed8db626712d",
+          "pagesSha256": "81f93e41144842efaa43c0f5d3cc20feeb84805ff9ac863757014de0e71dc9cb",
           "devtoolsFile": "profile-devtools.png",
           "pagesFile": "profile-pages.png",
           "landed": "pages/profile/index",
@@ -574,8 +574,8 @@
               308
             ]
           ],
-          "sourceSha256": "0d7a59713cecae841c8de3298479dbc787469806f1c87de0e7d17ab07aab8bdf",
-          "devtoolsSha256": "28265870bf0cc245c81d40fc1a05bb14d102e2cf09280b45311d505371afffb2",
+          "sourceSha256": "2b6f9f5544ab961a8aeaa361d37434e33acc82e9c760e33afba5e8c441eda747",
+          "devtoolsSha256": "c1288ebfe2b9f20ddf4e61f7d509830eb911f3dc2baf65b0b11a7614c75a8eea",
           "pagesSha256": "223c16df89250db6b4c3d1641079c227d75c3feda308223c5835f62711747d99",
           "devtoolsFile": "profile-devtools-light.png",
           "pagesFile": "profile-pages-light.png",
@@ -626,9 +626,9 @@
               308
             ]
           ],
-          "sourceSha256": "5e3f45c05f7530895fdc20dcb1f333c532291b5a8e655883febfb46e4148d8ea",
-          "devtoolsSha256": "814b76ce4704b818d037451089aaea4a64a2fede789276ddc8207eb59e4ba966",
-          "pagesSha256": "b9595a21979cdf05fd1124ccecbcc7408b9dcbb64841075d4f20ad1df18eae5f",
+          "sourceSha256": "5e2f2bff68f9018f8954af569f0127b8260154d29fc18de30bc21271e3f142b4",
+          "devtoolsSha256": "4ad5ece5200270921690a5458828a40fe42e08175d499ee3e7ac0df17185b292",
+          "pagesSha256": "81f93e41144842efaa43c0f5d3cc20feeb84805ff9ac863757014de0e71dc9cb",
           "devtoolsFile": "capability-card-devtools.png",
           "pagesFile": "capability-card-pages.png",
           "landed": "pages/profile/index",
@@ -673,9 +673,9 @@
               308
             ]
           ],
-          "sourceSha256": "0d7a59713cecae841c8de3298479dbc787469806f1c87de0e7d17ab07aab8bdf",
-          "devtoolsSha256": "28265870bf0cc245c81d40fc1a05bb14d102e2cf09280b45311d505371afffb2",
-          "pagesSha256": "d03515856abc73f769c477aaa1e3d4c525b6443036535324ef0c9a4b2d7402d0",
+          "sourceSha256": "93a72d0cce5288e67af812867cf94f0979909bea75fadcb3ee7fc539247a0eaa",
+          "devtoolsSha256": "c1288ebfe2b9f20ddf4e61f7d509830eb911f3dc2baf65b0b11a7614c75a8eea",
+          "pagesSha256": "cb4a749865411c727efacab9b3c96c3f33b740974825cefacf19dc3ad98ad300",
           "devtoolsFile": "capability-card-devtools-light.png",
           "pagesFile": "capability-card-pages-light.png",
           "landed": "pages/profile/index",
@@ -719,9 +719,9 @@
               846
             ]
           ],
-          "sourceSha256": "976afd5a0f3460a1b0f5f078e4346a7f217d12ec9a061c65aee0acfc536cc167",
-          "devtoolsSha256": "36ac5f1c355ecab34fc9565a0e767830e5390a69b9d8463ab860d769da1fa887",
-          "pagesSha256": "88ce0a9c3c78476b72b8d499a776366403330d26cc1039ba764f217c75bf1322",
+          "sourceSha256": "bdd7ab71444ea52de3bdf282a7bdb141b6ce340eb87847107cc9a7333b3599c3",
+          "devtoolsSha256": "9ae8da72fc08d064be4335083ac06ce923ace4ace9352810016812c21a93842d",
+          "pagesSha256": "239ef25d4d52da7c8947d37cf9c29cadcf56800c8235c60aab58aeed30eaffe4",
           "devtoolsFile": "settings-devtools.png",
           "pagesFile": "settings-pages.png",
           "landed": "pages/settings/index",
@@ -760,8 +760,8 @@
               846
             ]
           ],
-          "sourceSha256": "0b7c86f537dba255f906cc4e560b8cd012bd9d15ffd24ff2b953ec7e056f070c",
-          "devtoolsSha256": "aaa1f8a76a0df0ed6affef806888c921a63b7f698d0c337194b37211166cdf76",
+          "sourceSha256": "d157cae6e923a4b49f8b3bf6efc423e16ec68e5bc36e4358874d1e27be9e5fb0",
+          "devtoolsSha256": "d27e5a5abf263d2192e446b9a107f2177452dcfa124129069636612feda023d0",
           "pagesSha256": "505a379ce08a58a0d002639b1cfd3042b8338f1205b8af9573e16605c769ff7f",
           "devtoolsFile": "settings-devtools-light.png",
           "pagesFile": "settings-pages-light.png",
@@ -812,9 +812,9 @@
               308
             ]
           ],
-          "sourceSha256": "ab39174407340270330201a43726619e85ae3549d6be9f9c476e7a166b91b522",
-          "devtoolsSha256": "fc13fe3c59ecec7efdde2c249d37817ceac8eca614298d649bfa24b1f0883602",
-          "pagesSha256": "1ba6214d34a93f430bcbd30ffbd678a884033fc6905511381deece60565f75bf",
+          "sourceSha256": "8e58bc98d347d2550096d1e804cb4e7a5b88cfb193e47dc8b2330f5709c0ecfb",
+          "devtoolsSha256": "5f2a44a8b392ebf47ca4141950b5ecc3683b342f84bfd5607fcac3b25431fec8",
+          "pagesSha256": "70321682ca2000a027fd568827d7bf8b4bb9dc2b6e32ee5839fca9e9cba0ab21",
           "devtoolsFile": "activity-detail-devtools.png",
           "pagesFile": "activity-detail-pages.png",
           "landed": "pages/activity-detail/index",
@@ -859,8 +859,8 @@
               308
             ]
           ],
-          "sourceSha256": "d71729c9bc39e5d07aa9b893a1483447de2b45acb49d7c2aa316ca1c2687ecd2",
-          "devtoolsSha256": "adeccc0f13e84aad6eb2ceeda768f2f887f79fa01c7e4f160f84fe7e6025b87d",
+          "sourceSha256": "ce572ed4047c86b64d9e18628b68aebd378a3da776b8cf55489498179e442bff",
+          "devtoolsSha256": "6216c92de7444bc4d7a50a4e0b1ffaa67b40a84ea60ab47924e6b8ec61a9fdc4",
           "pagesSha256": "ae595fc2df5524e573eda2168672e0287dc96a0781150c94c4f488e6f221b632",
           "devtoolsFile": "activity-detail-devtools-light.png",
           "pagesFile": "activity-detail-pages-light.png",
@@ -905,9 +905,9 @@
               846
             ]
           ],
-          "sourceSha256": "78275af15fc30b2ff1352d77809d1c85ec9f8973060e9e0d03bc6ec8f797f3da",
-          "devtoolsSha256": "73c5da882304677a4b7a9c2051889965ea21e93f8d2683ce57657398ea3c7447",
-          "pagesSha256": "3fdd770b948922aca3f43e4719fdffbb4579c360845b3a52a57dc88ab55bf1d0",
+          "sourceSha256": "dbe480d72a0b193786b3c3a9ffb20204cb635d48206b8d798d1a6d63a11d830e",
+          "devtoolsSha256": "081aa63170aee8410efe57dcb67ca0af0772c2ecf0e9ce153b71221187f6b639",
+          "pagesSha256": "4f6928e8eab6e6f7651f1a6b41cc100416ab61301071b70e70fc847e4921277a",
           "devtoolsFile": "route-analysis-devtools.png",
           "pagesFile": "route-analysis-pages.png",
           "landed": "pages/route-analysis/index",
@@ -946,9 +946,9 @@
               846
             ]
           ],
-          "sourceSha256": "f00dbb52c070aa3378b037669af63d0c3c9458397edb9a0fc0351ec133eb0f04",
-          "devtoolsSha256": "22c59738ef010005f56edea7a02a751b0c994fb312920c8d124c15dd9c0eb2e3",
-          "pagesSha256": "db364f2b0b3f91491bb834f9c3c134cbae63dd5850bd311fb0206f42dd610e4b",
+          "sourceSha256": "ec77eecb7ddaacebe154cf22f0981c5c538e9dee717009a267c24068a359f7d2",
+          "devtoolsSha256": "720e9d580093d6230d09420cd792d32628e32501cf439e176c9f6d9cd4cf241b",
+          "pagesSha256": "2b62fd356cf744d74fba0d3883999931ca87071c178e5f853eb9da05bacdb191",
           "devtoolsFile": "route-analysis-devtools-light.png",
           "pagesFile": "route-analysis-pages-light.png",
           "landed": "pages/route-analysis/index",
@@ -998,9 +998,9 @@
               400
             ]
           ],
-          "sourceSha256": "2808b02b244d00c4ad9d1718aa5f447a6ed81c3fbec2ce8d5ac303fedc0ab762",
-          "devtoolsSha256": "60354d233918f5303182e2936d076c04cc4eef2a0816dfe21d660d642b846660",
-          "pagesSha256": "306b556901b4dba8309b055f6ce4e661f4aa640e9e03a2cd591015e9ef242d16",
+          "sourceSha256": "2f82aa6579fd05483dcbaaf14247c4896815f9762900ed3ab24bb9c44ba12a73",
+          "devtoolsSha256": "fa6bb9ead93cd2a4124fc8e7a96fba7de3e5b6f5d8f15d20aaea24e9195689ff",
+          "pagesSha256": "0b5bf7ba921b0cc1dbdbb7aef0509aa16f6ae0346b14307ef1ac54e8a551d9a4",
           "devtoolsFile": "profile-edit-devtools.png",
           "pagesFile": "profile-edit-pages.png",
           "landed": "pages/profile-edit/index",
@@ -1045,8 +1045,8 @@
               400
             ]
           ],
-          "sourceSha256": "f306f1adc7d1ee37cfe59c9579a4646ec2016ea849dbbfda4e320c8729f34755",
-          "devtoolsSha256": "95cfa3aaa6f87c3b2ecdbe2bbb95f0e96d3f5f399b7c25a0a3841fa620aaf412",
+          "sourceSha256": "4cf03d1185cf910f4dbe14a1d2dc05b0267c201f2630f3217c3b6962a3fd73ae",
+          "devtoolsSha256": "f5b07b9bc76e570c001402d3101f2b1fe5566682efd667fe173b1a588e10f58e",
           "pagesSha256": "95c9be5095c22ff5a93a5cb3685eff5b0f2912b04536dcbcb1dffef4f5bab15e",
           "devtoolsFile": "profile-edit-devtools-light.png",
           "pagesFile": "profile-edit-pages-light.png",
@@ -1097,8 +1097,8 @@
               308
             ]
           ],
-          "sourceSha256": "c3dd55a3806a9dc62cfd3c9d36c238d4cdd3377afc974677d75d61141bdc158d",
-          "devtoolsSha256": "48dd4e92325d27591cb5fa542d19c11b7854f3b8b340a05546c6b3182f9d6879",
+          "sourceSha256": "f905913457ff1fb79dca26a36881cf56658a7fb3ce72939e101165772b3b0514",
+          "devtoolsSha256": "4c0c8f26ede4c30f83732e44218b85b226ded394bd469d81980d940b17a50711",
           "pagesSha256": "370067b7097480c5400744fb49b7dd90ec2e60dc1922b59d26aaa64316362fc1",
           "devtoolsFile": "club-center-devtools.png",
           "pagesFile": "club-center-pages.png",
@@ -1107,7 +1107,7 @@
           "pageAppearance": "dark",
           "pageError": null,
           "items": null,
-          "isAdmin": false,
+          "isAdmin": true,
           "url": "/pages/club/center/index"
         },
         "light": {
@@ -1144,9 +1144,9 @@
               308
             ]
           ],
-          "sourceSha256": "e793b2b2f518c017cf9758f9e602a384a68826d6ce0b52fff52cd5e23ba72683",
-          "devtoolsSha256": "0fded7cce125de194aaa98fecd32cf5edbe69d6a6fb5d728dbda46fbb540dcfe",
-          "pagesSha256": "a85eecf58a5e1517963942f4d4d2301667e06ae92394f93bfb130f215365441d",
+          "sourceSha256": "935456a8f3660d562790e4b9accb397f2f7dc699762a5cd2fc0e7c320da18a96",
+          "devtoolsSha256": "64b585614a4f5ff2834b59feac6455e0fad95912c34d161a723d4420169b8c67",
+          "pagesSha256": "389ee4a149dd832afe8a95cd925f70fa4525aeea4c384a0675bea3c6e9ef56f8",
           "devtoolsFile": "club-center-devtools-light.png",
           "pagesFile": "club-center-pages-light.png",
           "landed": "pages/club/center/index",
@@ -1190,9 +1190,9 @@
               846
             ]
           ],
-          "sourceSha256": "93c8ab2ed1896ca38ad3ea24c327ef1ca994e301fd60e380140251faf7784579",
-          "devtoolsSha256": "d5e483f9671aee523af765041d9b24907cd2ff811d541f86bbae7a43424b8f2c",
-          "pagesSha256": "4a8ad4c7c0eb7ae0d1179fa75b81eed1ff4a9ea0883e50d091d0d8915182651a",
+          "sourceSha256": "a3359da01331347c9a4b0a76f6221f58d3aa91a5f29a4f5aa83cf260f7812579",
+          "devtoolsSha256": "b2629bc6e0febdb9d072c1ff3458b66b698773d8f6cd236943891a0423a5143d",
+          "pagesSha256": "ee475d09e421f98db1d8691e13516b455450b6ad611a4560811c15e239dce6af",
           "devtoolsFile": "admin-activity-list-devtools.png",
           "pagesFile": "admin-activity-list-pages.png",
           "landed": "pages/admin/activity-list/index",
@@ -1231,9 +1231,9 @@
               846
             ]
           ],
-          "sourceSha256": "b5b9d0675b4e7f8875811cede9b1fd63b9438567d1897007d12599dfa5f9a4dc",
-          "devtoolsSha256": "f051772541cd52ae630f2aba7f7f1be4f5f87489057c8f8aa849995f393fc468",
-          "pagesSha256": "6536d7795de503a50d509511b7cec953e6b505bb84a5de43b7cc9464a4281894",
+          "sourceSha256": "44f29e553ae6b53e426a855ee026db17547bdea3ac8610808d80174c0a9f838e",
+          "devtoolsSha256": "743cab06c68faff487b0ba5d6722a5df5518346e6fb9ce545e178e27a529a9cc",
+          "pagesSha256": "077820cf494e6e676aeaf970463af042c755df4f5d90582e55769ad2a4206f7b",
           "devtoolsFile": "admin-activity-list-devtools-light.png",
           "pagesFile": "admin-activity-list-pages-light.png",
           "landed": "pages/admin/activity-list/index",
@@ -1277,8 +1277,8 @@
               846
             ]
           ],
-          "sourceSha256": "5a959f7c3f28ce9938d7fdcf4ec5d3379f7642a67a20ee9522389791fec169fc",
-          "devtoolsSha256": "d602b9c7f8fd298825ce725de321cba081190b2f14489173486424762ba3a95b",
+          "sourceSha256": "e47acfc40de3be695384b9951f963afc80c21d5c490fd54902947c79202523ad",
+          "devtoolsSha256": "8aeed1c3648d94fc6148b0876aa496eab719da5f7d7a9fa1b0fbe64021bca20f",
           "pagesSha256": "e6217db33a7364d7d6032721ed97d15fe7bbb407d8bfe0a92ae5bb6c0e06fbf8",
           "devtoolsFile": "admin-activity-edit-devtools.png",
           "pagesFile": "admin-activity-edit-pages.png",
@@ -1318,8 +1318,8 @@
               846
             ]
           ],
-          "sourceSha256": "bdb2fec4cb8bf8716e4ba341546e0a7238cde302923dfef0613e9d7d2da1eae0",
-          "devtoolsSha256": "91bc93b86116b655f7b83bff5c0f9f5714611840dacbd2fc929854834dda9197",
+          "sourceSha256": "36ff92639f565e587d2bbdfd19936e1bcc8dd047e2b67a07246f5c5af95fbdfe",
+          "devtoolsSha256": "352ee2422da9cc72f7260a2daa3c17e9f94075c4e54b358a9c28c602fa1758e0",
           "pagesSha256": "a595edc436d6c0420bf373f3f4ad5691b52eeefa6494a5a226a4d71387029b9d",
           "devtoolsFile": "admin-activity-edit-devtools-light.png",
           "pagesFile": "admin-activity-edit-pages-light.png",
@@ -1364,9 +1364,9 @@
               846
             ]
           ],
-          "sourceSha256": "fbc925b29171ea58197d8272cd98ae951828d9fd57d3a673fcaf53d4a6252692",
-          "devtoolsSha256": "714c519eda5289cdac7a045499a717097baa15443359a59acd9baf9dc223b495",
-          "pagesSha256": "ec9600b6bfb7597e2ac3ce71b688bc9bb52829a40f7e09368448aa393aed61e7",
+          "sourceSha256": "1353fb7dc4181581ae24a3467c86c17806149e78f94abb4b66af9c8c81389610",
+          "devtoolsSha256": "bf7c49095b13938d6fa826bbd9e6c6f69f26c310b7adfa08a86076094590cf0c",
+          "pagesSha256": "9ec9ce9be30e329bd08569b3443693729c191bdc306fed37104ed72728518e80",
           "devtoolsFile": "admin-reviews-devtools.png",
           "pagesFile": "admin-reviews-pages.png",
           "landed": "pages/admin/reviews/index",
@@ -1405,9 +1405,9 @@
               846
             ]
           ],
-          "sourceSha256": "067212743f159d73c2893874b306a3e42056e66e25e5845cd14faff5d4a7ec4b",
-          "devtoolsSha256": "15ae23c9bd7a6695636a97bc262ce1f62b9e0156882e2c31685c90839ce9ab9e",
-          "pagesSha256": "cce49690dcc4f4ab4bc48435ffc85f5f436287da6e21233aa21e355d3a12a44c",
+          "sourceSha256": "8cfae69a05f6b206d229e0f6a7c6fc3cefaf47e20170dfb84926c8a965be5d9f",
+          "devtoolsSha256": "5c780d91fb527318d15d56baecfebe986147eaf4a2082334b323743eac0d57c2",
+          "pagesSha256": "304902d2debc002b8c1a404b6bee967669682868b4034d5c9365c188aeaa1212",
           "devtoolsFile": "admin-reviews-devtools-light.png",
           "pagesFile": "admin-reviews-pages-light.png",
           "landed": "pages/admin/reviews/index",
@@ -1469,9 +1469,9 @@
               625
             ]
           ],
-          "sourceSha256": "9cb7fd76fefa8a4248657018536b3e4049f66a5510ce6749adbaa91c848d79f3",
-          "devtoolsSha256": "f05a861ca888f525451ef676716694ae067f3085af769a9e6510e4f439cb1520",
-          "pagesSha256": "8148f20fe85469005b4e896419e0ccdfd7c76021193a870c5c1a43dc21d8b664",
+          "sourceSha256": "617de6f8374de0446f787c6d5cd325368efff9cded6897f0b723ee3f32cbe7e9",
+          "devtoolsSha256": "f6f5202fe7f9671c097516f1ea4d8bfc157ab7ecc97c68f55bc9f9207c980dba",
+          "pagesSha256": "b11051a04deedbadb08c4a2f80e292c030aec5185adc3181747068a31a91a8ca",
           "devtoolsFile": "admin-review-detail-devtools.png",
           "pagesFile": "admin-review-detail-pages.png",
           "landed": "pages/admin/review-detail/index",
@@ -1528,8 +1528,8 @@
               625
             ]
           ],
-          "sourceSha256": "8d27d14207e26b645feaab6c4b3295f237e258d5d913b8c4d8b9b93b8da69f28",
-          "devtoolsSha256": "b9cdf39b456b81267ed195efe502db93b72a3534a89765db4d98bb4f3c100edb",
+          "sourceSha256": "dc9672eb51dd552fdeb923b5596cfccfbd72774a3692e5e9ac40bdb7467fa494",
+          "devtoolsSha256": "91b58f3dcd9b3918caf8dc0f4ae132406e7facdde23b36a1be9013ff717bc080",
           "pagesSha256": "d10efbd73b9cfc277f3a6b4905633f4ff5c7043d051e2a16904043ccd0f8d70f",
           "devtoolsFile": "admin-review-detail-devtools-light.png",
           "pagesFile": "admin-review-detail-pages-light.png",
@@ -1580,9 +1580,9 @@
               515
             ]
           ],
-          "sourceSha256": "1c294458abb5ae5fe22fbedac9676d0a73b2a01e4a7518b0465547eb4d4795b1",
-          "devtoolsSha256": "240b9b156850dd5261ec3ee92927cd4a6ffbfed82fa624a16c9da3a9d8aa1e47",
-          "pagesSha256": "d23b4a3d6f0ec54b2ab91cee55d5c8f577c2e630a82816c8b0402f7bd603dc8c",
+          "sourceSha256": "397d16ecd319d53d59a347a39e44deb5203ddd961f0af8b71cf6097e56fd6d44",
+          "devtoolsSha256": "76bddce6e167c67347f6b9b5b38a3ff7a46ff7410153b1123c44c8016a563ff1",
+          "pagesSha256": "2cc4880c1a5306bd0e9a80ef81cdc53b83284c332c9a116c073a409796c1a14e",
           "devtoolsFile": "admin-club-applications-devtools.png",
           "pagesFile": "admin-club-applications-pages.png",
           "landed": "pages/admin/club-applications/index",
@@ -1627,9 +1627,9 @@
               515
             ]
           ],
-          "sourceSha256": "337b4038157db1d51eb1ff42c302d3a7c3b13a9bc467f79b5b12aa9aef465bd3",
-          "devtoolsSha256": "d1aa701923979e655e35313071ad9056863e2803ee7f7f6f4eed34d2a952924f",
-          "pagesSha256": "9a79dfcc08ffb18396952358f19b77a37a51a806919d94753959de98861d7504",
+          "sourceSha256": "0432b2babf8227abc6f773197f320cf980b268ff44f71c3fe98f6c346646f983",
+          "devtoolsSha256": "231d71f705c4c8f4375679a02102426b889fa98062cbc9b10e73da339837339a",
+          "pagesSha256": "283486adad7b683749731aaf0b77dacff2b87b5a32d17909ea3d2a672f910192",
           "devtoolsFile": "admin-club-applications-devtools-light.png",
           "pagesFile": "admin-club-applications-pages-light.png",
           "landed": "pages/admin/club-applications/index",
@@ -1685,9 +1685,9 @@
               846
             ]
           ],
-          "sourceSha256": "6b1ab944b3975ded151bacb32711e051172eb21ff16223b171a58c5ef66ddf1f",
-          "devtoolsSha256": "5f8425f70318e8f2b3058b8788d3e4db840976292b4d47f7293953981ba1ad4d",
-          "pagesSha256": "4fbb9d483771c7724f6d121a3c9635617d4da041d06230d51939b7618fb20f5a",
+          "sourceSha256": "f768056649dd41ee190afd4e513b0932c9d61dee0b532cc2ccd3836057b53518",
+          "devtoolsSha256": "94521b1bab5a22ee6056fc632f2cc90053b31a1d4fcf55f2c529595c60da5f9c",
+          "pagesSha256": "a17a2af6163f04bf7a0b5dba27834609ef8b662c6217d36bd7b67b154392701e",
           "devtoolsFile": "admin-club-application-detail-devtools.png",
           "pagesFile": "admin-club-application-detail-pages.png",
           "landed": "pages/admin/club-application-detail/index",
@@ -1738,9 +1738,9 @@
               846
             ]
           ],
-          "sourceSha256": "5669248400641b2352698b3e84acf6158b0f095e58df2ef60461a9ff62ba44a2",
-          "devtoolsSha256": "6f40396a1eaed6714c6b76d9dd908bc687c354fab51764fd12b39a3115284315",
-          "pagesSha256": "da8b0fc0dc17e782c92e42d03449aba8e9ccf9cd120f8eed384342f8abf7cc4d",
+          "sourceSha256": "dec78915ecf027ea4005a0af83cc5143a66893f153a691cc80e1af8128fd1c9c",
+          "devtoolsSha256": "7d6e9f491ecca12b79f0426d5e39f9aca278f1a8b5c05c606e6af9d446b81595",
+          "pagesSha256": "d21538cc244cb88c6e11449e9c4f1b2dfbb0d396d21579593ad982f5e85b1d52",
           "devtoolsFile": "admin-club-application-detail-devtools-light.png",
           "pagesFile": "admin-club-application-detail-pages-light.png",
           "landed": "pages/admin/club-application-detail/index",
