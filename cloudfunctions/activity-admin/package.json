@@ -7,7 +7,7 @@
     "test": "node --test *.node-test.js"
   },
   "dependencies": {
-    "fast-xml-parser": "5.11.2",
+    "fast-xml-parser": "5.12.0",
     "wx-server-sdk": "4.0.2"
   },
   "overrides": {
